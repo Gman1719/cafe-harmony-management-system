@@ -9,6 +9,33 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    <style>
+        /* Ensure auth footer is visible */
+        .auth-footer {
+            margin-top: 1.5rem;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(139,69,19,0.1);
+            display: block !important;
+        }
+        
+        .auth-footer p {
+            color: #666;
+            font-size: 0.95rem;
+            display: block !important;
+        }
+        
+        .auth-footer a {
+            color: #8B4513;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block !important;
+        }
+        
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body class="auth-page">
     <!-- Navigation -->
@@ -75,18 +102,6 @@
             <div class="auth-footer">
                 <p>Don't have an account? <a href="register.html">Sign up</a></p>
             </div>
-            
-            <div class="auth-demo">
-                <p>Demo Accounts:</p>
-                <div class="demo-buttons">
-                    <button onclick="demoLogin('customer')" class="btn btn-outline btn-sm">
-                        <i class="fas fa-user"></i> Customer
-                    </button>
-                    <button onclick="demoLogin('admin')" class="btn btn-outline btn-sm">
-                        <i class="fas fa-user-tie"></i> Admin
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -95,6 +110,7 @@
         <div class="container">
             <div class="footer-bottom">
                 <p>&copy; 2025 Markan Cafe. Debre Birhan University</p>
+                <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a> | <i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
             </div>
         </div>
     </footer>

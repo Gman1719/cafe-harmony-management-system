@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/customer-style.css">
+    <link rel="stylesheet" href="css/customer-responsive.css">
+    <style>
+        .cart-header {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            padding: 3rem;
+            border-radius: 0 0 50px 50px;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .cart-header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .empty-cart i {
+            font-size: 5rem;
+            color: var(--primary-gold);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-cart h3 {
+            font-size: 2rem;
+            color: var(--primary-brown);
+            margin-bottom: 1rem;
+        }
+
+        .empty-cart p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .cart-item {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.3s ease;
+        }
+
+        .cart-item:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .cart-summary {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 100px;
+        }
+
+        .promo-code {
+            margin: 1.5rem 0;
+            padding: 1.5rem 0;
+            border-top: 1px dashed var(--primary-cream);
+            border-bottom: 1px dashed var(--primary-cream);
+        }
+
+        .promo-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .promo-input input {
+            flex: 1;
+            padding: 0.8rem;
+            border: 2px solid var(--primary-cream);
+            border-radius: 50px;
+            font-size: 1rem;
+        }
+
+        .promo-input input:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+        }
+
+        .promo-input button {
+            padding: 0.8rem 1.5rem;
+            background: var(--primary-brown);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .promo-input button:hover {
+            background: var(--light-brown);
+        }
+
+        .continue-shopping {
+            display: block;
+            text-align: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-top: 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .continue-shopping:hover {
+            color: var(--primary-brown);
+        }
+
+        .saved-orders {
+            margin-top: 3rem;
+        }
+
+        .saved-orders h2 {
+            margin-bottom: 1.5rem;
+        }
+
+        .saved-order-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .saved-order-info h4 {
+            color: var(--primary-brown);
+            margin-bottom: 0.3rem;
+        }
+
+        .saved-order-info p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .load-order-btn {
+            padding: 0.5rem 1rem;
+            background: var(--primary-gold);
+            color: var(--primary-brown);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .load-order-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../assets/images/logo.png" alt="Markan Cafe" class="logo">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html" class="active"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <span class="user-greeting" id="userGreeting">Hi, Customer</span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Cart Header -->
+    <div class="cart-header">
+        <div class="container">
+            <h1><i class="fas fa-shopping-cart"></i> Your Cart</h1>
+            <p>Review and adjust your items before checkout</p>
+        </div>
+    </div>
+
+    <!-- Cart Content -->
+    <div class="container">
+        <div class="cart-layout">
+            <!-- Cart Items -->
+            <div class="cart-items" id="cartItems">
+                <!-- Will be populated by JavaScript -->
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="cart-summary">
+                <h2>Order Summary</h2>
+                
+                <div id="cartSummary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax (10%):</span>
+                        <span>$0.00</span>
+                    </div>
+                    <div class="summary-row grand-total">
+                        <span>Total:</span>
+                        <span>$0.00</span>
+                    </div>
+                </div>
+
+                <div class="promo-code">
+                    <h4>Have a promo code?</h4>
+                    <div class="promo-input">
+                        <input type="text" id="promoCode" placeholder="Enter code">
+                        <button onclick="applyPromoCode()">Apply</button>
+                    </div>
+                </div>
+
+                <button class="checkout-btn" onclick="proceedToCheckout()">
+                    <i class="fas fa-lock"></i> Proceed to Checkout
+                </button>
+                
+                <a href="menu.html" class="continue-shopping">
+                    <i class="fas fa-arrow-left"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+
+        <!-- Saved Orders -->
+        <div class="saved-orders" id="savedOrders" style="display: none;">
+            <h2><i class="fas fa-bookmark"></i> Saved Orders</h2>
+            <div id="savedOrdersList">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script>
+        // Authentication check
+        (function() {
+            const user = Auth.getCurrentUser();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+        })();
+
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Apply promo code function
+        window.applyPromoCode = function() {
+            const code = document.getElementById('promoCode').value;
+            if (code.toUpperCase() === 'COFFEE10') {
+                showNotification('10% discount applied!', 'success');
+            } else {
+                showNotification('Invalid promo code', 'error');
+            }
+        };
+
+        // Proceed to checkout
+        window.proceedToCheckout = function() {
+            if (AppState.cart.length === 0) {
+                showNotification('Your cart is empty', 'error');
+                return;
+            }
+            window.location.href = 'checkout.html';
+        };
+    </script>
+</body>
+</html>

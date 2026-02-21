@@ -45,7 +45,7 @@ const Validator = {
         return null;
     },
     
-    // Minimum length validation
+    // Min length validation
     minLength(value, min, fieldName = 'Field') {
         if (value.length < min) {
             return `${fieldName} must be at least ${min} characters`;
@@ -53,7 +53,7 @@ const Validator = {
         return null;
     },
     
-    // Maximum length validation
+    // Max length validation
     maxLength(value, max, fieldName = 'Field') {
         if (value.length > max) {
             return `${fieldName} must be no more than ${max} characters`;
@@ -162,17 +162,17 @@ const Validator = {
         const field = document.getElementById(fieldId);
         if (!field) return;
         
-        // Remove existing error
         this.clearFieldError(fieldId);
         
-        // Add error class
         field.classList.add('error');
         
-        // Create error message
         const error = document.createElement('div');
         error.className = 'field-error';
         error.id = `${fieldId}-error`;
         error.textContent = message;
+        error.style.color = 'var(--danger)';
+        error.style.fontSize = '0.85rem';
+        error.style.marginTop = '0.25rem';
         
         field.parentNode.appendChild(error);
     },
@@ -198,8 +198,60 @@ const Validator = {
 // Make Validator available globally
 window.Validator = Validator;
 
-// Add validation to reservation form
+// Add validation to forms
 document.addEventListener('DOMContentLoaded', () => {
+    // Registration form validation
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            Validator.clearAllErrors();
+            
+            const formData = {
+                name: document.getElementById('name')?.value,
+                email: document.getElementById('email')?.value,
+                phone: document.getElementById('phone')?.value,
+                password: document.getElementById('password')?.value,
+                confirmPassword: document.getElementById('confirmPassword')?.value
+            };
+            
+            const rules = {
+                name: [v => Validator.required(v, 'Full Name')],
+                email: [v => Validator.required(v, 'Email'), v => Validator.email(v)],
+                phone: [v => Validator.required(v, 'Phone'), v => Validator.ethiopianPhone(v)],
+                password: [v => Validator.required(v, 'Password'), v => Validator.password(v)],
+                confirmPassword: [v => Validator.confirmPassword(formData.password, v, 'Confirm Password')]
+            };
+            
+            const result = Validator.validate(formData, rules);
+            
+            if (!result.isValid) {
+                Object.entries(result.errors).forEach(([field, message]) => {
+                    const fieldId = {
+                        name: 'name',
+                        email: 'email',
+                        phone: 'phone',
+                        password: 'password',
+                        confirmPassword: 'confirmPassword'
+                    }[field];
+                    
+                    if (fieldId) {
+                        Validator.showFieldError(fieldId, message);
+                    }
+                });
+                
+                showNotification('Please fix the errors in the form', 'error');
+                return;
+            }
+            
+            // If validation passes, let auth.js handle the submission
+            registerForm.removeEventListener('submit', this);
+            registerForm.dispatchEvent(new Event('submit'));
+        });
+    }
+    
+    // Reservation form validation
     const reservationForm = document.getElementById('reservationForm');
     if (reservationForm) {
         reservationForm.addEventListener('submit', (e) => {
@@ -228,7 +280,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = Validator.validate(formData, rules);
             
             if (!result.isValid) {
-                // Show errors
                 Object.entries(result.errors).forEach(([field, message]) => {
                     const fieldId = {
                         name: 'resName',
@@ -248,10 +299,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // Submit form
+            // If validation passes, proceed
             showNotification('Reservation request sent successfully! We\'ll confirm shortly.', 'success');
             reservationForm.reset();
-            closeReservationModal();
+            if (typeof closeReservationModal === 'function') {
+                closeReservationModal();
+            }
         });
     }
 });

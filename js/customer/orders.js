@@ -2,17 +2,11 @@
 // Markan Cafe - Debre Birhan University
 
 let allOrders = [];
-let filteredOrders = [];
-let currentFilter = 'all';
+let currentOrderId = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication
-    if (!Auth.requireAuth()) return;
-    
-    // Load orders
-    await loadOrders();
-    
-    // Setup event listeners
+// Initialize orders page
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrders();
     setupEventListeners();
     
     // Check for order ID in URL
@@ -23,50 +17,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-async function loadOrders() {
+// Load orders
+function loadOrders() {
     const container = document.getElementById('ordersGrid');
     if (!container) return;
     
     const user = Auth.getCurrentUser();
     if (!user) return;
     
-    try {
-        container.innerHTML = '<div class="spinner"></div>';
-        
-        allOrders = await API.orders.getByCustomerId(user.id);
-        filteredOrders = [...allOrders];
-        
-        displayOrders(filteredOrders);
-        
-    } catch (error) {
-        console.error('Failed to load orders:', error);
-        container.innerHTML = '<p class="error">Failed to load orders</p>';
-    }
+    // Get orders from localStorage
+    const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
+    allOrders = orders.filter(o => o.customerId === user.id)
+                      .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+    
+    displayOrders(allOrders);
 }
 
+// Display orders
 function displayOrders(orders) {
     const container = document.getElementById('ordersGrid');
     if (!container) return;
     
     if (orders.length === 0) {
         container.innerHTML = `
-            <div class="no-results">
+            <div class="no-orders">
                 <i class="fas fa-clipboard-list"></i>
                 <h3>No orders found</h3>
                 <p>You haven't placed any orders yet</p>
-                <a href="menu.html" class="btn btn-primary">Start Ordering</a>
+                <a href="menu.html" class="btn-large">Start Ordering</a>
             </div>
         `;
         return;
     }
     
     container.innerHTML = orders.map(order => `
-        <div class="order-card">
+        <div class="order-card" onclick="showOrderDetails('${order.id}')">
             <div class="order-header">
                 <span class="order-id">${order.id}</span>
                 <span class="order-status ${order.status}">${order.status}</span>
             </div>
-            <div class="order-date">${formatDate(order.orderDate)}</div>
+            <div class="order-date">
+                <i class="fas fa-calendar"></i> ${new Date(order.orderDate).toLocaleDateString()}
+            </div>
             <div class="order-items">
                 ${order.items.map(item => `
                     <div class="order-item">
@@ -76,18 +68,18 @@ function displayOrders(orders) {
                 `).join('')}
             </div>
             <div class="order-total">Total: $${order.total.toFixed(2)}</div>
-            <div class="order-actions">
-                <button class="btn btn-outline btn-small" onclick="showOrderDetails('${order.id}')">
-                    View Details
+            <div class="order-actions" onclick="event.stopPropagation()">
+                <button class="btn-view" onclick="viewOrderDetails('${order.id}')">
+                    <i class="fas fa-eye"></i> View
                 </button>
                 ${order.status === 'completed' ? `
-                    <button class="btn btn-primary btn-small" onclick="reorder('${order.id}')">
-                        Reorder
+                    <button class="btn-reorder" onclick="reorder('${order.id}')">
+                        <i class="fas fa-redo"></i> Reorder
                     </button>
                 ` : ''}
                 ${order.status === 'pending' ? `
-                    <button class="btn btn-danger btn-small" onclick="cancelOrder('${order.id}')">
-                        Cancel
+                    <button class="btn-cancel" onclick="cancelOrder('${order.id}')">
+                        <i class="fas fa-times"></i> Cancel
                     </button>
                 ` : ''}
             </div>
@@ -95,39 +87,17 @@ function displayOrders(orders) {
     `).join('');
 }
 
-window.filterOrders = function(filter) {
-    currentFilter = filter;
-    
-    // Update active filter button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.status === filter) {
-            btn.classList.add('active');
-        }
-    });
-    
-    if (filter === 'all') {
-        filteredOrders = [...allOrders];
-    } else {
-        filteredOrders = allOrders.filter(order => order.status === filter);
-    }
-    
-    displayOrders(filteredOrders);
-};
-
+// Show order details
 window.showOrderDetails = function(orderId) {
     const order = allOrders.find(o => o.id === orderId);
     if (!order) return;
     
-    const modalId = 'orderDetailsModal';
-    let modal = document.getElementById(modalId);
+    currentOrderId = orderId;
     
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'modal';
-        document.body.appendChild(modal);
-    }
+    const modal = document.getElementById('orderModal');
+    const details = document.getElementById('orderDetails');
+    
+    if (!modal || !details) return;
     
     const itemsHtml = order.items.map(item => `
         <tr>
@@ -138,96 +108,83 @@ window.showOrderDetails = function(orderId) {
         </tr>
     `).join('');
     
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Order Details - ${order.id}</h3>
-                <button class="modal-close"><i class="fas fa-times"></i></button>
+    details.innerHTML = `
+        <div class="detail-section">
+            <h4>Order Information</h4>
+            <div class="detail-row">
+                <span>Order ID:</span>
+                <span><strong>${order.id}</strong></span>
             </div>
-            <div class="modal-body">
-                <div class="order-details">
-                    <div class="detail-row">
-                        <strong>Status:</strong> <span class="status-badge ${order.status}">${order.status}</span>
-                    </div>
-                    <div class="detail-row">
-                        <strong>Date:</strong> ${formatDate(order.orderDate)}
-                    </div>
-                    <div class="detail-row">
-                        <strong>Payment Method:</strong> ${order.paymentMethod}
-                    </div>
-                    ${order.completedDate ? `
-                        <div class="detail-row">
-                            <strong>Completed:</strong> ${formatDate(order.completedDate)}
-                        </div>
-                    ` : ''}
-                    
-                    <h4>Items</h4>
-                    <table class="details-table">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Qty</th>
-                                <th>Price</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${itemsHtml}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="3"><strong>Subtotal</strong></td>
-                                <td>$${order.subtotal.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3"><strong>Tax</strong></td>
-                                <td>$${order.tax.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td colspan="3"><strong>Total</strong></td>
-                                <td><strong>$${order.total.toFixed(2)}</strong></td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                    
-                    ${order.specialInstructions ? `
-                        <div class="special-instructions">
-                            <strong>Special Instructions:</strong>
-                            <p>${order.specialInstructions}</p>
-                        </div>
-                    ` : ''}
-                </div>
+            <div class="detail-row">
+                <span>Date:</span>
+                <span>${new Date(order.orderDate).toLocaleString()}</span>
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-outline" onclick="window.print()">
-                    <i class="fas fa-print"></i> Print
-                </button>
-                ${order.status === 'completed' ? `
-                    <button class="btn btn-primary" onclick="reorder('${order.id}')">
-                        <i class="fas fa-redo"></i> Reorder
-                    </button>
-                ` : ''}
-                <button class="btn btn-outline" onclick="this.closest('.modal').classList.remove('active')">
-                    Close
-                </button>
+            <div class="detail-row">
+                <span>Status:</span>
+                <span><span class="order-status ${order.status}">${order.status}</span></span>
+            </div>
+            <div class="detail-row">
+                <span>Payment Method:</span>
+                <span>${order.paymentMethod || 'N/A'}</span>
             </div>
         </div>
+        
+        <div class="detail-section">
+            <h4>Items</h4>
+            <table class="detail-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
+                        <td>$${order.subtotal.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Tax (10%):</strong></td>
+                        <td>$${order.tax.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                        <td><strong>$${order.total.toFixed(2)}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        ${order.specialInstructions ? `
+            <div class="detail-section">
+                <h4>Special Instructions</h4>
+                <p>${order.specialInstructions}</p>
+            </div>
+        ` : ''}
     `;
     
     modal.classList.add('active');
-    
-    // Add close button handlers
-    modal.querySelector('.modal-close').addEventListener('click', () => {
-        modal.classList.remove('active');
-    });
-    
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
 };
 
+// Close order modal
+window.closeOrderModal = function() {
+    const modal = document.getElementById('orderModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+};
+
+// View order details (alias for showOrderDetails)
+window.viewOrderDetails = function(orderId) {
+    showOrderDetails(orderId);
+};
+
+// Reorder
 window.reorder = function(orderId) {
     const order = allOrders.find(o => o.id === orderId);
     if (!order) return;
@@ -242,7 +199,8 @@ window.reorder = function(orderId) {
                 id: item.id,
                 name: item.name,
                 price: item.price,
-                quantity: 1
+                quantity: 1,
+                category: item.category
             });
         }
     });
@@ -255,24 +213,72 @@ window.reorder = function(orderId) {
     }, 1500);
 };
 
+// Cancel order
 window.cancelOrder = async function(orderId) {
     if (!confirm('Are you sure you want to cancel this order?')) return;
     
-    try {
-        await API.orders.updateStatus(orderId, 'cancelled');
+    const orderIndex = allOrders.findIndex(o => o.id === orderId);
+    if (orderIndex !== -1) {
+        allOrders[orderIndex].status = 'cancelled';
+        
+        // Update in localStorage
+        const allStoredOrders = JSON.parse(localStorage.getItem('markanOrders')) || [];
+        const storedIndex = allStoredOrders.findIndex(o => o.id === orderId);
+        if (storedIndex !== -1) {
+            allStoredOrders[storedIndex].status = 'cancelled';
+            localStorage.setItem('markanOrders', JSON.stringify(allStoredOrders));
+        }
+        
+        displayOrders(allOrders);
         showNotification('Order cancelled', 'success');
-        await loadOrders(); // Reload orders
-    } catch (error) {
-        console.error('Failed to cancel order:', error);
-        showNotification('Failed to cancel order', 'error');
     }
 };
 
+// Filter orders by status
+window.filterOrders = function(status) {
+    const user = Auth.getCurrentUser();
+    if (!user) return;
+    
+    const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
+    const userOrders = orders.filter(o => o.customerId === user.id);
+    
+    let filtered = userOrders;
+    if (status !== 'all') {
+        filtered = userOrders.filter(o => o.status === status);
+    }
+    
+    allOrders = filtered.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+    displayOrders(allOrders);
+    
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.status === status) {
+            btn.classList.add('active');
+        }
+    });
+};
+
+// Setup event listeners
 function setupEventListeners() {
     // Filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterOrders(btn.dataset.status);
+        btn.addEventListener('click', function() {
+            filterOrders(this.dataset.status);
         });
+    });
+    
+    // Modal close button
+    const modalClose = document.querySelector('#orderModal .modal-close');
+    if (modalClose) {
+        modalClose.addEventListener('click', closeOrderModal);
+    }
+    
+    // Close modal on outside click
+    window.addEventListener('click', function(e) {
+        const modal = document.getElementById('orderModal');
+        if (e.target === modal) {
+            closeOrderModal();
+        }
     });
 }

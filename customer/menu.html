@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Menu - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/customer-style.css">
+    <link rel="stylesheet" href="css/customer-responsive.css">
+    <style>
+        /* Menu Page Specific Styles */
+        .menu-hero {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            padding: 3rem 0;
+            text-align: center;
+            color: white;
+            border-radius: 0 0 50px 50px;
+            margin-bottom: 2rem;
+        }
+
+        .menu-hero h1 {
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .menu-hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-lg);
+            margin-top: -2rem;
+            margin-bottom: 2rem;
+        }
+
+        .search-box {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--primary-brown);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid var(--primary-cream);
+            border-radius: 50px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.2);
+        }
+
+        .category-filters {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .category-btn {
+            padding: 0.8rem 2rem;
+            border: none;
+            background: white;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .category-btn:hover,
+        .category-btn.active {
+            background: var(--primary-brown);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .price-filter {
+            max-width: 300px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+
+        .price-filter label {
+            display: block;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            color: var(--primary-brown);
+        }
+
+        .range-slider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .range-slider input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: linear-gradient(to right, var(--primary-brown), var(--primary-gold));
+            border-radius: 10px;
+            -webkit-appearance: none;
+        }
+
+        .range-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 2px solid var(--primary-brown);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .range-slider input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: var(--primary-brown);
+        }
+
+        .dietary-tags {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .diet-tag {
+            padding: 0.5rem 1.5rem;
+            background: var(--primary-cream);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .diet-tag:hover,
+        .diet-tag.active {
+            background: var(--primary-gold);
+            color: var(--primary-brown);
+            transform: translateY(-2px);
+            border-color: var(--primary-brown);
+        }
+
+        .view-options {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .view-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+
+        .view-btn:hover,
+        .view-btn.active {
+            background: var(--primary-brown);
+            color: white;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .no-results i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--primary-gold);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../assets/images/logo.png" alt="Markan Cafe" class="logo">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html" class="active"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <span class="user-greeting" id="userGreeting">Hi, Customer</span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Menu Hero -->
+    <div class="menu-hero">
+        <div class="container">
+            <h1>Our Menu</h1>
+            <p>Discover the rich flavors of Ethiopian cuisine</p>
+        </div>
+    </div>
+
+    <!-- Search and Filters -->
+    <div class="container">
+        <div class="search-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search for coffee, dishes, snacks...">
+            </div>
+
+            <!-- Category Filters -->
+            <div class="category-filters" id="categoryFilters">
+                <button class="category-btn active" data-category="all">All Items</button>
+                <button class="category-btn" data-category="beverages">☕ Beverages</button>
+                <button class="category-btn" data-category="meals">🍛 Meals</button>
+                <button class="category-btn" data-category="snacks">🥨 Snacks</button>
+                <button class="category-btn" data-category="desserts">🍰 Desserts</button>
+            </div>
+
+            <!-- Price Range -->
+            <div class="price-filter">
+                <label>Price Range: <span id="priceRangeValue">$0 - $50</span></label>
+                <div class="range-slider">
+                    <input type="range" id="minPrice" min="0" max="50" value="0" step="1">
+                    <input type="range" id="maxPrice" min="0" max="50" value="50" step="1">
+                </div>
+            </div>
+
+            <!-- Dietary Tags -->
+            <div class="dietary-tags">
+                <span class="diet-tag" data-diet="ethiopian">🇪🇹 Ethiopian</span>
+                <span class="diet-tag" data-diet="vegetarian">🥬 Vegetarian</span>
+                <span class="diet-tag" data-diet="vegan">🌱 Vegan</span>
+                <span class="diet-tag" data-diet="popular">⭐ Popular</span>
+            </div>
+
+            <!-- View Options -->
+            <div class="view-options">
+                <button class="view-btn active" data-view="grid"><i class="fas fa-th"></i></button>
+                <button class="view-btn" data-view="list"><i class="fas fa-list"></i></button>
+            </div>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid" id="menuGrid">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../assets/images/logo-white.jpg" alt="Markan Cafe" class="footer-logo">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../data/menu-items.js"></script>
+    <script src="js/menu.js"></script>
+    <script>
+        // Authentication check
+        (function() {
+            const user = Auth.getCurrentUser();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+        })();
+
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // View toggle
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const view = this.dataset.view;
+                document.getElementById('menuGrid').className = `menu-grid ${view}-view`;
+            });
+        });
+    </script>
+</body>
+</html>

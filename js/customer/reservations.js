@@ -3,44 +3,29 @@
 
 let allReservations = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication
-    if (!Auth.requireAuth()) return;
-    
-    // Load reservations
-    await loadReservations();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Setup date picker with min date = today
-    const dateInput = document.getElementById('resDate');
-    if (dateInput) {
-        const today = new Date().toISOString().split('T')[0];
-        dateInput.min = today;
-    }
+// Initialize reservations page
+document.addEventListener('DOMContentLoaded', function() {
+    loadReservations();
+    setupDatePicker();
 });
 
-async function loadReservations() {
+// Load reservations
+function loadReservations() {
     const container = document.getElementById('reservationsGrid');
     if (!container) return;
     
     const user = Auth.getCurrentUser();
     if (!user) return;
     
-    try {
-        container.innerHTML = '<div class="spinner"></div>';
-        
-        allReservations = await API.reservations.getByCustomerId(user.id);
-        
-        displayReservations(allReservations);
-        
-    } catch (error) {
-        console.error('Failed to load reservations:', error);
-        container.innerHTML = '<p class="error">Failed to load reservations</p>';
-    }
+    // Get reservations from localStorage
+    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
+    allReservations = reservations.filter(r => r.customerId === user.id)
+                                  .sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    displayReservations(allReservations);
 }
 
+// Display reservations
 function displayReservations(reservations) {
     const container = document.getElementById('reservationsGrid');
     if (!container) return;
@@ -59,31 +44,31 @@ function displayReservations(reservations) {
                     <span class="reservation-status ${res.status}">${res.status}</span>
                 </div>
                 <div class="reservation-details">
-                    <p><i class="fas fa-calendar"></i> ${formatDateOnly(res.date)} at ${res.time}</p>
+                    <p><i class="fas fa-calendar"></i> ${formatDate(res.date)} at ${res.time}</p>
                     <p><i class="fas fa-users"></i> ${res.guests} guest${res.guests > 1 ? 's' : ''}</p>
                     ${res.specialRequests ? `<p><i class="fas fa-comment"></i> ${res.specialRequests}</p>` : ''}
                 </div>
-                <div class="reservation-actions">
-                    ${res.status === 'pending' || res.status === 'confirmed' ? `
-                        <button class="btn btn-danger btn-small" onclick="cancelReservation('${res.id}')">
-                            Cancel
+                ${res.status === 'pending' || res.status === 'confirmed' ? `
+                    <div class="reservation-actions">
+                        <button class="btn-cancel-reservation" onclick="cancelReservation('${res.id}')">
+                            <i class="fas fa-times"></i> Cancel
                         </button>
-                    ` : ''}
-                </div>
+                    </div>
+                ` : ''}
             </div>
         `).join('');
     }
     
     if (past.length > 0) {
-        html += '<h3>Past Reservations</h3>';
+        html += '<h3 style="margin-top: 2rem;">Past Reservations</h3>';
         html += past.map(res => `
-            <div class="reservation-card past">
+            <div class="reservation-card" style="opacity: 0.7;">
                 <div class="reservation-header">
                     <span class="reservation-id">${res.id}</span>
                     <span class="reservation-status ${res.status}">${res.status}</span>
                 </div>
                 <div class="reservation-details">
-                    <p><i class="fas fa-calendar"></i> ${formatDateOnly(res.date)} at ${res.time}</p>
+                    <p><i class="fas fa-calendar"></i> ${formatDate(res.date)} at ${res.time}</p>
                     <p><i class="fas fa-users"></i> ${res.guests} guest${res.guests > 1 ? 's' : ''}</p>
                 </div>
             </div>
@@ -92,11 +77,11 @@ function displayReservations(reservations) {
     
     if (upcoming.length === 0 && past.length === 0) {
         html = `
-            <div class="no-results">
+            <div class="no-reservations">
                 <i class="fas fa-calendar-times"></i>
                 <h3>No reservations found</h3>
                 <p>You haven't made any reservations yet</p>
-                <button class="btn btn-primary" onclick="showNewReservationForm()">
+                <button class="btn-reserve" onclick="openReservationModal()">
                     Make a Reservation
                 </button>
             </div>
@@ -106,39 +91,38 @@ function displayReservations(reservations) {
     container.innerHTML = html;
 }
 
-window.showNewReservationForm = function() {
-    document.getElementById('newReservationForm').style.display = 'block';
-    document.getElementById('existingReservations').style.display = 'none';
-};
-
-window.hideNewReservationForm = function() {
-    document.getElementById('newReservationForm').style.display = 'none';
-    document.getElementById('existingReservations').style.display = 'block';
-};
-
-window.makeReservation = async function() {
-    const form = document.getElementById('reservationForm');
-    
-    // Validate form
+// Make reservation
+window.makeReservation = function() {
+    // Get form values
     const name = document.getElementById('resName')?.value;
     const email = document.getElementById('resEmail')?.value;
     const phone = document.getElementById('resPhone')?.value;
     const guests = document.getElementById('resGuests')?.value;
     const date = document.getElementById('resDate')?.value;
     const time = document.getElementById('resTime')?.value;
+    const duration = document.getElementById('resDuration')?.value || '1.5';
     const requests = document.getElementById('resRequests')?.value;
-    
+
+    // Validate
     if (!name || !email || !phone || !guests || !date || !time) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
-    
-    // Validate phone
-    if (!validateEthiopianPhone(phone)) {
-        showNotification('Please enter a valid Ethiopian phone number', 'error');
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showNotification('Please enter a valid email address', 'error');
         return;
     }
-    
+
+    // Validate phone
+    const phoneRegex = /^(09|\+2519)\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+        showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
+        return;
+    }
+
     // Validate date (must be today or future)
     const selectedDate = new Date(date);
     const today = new Date();
@@ -148,78 +132,99 @@ window.makeReservation = async function() {
         showNotification('Please select a future date', 'error');
         return;
     }
-    
+
     const user = Auth.getCurrentUser();
     if (!user) return;
+
+    // Check availability (simple check)
+    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
+    const sameDateTime = reservations.filter(r => 
+        r.date === date && 
+        r.time === time && 
+        r.status !== 'cancelled'
+    );
     
-    const reservationData = {
+    // Assume max 10 reservations per time slot
+    if (sameDateTime.length >= 10) {
+        showNotification('Sorry, this time slot is fully booked. Please choose another time.', 'error');
+        return;
+    }
+
+    // Create reservation
+    const newReservation = {
+        id: 'RES-' + Date.now().toString().slice(-4),
         customerId: user.id,
         customerName: name,
         customerEmail: email,
         customerPhone: phone,
         guests: parseInt(guests),
-        date,
-        time,
-        duration: document.getElementById('resDuration')?.value || 2,
-        specialRequests: requests || ''
+        date: date,
+        time: time,
+        duration: parseFloat(duration),
+        specialRequests: requests || '',
+        status: 'pending',
+        createdAt: new Date().toISOString()
     };
+
+    reservations.push(newReservation);
+    localStorage.setItem('markanReservations', JSON.stringify(reservations));
+
+    showNotification('Reservation request sent successfully! We\'ll confirm shortly.', 'success');
     
-    try {
-        // Check availability
-        const availability = await API.reservations.checkAvailability(date, time, guests);
-        
-        if (!availability.available) {
-            showNotification('Sorry, this time slot is not available. Please choose another time.', 'error');
-            return;
-        }
-        
-        // Create reservation
-        await API.reservations.create(reservationData);
-        
-        showNotification('Reservation request sent successfully! We\'ll confirm shortly.', 'success');
-        
-        // Reset form and hide
-        form.reset();
-        hideNewReservationForm();
-        
-        // Reload reservations
-        await loadReservations();
-        
-    } catch (error) {
-        console.error('Failed to make reservation:', error);
-        showNotification('Failed to make reservation. Please try again.', 'error');
-    }
+    // Reset form and close modal
+    document.getElementById('reservationForm').reset();
+    closeReservationModal();
+    
+    // Reload reservations
+    loadReservations();
 };
 
-window.cancelReservation = async function(reservationId) {
+// Cancel reservation
+window.cancelReservation = function(reservationId) {
     if (!confirm('Are you sure you want to cancel this reservation?')) return;
     
-    try {
-        await API.reservations.updateStatus(reservationId, 'cancelled');
+    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
+    const index = reservations.findIndex(r => r.id === reservationId);
+    
+    if (index !== -1) {
+        reservations[index].status = 'cancelled';
+        reservations[index].updatedAt = new Date().toISOString();
+        localStorage.setItem('markanReservations', JSON.stringify(reservations));
+        
         showNotification('Reservation cancelled', 'success');
-        await loadReservations(); // Reload reservations
-    } catch (error) {
-        console.error('Failed to cancel reservation:', error);
-        showNotification('Failed to cancel reservation', 'error');
+        loadReservations();
     }
 };
 
-function setupEventListeners() {
-    // New reservation button
-    const newResBtn = document.getElementById('newReservationBtn');
-    if (newResBtn) {
-        newResBtn.addEventListener('click', showNewReservationForm);
-    }
-    
-    // Cancel new reservation button
-    const cancelBtn = document.getElementById('cancelNewReservation');
-    if (cancelBtn) {
-        cancelBtn.addEventListener('click', hideNewReservationForm);
-    }
-    
-    // Submit reservation button
-    const submitBtn = document.getElementById('submitReservation');
-    if (submitBtn) {
-        submitBtn.addEventListener('click', makeReservation);
+// Setup date picker with min date = today
+function setupDatePicker() {
+    const dateInput = document.getElementById('resDate');
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.min = today;
     }
 }
+
+// Format date
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-US', options);
+}
+
+// Open reservation modal (called from HTML)
+window.openReservationModal = function() {
+    const modal = document.getElementById('reservationModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+};
+
+// Close reservation modal (called from HTML)
+window.closeReservationModal = function() {
+    const modal = document.getElementById('reservationModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+};

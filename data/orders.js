@@ -62,56 +62,17 @@ const ordersDatabase = [
         customerName: 'Kebede Alemu',
         customerPhone: '+251944567890',
         items: [
-            { id: 2, name: 'Macchiato', quantity: 2, price: 3.75 },
             { id: 7, name: 'Tibs', quantity: 1, price: 13.50 },
             { id: 12, name: 'Kolo', quantity: 1, price: 2.50 }
         ],
-        subtotal: 23.50,
-        tax: 2.35,
-        total: 25.85,
+        subtotal: 16.00,
+        tax: 1.60,
+        total: 17.60,
         status: 'completed',
         paymentMethod: 'cash',
         orderDate: '2025-02-18T14:20:00Z',
         completedDate: '2025-02-18T14:50:00Z',
         specialInstructions: 'Tibs medium rare'
-    },
-    {
-        id: 'ORD-1005',
-        customerId: 2,
-        customerName: 'John Customer',
-        customerPhone: '+251922345678',
-        items: [
-            { id: 3, name: 'Spiced Tea (Shai)', quantity: 3, price: 3.25 },
-            { id: 8, name: 'Shiro Wat', quantity: 1, price: 8.99 },
-            { id: 15, name: 'Baklava', quantity: 2, price: 5.50 }
-        ],
-        subtotal: 28.24,
-        tax: 2.82,
-        total: 31.06,
-        status: 'preparing',
-        paymentMethod: 'card',
-        orderDate: '2025-02-20T10:05:00Z',
-        completedDate: null,
-        specialInstructions: 'Less spicy shiro'
-    },
-    {
-        id: 'ORD-1006',
-        customerId: 5,
-        customerName: 'Tigist Haile',
-        customerPhone: '+251955678901',
-        items: [
-            { id: 4, name: 'Fresh Orange Juice', quantity: 2, price: 4.00 },
-            { id: 9, name: 'Misir Wat', quantity: 1, price: 8.99 },
-            { id: 16, name: 'Fresh Fruit Platter', quantity: 1, price: 6.50 }
-        ],
-        subtotal: 23.49,
-        tax: 2.35,
-        total: 25.84,
-        status: 'cancelled',
-        paymentMethod: 'online',
-        orderDate: '2025-02-17T16:30:00Z',
-        completedDate: '2025-02-17T17:00:00Z',
-        specialInstructions: 'No onions in misir'
     }
 ];
 
@@ -172,26 +133,6 @@ const OrdersDB = {
         return null;
     },
     
-    // Update order
-    update: function(orderId, updates) {
-        const orders = this.getAll();
-        const index = orders.findIndex(order => order.id === orderId);
-        if (index !== -1) {
-            orders[index] = { ...orders[index], ...updates };
-            localStorage.setItem('markanOrders', JSON.stringify(orders));
-            return orders[index];
-        }
-        return null;
-    },
-    
-    // Delete order
-    delete: function(orderId) {
-        const orders = this.getAll();
-        const filtered = orders.filter(order => order.id !== orderId);
-        localStorage.setItem('markanOrders', JSON.stringify(filtered));
-        return filtered;
-    },
-    
     // Get orders by status
     getByStatus: function(status) {
         const orders = this.getAll();
@@ -206,61 +147,12 @@ const OrdersDB = {
                     .slice(0, limit);
     },
     
-    // Get orders by date range
-    getByDateRange: function(startDate, endDate) {
-        const orders = this.getAll();
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        return orders.filter(order => {
-            const orderDate = new Date(order.orderDate);
-            return orderDate >= start && orderDate <= end;
-        });
-    },
-    
     // Get today's orders
     getTodayOrders: function() {
         const today = new Date().toDateString();
         return this.getAll().filter(order => 
             new Date(order.orderDate).toDateString() === today
         );
-    },
-    
-    // Get pending orders
-    getPendingOrders: function() {
-        return this.getAll().filter(order => order.status === 'pending');
-    },
-    
-    // Get preparing orders
-    getPreparingOrders: function() {
-        return this.getAll().filter(order => order.status === 'preparing');
-    },
-    
-    // Get completed orders
-    getCompletedOrders: function() {
-        return this.getAll().filter(order => order.status === 'completed');
-    },
-    
-    // Calculate total revenue
-    getTotalRevenue: function() {
-        const orders = this.getAll();
-        return orders.reduce((sum, order) => sum + order.total, 0);
-    },
-    
-    // Get revenue by date range
-    getRevenueByDateRange: function(startDate, endDate) {
-        const orders = this.getByDateRange(startDate, endDate);
-        return orders.reduce((sum, order) => sum + order.total, 0);
-    },
-    
-    // Get today's revenue
-    getTodayRevenue: function() {
-        const todayOrders = this.getTodayOrders();
-        return todayOrders.reduce((sum, order) => sum + order.total, 0);
-    },
-    
-    // Get order count
-    getCount: function() {
-        return this.getAll().length;
     }
 };
 

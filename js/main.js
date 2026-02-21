@@ -8,8 +8,7 @@ const AppState = {
     menuItems: [],
     orders: [],
     reservations: [],
-    isLoading: false,
-    notifications: []
+    isLoading: false
 };
 
 // Initialize Application
@@ -28,14 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup mobile menu toggle
     setupMobileMenu();
     
-    // Setup back to top button
-    setupBackToTop();
-    
-    // Load popular items on homepage
-    if (document.getElementById('popularItems')) {
-        loadPopularItems();
-    }
-    
     // Set current date in admin dashboard
     const dateElement = document.getElementById('currentDate');
     if (dateElement) {
@@ -46,12 +37,6 @@ document.addEventListener('DOMContentLoaded', () => {
             day: 'numeric'
         });
     }
-    
-    // Initialize tooltips
-    initTooltips();
-    
-    // Setup form validation
-    setupFormValidation();
 });
 
 // ===== Authentication Functions =====
@@ -122,6 +107,7 @@ function addToCart(item, quantity = 1) {
     
     if (existingItem) {
         existingItem.quantity = (existingItem.quantity || 1) + quantity;
+        showNotification(`${item.name} quantity updated in cart`, 'success');
     } else {
         AppState.cart.push({
             id: item.id,
@@ -131,10 +117,10 @@ function addToCart(item, quantity = 1) {
             category: item.category,
             quantity
         });
+        showNotification(`${item.name} added to cart successfully!`, 'success');
     }
     
     saveCart();
-    showNotification(`${item.name} added to cart`, 'success');
 }
 
 function removeFromCart(itemId) {
@@ -196,43 +182,6 @@ function setupMobileMenu() {
     }
 }
 
-function setupBackToTop() {
-    const backToTop = document.getElementById('backToTop');
-    if (!backToTop) return;
-    
-    window.addEventListener('scroll', () => {
-        if (window.scrollY > 300) {
-            backToTop.classList.add('visible');
-        } else {
-            backToTop.classList.remove('visible');
-        }
-    });
-    
-    backToTop.addEventListener('click', () => {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-}
-
-function initTooltips() {
-    const tooltips = document.querySelectorAll('[data-tooltip]');
-    tooltips.forEach(el => {
-        el.addEventListener('mouseenter', (e) => {
-            const tooltip = document.createElement('div');
-            tooltip.className = 'tooltip';
-            tooltip.textContent = e.target.dataset.tooltip;
-            document.body.appendChild(tooltip);
-            
-            const rect = e.target.getBoundingClientRect();
-            tooltip.style.top = rect.top - tooltip.offsetHeight - 10 + 'px';
-            tooltip.style.left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2) + 'px';
-            
-            e.target.addEventListener('mouseleave', () => {
-                tooltip.remove();
-            }, { once: true });
-        });
-    });
-}
-
 // ===== Notification System =====
 function showNotification(message, type = 'info', duration = 3000) {
     const container = document.getElementById('notificationContainer');
@@ -262,15 +211,13 @@ function showNotification(message, type = 'info', duration = 3000) {
     
     // Add close handler
     notification.querySelector('.notification-close').addEventListener('click', () => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
+        notification.remove();
     });
     
     // Auto remove
     setTimeout(() => {
         if (notification.parentNode) {
-            notification.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
+            notification.remove();
         }
     }, duration);
 }
@@ -280,90 +227,6 @@ function createNotificationContainer() {
     container.id = 'notificationContainer';
     document.body.appendChild(container);
     return container;
-}
-
-// ===== Form Validation Setup =====
-function setupFormValidation() {
-    // Contact form
-    const contactForm = document.getElementById('contactForm');
-    if (contactForm) {
-        contactForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            showNotification('Message sent successfully! We\'ll reply soon.', 'success');
-            contactForm.reset();
-        });
-    }
-    
-    // Newsletter form
-    const newsletterForm = document.getElementById('newsletterForm');
-    if (newsletterForm) {
-        newsletterForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            showNotification('Subscribed to newsletter!', 'success');
-            newsletterForm.reset();
-        });
-    }
-}
-
-// ===== Data Loading Functions =====
-async function loadPopularItems() {
-    const container = document.getElementById('popularItems');
-    if (!container) return;
-    
-    try {
-        // Check if MenuDB exists
-        if (typeof MenuDB !== 'undefined') {
-            const items = MenuDB.getPopular(4);
-            displayPopularItems(items);
-        } else {
-            // Fallback data
-            const fallbackItems = [
-                { id: 1, name: 'Espresso', price: 3.50, image: 'https://via.placeholder.com/300x200/8B4513/FFD700?text=Espresso', rating: 4.5, description: 'Strong and bold single shot' },
-                { id: 2, name: 'Cappuccino', price: 4.50, image: 'https://via.placeholder.com/300x200/8B4513/FFD700?text=Cappuccino', rating: 4.7, description: 'Espresso with steamed milk' },
-                { id: 9, name: 'Croissant', price: 3.75, image: 'https://via.placeholder.com/300x200/8B4513/FFD700?text=Croissant', rating: 4.5, description: 'Buttery, flaky pastry' },
-                { id: 21, name: 'Cheesecake', price: 6.50, image: 'https://via.placeholder.com/300x200/8B4513/FFD700?text=Cheesecake', rating: 4.8, description: 'Creamy New York style' }
-            ];
-            displayPopularItems(fallbackItems);
-        }
-    } catch (error) {
-        console.error('Failed to load popular items:', error);
-        container.innerHTML = '<p class="error">Failed to load items</p>';
-    }
-}
-
-function displayPopularItems(items) {
-    const container = document.getElementById('popularItems');
-    if (!container) return;
-    
-    container.innerHTML = items.map(item => `
-        <div class="menu-card" onclick="window.location.href='menu.html?id=${item.id}'">
-            <div class="menu-card-image" style="background-image: url('${item.image}')">
-                <span class="menu-card-badge popular">Popular</span>
-            </div>
-            <div class="menu-card-content">
-                <h3 class="menu-card-title">${item.name}</h3>
-                <p class="menu-card-description">${item.description.substring(0, 60)}...</p>
-                <div class="menu-card-footer">
-                    <span class="menu-card-price">$${item.price.toFixed(2)}</span>
-                    <div class="menu-card-rating">
-                        ${generateStars(item.rating)} <span>(${item.rating})</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function generateStars(rating) {
-    const fullStars = Math.floor(rating);
-    const hasHalf = rating % 1 >= 0.5;
-    let stars = '';
-    
-    for (let i = 0; i < fullStars; i++) stars += '<i class="fas fa-star"></i>';
-    if (hasHalf) stars += '<i class="fas fa-star-half-alt"></i>';
-    for (let i = fullStars + (hasHalf ? 1 : 0); i < 5; i++) stars += '<i class="far fa-star"></i>';
-    
-    return stars;
 }
 
 // ===== Utility Functions =====
@@ -384,26 +247,6 @@ function formatDate(date) {
     }).format(new Date(date));
 }
 
-function formatDateOnly(date) {
-    return new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    }).format(new Date(date));
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
 function validateEthiopianPhone(phone) {
     const regex = /^(09|\+2519)\d{8}$/;
     return regex.test(phone);
@@ -419,26 +262,16 @@ function validateEmail(email) {
     return regex.test(email);
 }
 
-// ===== Loading States =====
-function showLoading(container) {
-    const loader = document.createElement('div');
-    loader.className = 'spinner';
-    loader.id = 'loadingSpinner';
-    
-    if (container) {
-        container.innerHTML = '';
-        container.appendChild(loader);
-    } else {
-        document.body.appendChild(loader);
-    }
-    
-    AppState.isLoading = true;
-}
-
-function hideLoading() {
-    const loader = document.getElementById('loadingSpinner');
-    if (loader) loader.remove();
-    AppState.isLoading = false;
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 // ===== Export Global Functions =====
@@ -453,10 +286,7 @@ window.getCartTotal = getCartTotal;
 window.showNotification = showNotification;
 window.formatCurrency = formatCurrency;
 window.formatDate = formatDate;
-window.formatDateOnly = formatDateOnly;
-window.debounce = debounce;
 window.validateEthiopianPhone = validateEthiopianPhone;
 window.validatePassword = validatePassword;
 window.validateEmail = validateEmail;
-window.showLoading = showLoading;
-window.hideLoading = hideLoading;
+window.debounce = debounce;

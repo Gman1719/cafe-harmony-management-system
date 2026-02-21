@@ -1,91 +1,106 @@
 // js/admin/users.js - Admin User Management
 // Markan Cafe - Debre Birhan University
 
+// Check admin authentication
+if (!Auth.requireAdmin()) {
+    window.location.href = '../login.html';
+}
+
+// Global variables
 let allUsers = [];
 let filteredUsers = [];
+let currentUserId = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Check admin authentication
-    if (!Auth.requireAdmin()) return;
-    
-    // Load users
-    await loadUsers();
-    
-    // Setup event listeners
+// Initialize users page
+document.addEventListener('DOMContentLoaded', function() {
+    updateAdminName();
+    loadUsers();
     setupEventListeners();
 });
 
-async function loadUsers() {
-    const container = document.getElementById('usersTable');
-    if (!container) return;
-    
-    try {
-        container.innerHTML = '<tr><td colspan="8"><div class="spinner"></div></td></tr>';
-        
-        allUsers = await API.users.getAll();
-        filteredUsers = [...allUsers];
-        
-        applyFilters();
-        
-    } catch (error) {
-        console.error('Failed to load users:', error);
-        container.innerHTML = '<tr><td colspan="8">Failed to load users</td></tr>';
+// Update admin name in header
+function updateAdminName() {
+    const user = Auth.getCurrentUser();
+    if (user) {
+        const adminNameElements = document.querySelectorAll('#adminName');
+        adminNameElements.forEach(el => {
+            if (el) el.textContent = user.name;
+        });
     }
 }
 
-function applyFilters() {
-    const roleFilter = document.getElementById('roleFilter')?.value || 'all';
-    const statusFilter = document.getElementById('statusFilter')?.value || 'all';
-    const searchTerm = document.getElementById('searchUser')?.value.toLowerCase() || '';
-    
-    let filtered = [...allUsers];
-    
-    // Apply role filter
-    if (roleFilter !== 'all') {
-        filtered = filtered.filter(user => user.role === roleFilter);
+// Load users from localStorage
+function loadUsers() {
+    const stored = localStorage.getItem('markanUsers');
+    if (stored) {
+        allUsers = JSON.parse(stored);
+    } else {
+        // Default users if none exist
+        allUsers = [
+            {
+                id: 1,
+                name: 'Admin User',
+                email: 'admin@markan.com',
+                password: 'Admin@123',
+                phone: '+251911234567',
+                role: 'admin',
+                status: 'active',
+                joined: '2025-01-01T00:00:00Z'
+            },
+            {
+                id: 2,
+                name: 'John Customer',
+                email: 'customer@markan.com',
+                password: 'Customer@123',
+                phone: '+251922345678',
+                role: 'customer',
+                status: 'active',
+                joined: '2025-01-15T10:30:00Z'
+            },
+            {
+                id: 3,
+                name: 'Sarah Wilson',
+                email: 'sarah@example.com',
+                password: 'Sarah@123',
+                phone: '+251933456789',
+                role: 'customer',
+                status: 'active',
+                joined: '2025-01-20T09:15:00Z'
+            }
+        ];
+        localStorage.setItem('markanUsers', JSON.stringify(allUsers));
     }
     
-    // Apply status filter
-    if (statusFilter !== 'all') {
-        filtered = filtered.filter(user => user.status === statusFilter);
-    }
-    
-    // Apply search
-    if (searchTerm) {
-        filtered = filtered.filter(user => 
-            user.name.toLowerCase().includes(searchTerm) ||
-            user.email.toLowerCase().includes(searchTerm) ||
-            (user.phone && user.phone.includes(searchTerm))
-        );
-    }
-    
-    filteredUsers = filtered;
-    displayUsers();
+    filteredUsers = [...allUsers];
+    displayUsers(filteredUsers);
 }
 
-function displayUsers() {
-    const container = document.getElementById('usersTable');
-    if (!container) return;
+// Display users in table
+function displayUsers(users) {
+    const tbody = document.getElementById('usersTable');
+    if (!tbody) return;
     
-    if (filteredUsers.length === 0) {
-        container.innerHTML = '<tr><td colspan="8">No users found</td></tr>';
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No users found</td></tr>';
         return;
     }
     
-    container.innerHTML = filteredUsers.map(user => `
+    tbody.innerHTML = users.map(user => `
         <tr>
             <td>${user.id}</td>
             <td>
-                <div class="user-info">
-                    <img src="${user.avatar || 'https://via.placeholder.com/30x30/8B4513/FFD700?text=U'}" alt="${user.name}" class="user-avatar">
-                    <span>${user.name}</span>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="https://via.placeholder.com/30x30/8B4513/FFD700?text=${user.name.charAt(0)}" 
+                         style="width: 30px; height: 30px; border-radius: 50%;"
+                         onerror="this.src='https://via.placeholder.com/30x30/8B4513/FFD700?text=U'">
+                    ${user.name}
                 </div>
             </td>
             <td>${user.email}</td>
             <td>${user.phone || 'N/A'}</td>
-            <td><span class="role-badge ${user.role}">${user.role}</span></td>
-            <td><span class="status-badge ${user.status}">${user.status}</span></td>
-            <td>${user.rewards?.points || 0}</td>
+            <td><span style="background: ${user.role === 'admin' ? '#8B4513' : '#4CAF50'}; color: white; padding: 3px 10px; border-radius: 12px;">${user.role}</span></td>
+            <td><span class="status-badge ${user.status || 'active'}">${user.status || 'active'}</span></td>
+            <td>${new Date(user.joined || user.createdAt).toLocaleDateString()}</td>
             <td>
                 <div class="action-buttons">
                     <button class="action-btn edit" onclick="editUser(${user.id})">
@@ -100,130 +115,225 @@ function displayUsers() {
     `).join('');
 }
 
+// Open add user modal
 window.openAddUserModal = function() {
     currentUserId = null;
     document.getElementById('userModalTitle').textContent = 'Add New User';
     document.getElementById('userForm').reset();
     document.getElementById('userId').value = '';
+    document.getElementById('passwordField').style.display = 'block';
     document.getElementById('userPassword').required = true;
-    Modal.show('userModal');
+    document.getElementById('userModal').classList.add('active');
 };
 
-window.editUser = function(userId) {
-    const user = allUsers.find(u => u.id === userId);
+// Edit user
+window.editUser = function(id) {
+    const user = allUsers.find(u => u.id === id);
     if (!user) return;
-    
-    currentUserId = userId;
+
+    currentUserId = id;
     document.getElementById('userModalTitle').textContent = 'Edit User';
-    document.getElementById('userName').value = user.name;
-    document.getElementById('userEmail').value = user.email;
+    document.getElementById('userName').value = user.name || '';
+    document.getElementById('userEmail').value = user.email || '';
     document.getElementById('userPhone').value = user.phone || '';
-    document.getElementById('userRole').value = user.role;
-    document.getElementById('userStatus').value = user.status;
+    document.getElementById('userRole').value = user.role || 'customer';
+    document.getElementById('userStatus').value = user.status || 'active';
     document.getElementById('userId').value = user.id;
+    document.getElementById('passwordField').style.display = 'none';
     document.getElementById('userPassword').required = false;
     
-    Modal.show('userModal');
+    document.getElementById('userModal').classList.add('active');
 };
 
-window.saveUser = async function() {
-    const form = document.getElementById('userForm');
-    
-    if (!form.checkValidity()) {
-        form.reportValidity();
+// Save user (add or update)
+window.saveUser = function() {
+    // Get form values
+    const name = document.getElementById('userName')?.value;
+    const email = document.getElementById('userEmail')?.value;
+    const phone = document.getElementById('userPhone')?.value;
+    const role = document.getElementById('userRole')?.value;
+    const status = document.getElementById('userStatus')?.value;
+    const password = document.getElementById('userPassword')?.value;
+
+    // Validate
+    if (!name || !email || !phone) {
+        showNotification('Please fill in all required fields', 'error');
         return;
     }
-    
-    const userData = {
-        name: document.getElementById('userName').value,
-        email: document.getElementById('userEmail').value,
-        phone: document.getElementById('userPhone').value,
-        role: document.getElementById('userRole').value,
-        status: document.getElementById('userStatus').value
-    };
-    
-    const password = document.getElementById('userPassword').value;
-    if (password) {
-        userData.password = password;
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        showNotification('Please enter a valid email address', 'error');
+        return;
     }
-    
-    try {
-        if (currentUserId) {
-            // Update existing user
-            await API.users.update(currentUserId, userData);
-            showNotification('User updated successfully', 'success');
-        } else {
-            // Add new user
-            if (!password) {
-                showNotification('Password is required for new users', 'error');
-                return;
+
+    // Validate phone
+    const phoneRegex = /^(09|\+2519)\d{8}$/;
+    if (!phoneRegex.test(phone)) {
+        showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
+        return;
+    }
+
+    const currentUser = Auth.getCurrentUser();
+
+    if (currentUserId) {
+        // Update existing user
+        const index = allUsers.findIndex(u => u.id === currentUserId);
+        if (index !== -1) {
+            // Don't allow changing own role/status
+            if (currentUser && currentUser.id === currentUserId) {
+                if (role !== allUsers[index].role || status !== allUsers[index].status) {
+                    showNotification('You cannot change your own role or status', 'error');
+                    return;
+                }
             }
-            await API.users.register(userData);
-            showNotification('User added successfully', 'success');
+            
+            allUsers[index] = {
+                ...allUsers[index],
+                name, email, phone, role, status
+            };
+            
+            localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+            
+            // Update current user if it's the same user
+            if (currentUser && currentUser.id === currentUserId) {
+                const updatedUser = { ...currentUser, name, email, phone };
+                localStorage.setItem('markanUser', JSON.stringify(updatedUser));
+                Auth.currentUser = updatedUser;
+            }
+            
+            showNotification('User updated successfully', 'success');
         }
+    } else {
+        // Add new user
+        if (!password) {
+            showNotification('Password is required for new users', 'error');
+            return;
+        }
+
+        // Validate password
+        const passwordRegex = /^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            showNotification('Password must be at least 8 characters with one special character', 'error');
+            return;
+        }
+
+        // Check if email already exists
+        if (allUsers.some(u => u.email === email)) {
+            showNotification('Email already exists', 'error');
+            return;
+        }
+
+        const newId = allUsers.length > 0 ? Math.max(...allUsers.map(u => u.id)) + 1 : 1;
+        const newUser = {
+            id: newId,
+            name, email, phone, role, status,
+            password: password,
+            joined: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        };
         
-        Modal.hide('userModal');
-        await loadUsers(); // Reload users
-        
-    } catch (error) {
-        console.error('Failed to save user:', error);
-        showNotification(error.message || 'Failed to save user', 'error');
+        allUsers.push(newUser);
+        localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+        showNotification('User added successfully', 'success');
     }
+
+    displayUsers(allUsers);
+    closeUserModal();
 };
 
-window.deleteUser = function(userId) {
+// Delete user
+window.deleteUser = function(id) {
     const currentUser = Auth.getCurrentUser();
     
     // Prevent deleting yourself
-    if (currentUser && currentUser.id === userId) {
+    if (currentUser && currentUser.id === id) {
         showNotification('You cannot delete your own account', 'error');
         return;
     }
     
-    if (confirm('Are you sure you want to delete this user?')) {
-        currentUserId = userId;
-        Modal.show('deleteUserModal');
+    currentUserId = id;
+    document.getElementById('deleteUserModal').classList.add('active');
+};
+
+// Confirm delete user
+window.confirmDeleteUser = function() {
+    if (currentUserId) {
+        allUsers = allUsers.filter(u => u.id !== currentUserId);
+        localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+        displayUsers(allUsers);
+        showNotification('User deleted successfully', 'success');
+        closeDeleteUserModal();
     }
 };
 
-window.confirmDeleteUser = async function() {
-    if (!currentUserId) return;
-    
-    try {
-        await API.users.delete(currentUserId);
-        showNotification('User deleted', 'success');
-        await loadUsers(); // Reload users
-        Modal.hide('deleteUserModal');
-    } catch (error) {
-        console.error('Failed to delete user:', error);
-        showNotification('Failed to delete user', 'error');
-    }
-};
-
+// Close modals
 window.closeUserModal = function() {
-    Modal.hide('userModal');
+    document.getElementById('userModal').classList.remove('active');
+    currentUserId = null;
 };
 
 window.closeDeleteUserModal = function() {
-    Modal.hide('deleteUserModal');
+    document.getElementById('deleteUserModal').classList.remove('active');
+    currentUserId = null;
 };
 
-function setupEventListeners() {
-    // Filter changes
-    const roleFilter = document.getElementById('roleFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const searchInput = document.getElementById('searchUser');
+// Apply filters
+function applyFilters() {
+    const roleFilter = document.getElementById('roleFilter')?.value || 'all';
+    const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+    const searchTerm = document.getElementById('searchUser')?.value.toLowerCase() || '';
+
+    filteredUsers = allUsers.filter(user => {
+        // Role filter
+        if (roleFilter !== 'all' && user.role !== roleFilter) {
+            return false;
+        }
+        
+        // Status filter
+        if (statusFilter !== 'all' && user.status !== statusFilter) {
+            return false;
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const matchesName = user.name?.toLowerCase().includes(searchTerm);
+            const matchesEmail = user.email?.toLowerCase().includes(searchTerm);
+            const matchesPhone = user.phone?.includes(searchTerm);
+            if (!matchesName && !matchesEmail && !matchesPhone) return false;
+        }
+        
+        return true;
+    });
     
+    displayUsers(filteredUsers);
+}
+
+// Refresh users
+window.refreshUsers = function() {
+    loadUsers();
+    showNotification('Users refreshed', 'success');
+};
+
+// Setup event listeners
+function setupEventListeners() {
+    // Search input
+    const searchInput = document.getElementById('searchUser');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(applyFilters, 300));
+    }
+    
+    // Role filter
+    const roleFilter = document.getElementById('roleFilter');
     if (roleFilter) {
         roleFilter.addEventListener('change', applyFilters);
     }
     
+    // Status filter
+    const statusFilter = document.getElementById('statusFilter');
     if (statusFilter) {
         statusFilter.addEventListener('change', applyFilters);
-    }
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(applyFilters, 300));
     }
     
     // Add user button
@@ -250,7 +360,33 @@ function setupEventListeners() {
     // Modal close buttons
     document.querySelectorAll('.modal-close').forEach(btn => {
         btn.addEventListener('click', () => {
-            Modal.hide(btn.closest('.modal').id);
+            const modal = btn.closest('.modal');
+            if (modal) {
+                modal.classList.remove('active');
+            }
         });
     });
+    
+    // Close modals on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('active');
+        }
+    });
 }
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Export functions
+window.applyFilters = applyFilters;

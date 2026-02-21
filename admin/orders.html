@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Management - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html" class="active"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchOrder" placeholder="Search orders...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Order Management</h1>
+                <button class="btn btn-outline" onclick="refreshOrders()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <select id="statusFilter" class="form-control" style="width: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                
+                <select id="dateFilter" class="form-control" style="width: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="all">All Time</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                </select>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                        <!-- Will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button class="modal-close" onclick="closeOrderModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="orderDetails">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin authentication
+        if (!Auth.requireAdmin()) {
+            window.location.href = '../login.html';
+        }
+
+        let allOrders = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAdminName();
+            loadOrders();
+            setupEventListeners();
+
+            // Check for order ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            if (orderId) {
+                viewOrderDetails(orderId);
+            }
+        });
+
+        function updateAdminName() {
+            const user = Auth.getCurrentUser();
+            if (user) {
+                document.getElementById('adminName').textContent = user.name;
+            }
+        }
+
+        function loadOrders() {
+            // Mock data - replace with actual API call
+            allOrders = [
+                { 
+                    id: 'ORD-1001', 
+                    customer: 'John Customer', 
+                    date: '2025-02-20T10:30:00Z',
+                    items: [
+                        { name: 'Ethiopian Coffee', quantity: 2, price: 4.50 },
+                        { name: 'Sambusa', quantity: 1, price: 3.50 }
+                    ],
+                    total: 12.50,
+                    status: 'completed',
+                    payment: 'cash'
+                },
+                { 
+                    id: 'ORD-1002', 
+                    customer: 'Sarah Wilson', 
+                    date: '2025-02-20T09:15:00Z',
+                    items: [
+                        { name: 'Doro Wat', quantity: 1, price: 12.99 },
+                        { name: 'Injera', quantity: 2, price: 2.50 }
+                    ],
+                    total: 17.99,
+                    status: 'preparing',
+                    payment: 'card'
+                },
+                { 
+                    id: 'ORD-1003', 
+                    customer: 'Mike Johnson', 
+                    date: '2025-02-19T14:20:00Z',
+                    items: [
+                        { name: 'Kitfo', quantity: 1, price: 14.50 },
+                        { name: 'Honey Bread', quantity: 1, price: 4.99 }
+                    ],
+                    total: 19.49,
+                    status: 'pending',
+                    payment: 'online'
+                },
+                { 
+                    id: 'ORD-1004', 
+                    customer: 'Emma Davis', 
+                    date: '2025-02-19T11:45:00Z',
+                    items: [
+                        { name: 'Macchiato', quantity: 2, price: 3.75 }
+                    ],
+                    total: 7.50,
+                    status: 'cancelled',
+                    payment: 'cash'
+                }
+            ];
+            
+            displayOrders(allOrders);
+        }
+
+        function displayOrders(orders) {
+            const tbody = document.getElementById('ordersTable');
+            tbody.innerHTML = orders.map(order => `
+                <tr>
+                    <td>${order.id}</td>
+                    <td>${order.customer}</td>
+                    <td>${new Date(order.date).toLocaleDateString()}</td>
+                    <td>${order.items.length} items</td>
+                    <td>$${order.total.toFixed(2)}</td>
+                    <td>
+                        <select class="status-badge ${order.status}" onchange="updateOrderStatus('${order.id}', this.value)" style="border: none; padding: 5px; border-radius: 20px;">
+                            <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Preparing</option>
+                            <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewOrderDetails('${order.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                showNotification(`Order ${orderId} status updated to ${newStatus}`, 'success');
+                applyFilters();
+            }
+        }
+
+        function viewOrderDetails(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const itemsHtml = order.items.map(item => `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${item.price.toFixed(2)}</td>
+                    <td>$${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('orderDetails').innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <p><strong>Order ID:</strong> ${order.id}</p>
+                    <p><strong>Customer:</strong> ${order.customer}</p>
+                    <p><strong>Date:</strong> ${new Date(order.date).toLocaleString()}</p>
+                    <p><strong>Payment Method:</strong> ${order.payment}</p>
+                    <p><strong>Status:</strong> <span class="status-badge ${order.status}">${order.status}</span></p>
+                </div>
+                
+                <h4>Order Items</h4>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                            <td><strong>$${order.total.toFixed(2)}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+
+            document.getElementById('orderModal').classList.add('active');
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.remove('active');
+        }
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            const searchTerm = document.getElementById('searchOrder').value.toLowerCase();
+
+            let filtered = [...allOrders];
+
+            // Status filter
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(o => o.status === statusFilter);
+            }
+
+            // Date filter
+            if (dateFilter !== 'all') {
+                const today = new Date();
+                const weekAgo = new Date(today);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const monthAgo = new Date(today);
+                monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+                filtered = filtered.filter(o => {
+                    const orderDate = new Date(o.date);
+                    switch(dateFilter) {
+                        case 'today':
+                            return orderDate.toDateString() === today.toDateString();
+                        case 'week':
+                            return orderDate >= weekAgo;
+                        case 'month':
+                            return orderDate >= monthAgo;
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            // Search filter
+            if (searchTerm) {
+                filtered = filtered.filter(o => 
+                    o.id.toLowerCase().includes(searchTerm) ||
+                    o.customer.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            displayOrders(filtered);
+        }
+
+        function refreshOrders() {
+            loadOrders();
+            showNotification('Orders refreshed', 'success');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('dateFilter').addEventListener('change', applyFilters);
+            document.getElementById('searchOrder').addEventListener('input', applyFilters);
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+    </script>
+</body>
+</html>

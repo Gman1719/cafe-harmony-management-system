@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Management - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html" class="active"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchReservation" placeholder="Search reservations...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">5</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Reservation Management</h1>
+                <button class="btn btn-outline" onclick="refreshReservations()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <select id="statusFilter" class="form-control" style="width: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                
+                <select id="dateFilter" class="form-control" style="width: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="all">All Dates</option>
+                    <option value="today">Today</option>
+                    <option value="tomorrow">Tomorrow</option>
+                    <option value="week">This Week</option>
+                </select>
+            </div>
+
+            <!-- Reservations Table -->
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Reservation ID</th>
+                            <th>Customer</th>
+                            <th>Phone</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Guests</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reservationsTable">
+                        <!-- Will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reservation Details Modal -->
+    <div class="modal" id="reservationModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Reservation Details</h3>
+                <button class="modal-close" onclick="closeReservationModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="reservationDetails">
+                <!-- Will be populated by JS -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-success" onclick="updateReservationStatus(currentReservationId, 'confirmed')">Confirm</button>
+                <button class="btn btn-danger" onclick="updateReservationStatus(currentReservationId, 'cancelled')">Cancel</button>
+                <button class="btn btn-outline" onclick="closeReservationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin authentication
+        if (!Auth.requireAdmin()) {
+            window.location.href = '../login.html';
+        }
+
+        let allReservations = [];
+        let currentReservationId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAdminName();
+            loadReservations();
+            setupEventListeners();
+        });
+
+        function updateAdminName() {
+            const user = Auth.getCurrentUser();
+            if (user) {
+                document.getElementById('adminName').textContent = user.name;
+            }
+        }
+
+        function loadReservations() {
+            // Mock data - replace with actual API call
+            allReservations = [
+                { 
+                    id: 'RES-1001', 
+                    customer: 'John Customer', 
+                    phone: '+251922345678',
+                    email: 'john@example.com',
+                    date: '2025-02-25', 
+                    time: '19:00', 
+                    guests: 4,
+                    status: 'confirmed',
+                    specialRequests: 'Window table preferred, anniversary celebration',
+                    createdAt: '2025-02-18T10:30:00Z'
+                },
+                { 
+                    id: 'RES-1002', 
+                    customer: 'Sarah Wilson', 
+                    phone: '+251933456789',
+                    email: 'sarah@example.com',
+                    date: '2025-02-22', 
+                    time: '18:30', 
+                    guests: 2,
+                    status: 'confirmed',
+                    specialRequests: 'Vegetarian options',
+                    createdAt: '2025-02-19T09:15:00Z'
+                },
+                { 
+                    id: 'RES-1003', 
+                    customer: 'Mike Johnson', 
+                    phone: '+251944567890',
+                    email: 'mike@example.com',
+                    date: '2025-02-26', 
+                    time: '20:00', 
+                    guests: 6,
+                    status: 'pending',
+                    specialRequests: 'Birthday celebration',
+                    createdAt: '2025-02-20T11:45:00Z'
+                },
+                { 
+                    id: 'RES-1004', 
+                    customer: 'Emma Davis', 
+                    phone: '+251955678901',
+                    email: 'emma@example.com',
+                    date: '2025-02-21', 
+                    time: '12:30', 
+                    guests: 3,
+                    status: 'completed',
+                    specialRequests: '',
+                    createdAt: '2025-02-15T14:20:00Z'
+                },
+                { 
+                    id: 'RES-1005', 
+                    customer: 'David Brown', 
+                    phone: '+251966789012',
+                    email: 'david@example.com',
+                    date: '2025-02-23', 
+                    time: '13:00', 
+                    guests: 2,
+                    status: 'cancelled',
+                    specialRequests: 'Coffee ceremony',
+                    createdAt: '2025-02-10T16:30:00Z'
+                }
+            ];
+            
+            displayReservations(allReservations);
+        }
+
+        function displayReservations(reservations) {
+            const tbody = document.getElementById('reservationsTable');
+            tbody.innerHTML = reservations.map(res => `
+                <tr>
+                    <td>${res.id}</td>
+                    <td>${res.customer}</td>
+                    <td>${res.phone}</td>
+                    <td>${res.date}</td>
+                    <td>${res.time}</td>
+                    <td>${res.guests}</td>
+                    <td>
+                        <select class="status-badge ${res.status}" onchange="updateReservationStatus('${res.id}', this.value)" style="border: none; padding: 5px; border-radius: 20px;">
+                            <option value="pending" ${res.status === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="confirmed" ${res.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="completed" ${res.status === 'completed' ? 'selected' : ''}>Completed</option>
+                            <option value="cancelled" ${res.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn view" onclick="viewReservationDetails('${res.id}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function viewReservationDetails(reservationId) {
+            const reservation = allReservations.find(r => r.id === reservationId);
+            if (!reservation) return;
+
+            currentReservationId = reservationId;
+
+            document.getElementById('reservationDetails').innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <h4>Customer Information</h4>
+                        <p><strong>Name:</strong> ${reservation.customer}</p>
+                        <p><strong>Phone:</strong> ${reservation.phone}</p>
+                        <p><strong>Email:</strong> ${reservation.email}</p>
+                    </div>
+                    <div>
+                        <h4>Reservation Details</h4>
+                        <p><strong>Date:</strong> ${reservation.date}</p>
+                        <p><strong>Time:</strong> ${reservation.time}</p>
+                        <p><strong>Guests:</strong> ${reservation.guests}</p>
+                        <p><strong>Status:</strong> <span class="status-badge ${reservation.status}">${reservation.status}</span></p>
+                    </div>
+                </div>
+                ${reservation.specialRequests ? `
+                    <div style="margin-top: 20px;">
+                        <h4>Special Requests</h4>
+                        <p>${reservation.specialRequests}</p>
+                    </div>
+                ` : ''}
+                <div style="margin-top: 20px;">
+                    <p><strong>Created:</strong> ${new Date(reservation.createdAt).toLocaleString()}</p>
+                </div>
+            `;
+
+            document.getElementById('reservationModal').classList.add('active');
+        }
+
+        function updateReservationStatus(reservationId, newStatus) {
+            const reservation = allReservations.find(r => r.id === reservationId);
+            if (reservation) {
+                reservation.status = newStatus;
+                showNotification(`Reservation ${reservationId} ${newStatus}`, 'success');
+                displayReservations(allReservations);
+                closeReservationModal();
+            }
+        }
+
+        function closeReservationModal() {
+            document.getElementById('reservationModal').classList.remove('active');
+            currentReservationId = null;
+        }
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const dateFilter = document.getElementById('dateFilter').value;
+            const searchTerm = document.getElementById('searchReservation').value.toLowerCase();
+
+            let filtered = [...allReservations];
+
+            // Status filter
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(r => r.status === statusFilter);
+            }
+
+            // Date filter
+            if (dateFilter !== 'all') {
+                const today = new Date().toISOString().split('T')[0];
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                
+                const weekFromNow = new Date();
+                weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+                filtered = filtered.filter(r => {
+                    switch(dateFilter) {
+                        case 'today':
+                            return r.date === today;
+                        case 'tomorrow':
+                            return r.date === tomorrowStr;
+                        case 'week':
+                            return r.date >= today && r.date <= weekFromNow.toISOString().split('T')[0];
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            // Search filter
+            if (searchTerm) {
+                filtered = filtered.filter(r => 
+                    r.id.toLowerCase().includes(searchTerm) ||
+                    r.customer.toLowerCase().includes(searchTerm) ||
+                    r.phone.includes(searchTerm)
+                );
+            }
+
+            displayReservations(filtered);
+        }
+
+        function refreshReservations() {
+            loadReservations();
+            showNotification('Reservations refreshed', 'success');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('dateFilter').addEventListener('change', applyFilters);
+            document.getElementById('searchReservation').addEventListener('input', applyFilters);
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+    </script>
+</body>
+</html>

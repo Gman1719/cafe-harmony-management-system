@@ -3,19 +3,19 @@
    Markan Cafe
    ======================================== */
 
+/* Billing Page */
 .billing-page {
-    background: var(--bg-cream);
+    background: var(--bg-secondary);
     min-height: 100vh;
     padding: var(--spacing-4xl) 0;
 }
 
 .billing-header {
-    background: linear-gradient(135deg, var(--primary-red), var(--primary-brown));
+    background: linear-gradient(135deg, var(--primary-brown), var(--primary-brown-dark));
     color: var(--white);
     padding: var(--spacing-3xl) 0;
     margin-bottom: var(--spacing-3xl);
     text-align: center;
-    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
 }
 
 .billing-header h1 {
@@ -42,7 +42,6 @@
     padding: var(--spacing-2xl);
     box-shadow: var(--shadow-xl);
     margin-bottom: var(--spacing-3xl);
-    border: 1px solid var(--border-color);
 }
 
 /* Bill Header */
@@ -104,7 +103,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-lg);
-    border: 1px solid var(--border-color);
 }
 
 .info-group {
@@ -124,29 +122,6 @@
     font-size: 1.1rem;
     font-weight: 600;
     color: var(--text-primary);
-}
-
-.info-value.customer-type {
-    display: inline-block;
-    padding: var(--spacing-xs) var(--spacing-sm);
-    border-radius: var(--radius-full);
-    font-size: 0.85rem;
-    font-weight: 500;
-}
-
-.customer-type.regular {
-    background: var(--success);
-    color: var(--white);
-}
-
-.customer-type.new {
-    background: var(--info);
-    color: var(--white);
-}
-
-.customer-type.vip {
-    background: var(--primary-gold);
-    color: var(--primary-brown);
 }
 
 /* Bill Items */
@@ -188,23 +163,12 @@
     background-color: var(--bg-cream);
 }
 
-.bill-table tfoot td {
-    background: var(--bg-cream);
-    font-weight: 600;
-    border-bottom: none;
-}
-
-.bill-table tfoot td:last-child {
-    color: var(--primary-red);
-}
-
 /* Bill Summary */
 .bill-summary {
     background: var(--bg-cream);
     border-radius: var(--radius-xl);
     padding: var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
-    border: 1px solid var(--border-color);
 }
 
 .summary-row {
@@ -224,17 +188,15 @@
     font-weight: 600;
     color: var(--text-primary);
     font-size: 1.2rem;
-    padding-top: var(--spacing-md);
-    margin-top: var(--spacing-sm);
 }
 
 .summary-row.grand-total {
     font-size: 1.5rem;
     font-weight: 700;
-    color: var(--primary-red);
+    color: var(--primary-brown);
     padding-top: var(--spacing-md);
     margin-top: var(--spacing-sm);
-    border-top: 2px solid var(--primary-red);
+    border-top: 2px solid var(--primary-brown);
 }
 
 /* Payment Methods */
@@ -288,7 +250,7 @@
 }
 
 .payment-option input[type="radio"]:checked + label {
-    border-color: var(--primary-red);
+    border-color: var(--primary-brown);
     background: var(--bg-cream);
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
@@ -299,7 +261,7 @@
 }
 
 .payment-option input[type="radio"]:checked + label span {
-    color: var(--primary-red);
+    color: var(--primary-brown);
 }
 
 /* Payment Actions */
@@ -316,45 +278,27 @@
     padding: var(--spacing-md) var(--spacing-xl);
 }
 
-/* Invoice for Printing */
-@media print {
-    .navbar,
-    .billing-header,
-    .payment-methods,
-    .payment-actions,
-    .footer,
-    .btn,
-    .no-print {
-        display: none !important;
-    }
-    
-    .billing-card {
-        box-shadow: none;
-        padding: 0;
-        margin: 0;
-        border: none;
-    }
-    
-    .bill-header {
-        border-bottom: 2px solid #000;
-    }
-    
-    .bill-table th {
-        background: #f0f0f0;
-        color: #000;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    
-    .customer-info {
-        background: none;
-        border: 1px solid #ddd;
-    }
-    
-    .bill-summary {
-        background: none;
-        border: 1px solid #ddd;
-    }
+/* Empty Bill */
+.empty-bill {
+    text-align: center;
+    padding: var(--spacing-4xl) 0;
+}
+
+.empty-bill i {
+    font-size: 5rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-xl);
+}
+
+.empty-bill h3 {
+    font-size: 1.8rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.empty-bill p {
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-xl);
 }
 
 /* Past Bills */
@@ -366,13 +310,6 @@
     font-size: 2rem;
     color: var(--primary-brown);
     margin-bottom: var(--spacing-xl);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-}
-
-.past-bills h2 i {
-    color: var(--primary-gold);
 }
 
 .past-bills-grid {
@@ -389,30 +326,12 @@
     cursor: pointer;
     transition: all var(--transition-fast);
     border: 2px solid transparent;
-    position: relative;
-    overflow: hidden;
-}
-
-.past-bill-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary-red), var(--primary-gold));
-    transform: translateX(-100%);
-    transition: transform var(--transition-slow);
-}
-
-.past-bill-card:hover::before {
-    transform: translateX(0);
 }
 
 .past-bill-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
-    border-color: var(--primary-red);
+    border-color: var(--primary-brown);
 }
 
 .past-bill-header {
@@ -442,7 +361,7 @@
 .past-bill-total {
     font-size: 1.3rem;
     font-weight: 700;
-    color: var(--primary-red);
+    color: var(--primary-brown);
     margin-bottom: var(--spacing-sm);
 }
 
@@ -459,115 +378,20 @@
     color: #155724;
 }
 
-.past-bill-status.pending {
-    background: #fff3cd;
-    color: #856404;
-}
-
-/* Receipt Styles */
-.receipt {
-    max-width: 400px;
-    margin: 0 auto;
-    padding: var(--spacing-xl);
-    background: var(--white);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--border-color);
-}
-
-.receipt-header {
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
-    border-bottom: 2px dashed var(--border-color);
-}
-
-.receipt-header h3 {
-    color: var(--primary-brown);
-    margin-bottom: var(--spacing-xs);
-    font-size: 1.5rem;
-}
-
-.receipt-header p {
-    font-size: 0.9rem;
-    color: var(--text-muted);
-}
-
-.receipt-items {
-    margin-bottom: var(--spacing-lg);
-}
-
-.receipt-item {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--spacing-xs) 0;
-    font-size: 0.95rem;
-}
-
-.receipt-item-name {
-    color: var(--text-primary);
-}
-
-.receipt-item-price {
-    color: var(--text-secondary);
-}
-
-.receipt-total {
-    margin-top: var(--spacing-md);
-    padding-top: var(--spacing-md);
-    border-top: 2px dashed var(--border-color);
-    display: flex;
-    justify-content: space-between;
-    font-weight: 700;
-    font-size: 1.2rem;
-    color: var(--primary-red);
-}
-
-.receipt-footer {
-    text-align: center;
-    margin-top: var(--spacing-lg);
-    padding-top: var(--spacing-md);
-    border-top: 2px dashed var(--border-color);
-    font-size: 0.85rem;
-    color: var(--text-muted);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .billing-header h1 {
-        font-size: 2rem;
+/* Print Styles */
+@media print {
+    .navbar,
+    .billing-header,
+    .payment-methods,
+    .payment-actions,
+    .past-bills,
+    .footer,
+    .btn {
+        display: none !important;
     }
     
     .billing-card {
-        padding: var(--spacing-lg);
-    }
-    
-    .bill-header {
-        flex-direction: column;
-        text-align: center;
-    }
-    
-    .bill-header-right {
-        text-align: center;
-    }
-    
-    .payment-options {
-        flex-direction: column;
-    }
-    
-    .payment-option {
-        width: 100%;
-    }
-    
-    .payment-actions {
-        flex-direction: column;
-    }
-    
-    .payment-actions .btn {
-        width: 100%;
-    }
-    
-    .past-bills-grid {
-        grid-template-columns: 1fr;
+        box-shadow: none;
+        padding: 0;
     }
 }

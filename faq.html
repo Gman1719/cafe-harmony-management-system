@@ -15,6 +15,7 @@
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/responsive.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
 </head>
 <body>
     <!-- Navigation -->
@@ -225,7 +226,7 @@
                             <span class="faq-toggle">+</span>
                         </button>
                         <div class="faq-answer">
-                            <p>You can place delivery orders through our website by logging into your account and using the online ordering system. We're also available on delivery apps like Deliver Addis and Ethio Delivery.</p>
+                            <p>You can place delivery orders through our website by logging into your account and using the online ordering system.</p>
                         </div>
                     </div>
                     
@@ -238,16 +239,6 @@
                             <p>Delivery within the university campus is free for orders over 150 ETB. For nearby neighborhoods, there's a small delivery fee of 30-50 ETB depending on distance.</p>
                         </div>
                     </div>
-                    
-                    <div class="faq-item">
-                        <button class="faq-question">
-                            <span>How long does delivery take?</span>
-                            <span class="faq-toggle">+</span>
-                        </button>
-                        <div class="faq-answer">
-                            <p>Delivery typically takes 30-45 minutes within the campus area, and 45-60 minutes for nearby neighborhoods. During peak hours, it may take a little longer.</p>
-                        </div>
-                    </div>
                 </div>
                 
                 <!-- Events FAQs -->
@@ -258,7 +249,7 @@
                             <span class="faq-toggle">+</span>
                         </button>
                         <div class="faq-answer">
-                            <p>Yes! We host private events including birthdays, graduation celebrations, team lunches, and small gatherings. Our space can accommodate up to 40 guests for seated events and 60 for cocktail-style gatherings.</p>
+                            <p>Yes! We host private events including birthdays, graduation celebrations, team lunches, and small gatherings. Our space can accommodate up to 40 guests.</p>
                         </div>
                     </div>
                     
@@ -268,17 +259,7 @@
                             <span class="faq-toggle">+</span>
                         </button>
                         <div class="faq-answer">
-                            <p>Yes, we offer catering services for university events, meetings, and private parties. We have various catering packages that include traditional Ethiopian dishes, coffee ceremonies, and more. Contact our events team for a quote.</p>
-                        </div>
-                    </div>
-                    
-                    <div class="faq-item">
-                        <button class="faq-question">
-                            <span>Can you accommodate dietary restrictions for events?</span>
-                            <span class="faq-toggle">+</span>
-                        </button>
-                        <div class="faq-answer">
-                            <p>Absolutely. We're happy to accommodate vegetarian, vegan, and gluten-free needs for your event. Please discuss your requirements when booking so we can prepare accordingly.</p>
+                            <p>Yes, we offer catering services for university events, meetings, and private parties. Contact our events team for a quote.</p>
                         </div>
                     </div>
                 </div>
@@ -307,13 +288,11 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-info">
-                    <img src="assets/images/logo.svg" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <img src="assets/images/logo-white.jpg" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
                     <p>Experience authentic Ethiopian cuisine and warm hospitality at Debre Birhan University.</p>
                     <div class="social-links">
                         <a href="https://www.tiktok.com/@gman1719" target="_blank"><i class="fab fa-tiktok"></i></a>
                         <a href="https://www.instagram.com/getiyedemis17/" target="_blank"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-telegram"></i></a>
                     </div>
                 </div>
                 
@@ -325,16 +304,6 @@
                         <li><a href="about.html">About</a></li>
                         <li><a href="contact.html">Contact</a></li>
                         <li><a href="faq.html">FAQ</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-links">
-                    <h3>For Customers</h3>
-                    <ul>
-                        <li><a href="login.html">Login</a></li>
-                        <li><a href="register.html">Register</a></li>
-                        <li><a href="#">Reservations</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
                     </ul>
                 </div>
                 
@@ -364,13 +333,11 @@
                 const item = btn.closest('.faq-item');
                 const isOpen = item.classList.contains('open');
                 
-                // Close all other items
                 document.querySelectorAll('.faq-item').forEach(i => {
                     i.classList.remove('open');
                     i.querySelector('.faq-toggle').textContent = '+';
                 });
                 
-                // Open clicked item if it wasn't open
                 if (!isOpen) {
                     item.classList.add('open');
                     btn.querySelector('.faq-toggle').textContent = '-';
@@ -378,16 +345,13 @@
             });
         });
         
-        // Category filtering
         document.querySelectorAll('.category-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const category = btn.dataset.category;
                 
-                // Update active button
                 document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
-                // Show selected category
                 document.querySelectorAll('.faq-category-content').forEach(content => {
                     content.classList.remove('active');
                     if (content.dataset.category === category) {

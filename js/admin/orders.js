@@ -1,126 +1,122 @@
 // js/admin/orders.js - Admin Order Management
 // Markan Cafe - Debre Birhan University
 
+// Check admin authentication
+if (!Auth.requireAdmin()) {
+    window.location.href = '../login.html';
+}
+
+// Global variables
 let allOrders = [];
 let filteredOrders = [];
-let currentPage = 1;
-let itemsPerPage = 10;
-let totalPages = 1;
+let currentOrderId = null;
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Check admin authentication
-    if (!Auth.requireAdmin()) return;
-    
-    // Load orders
-    await loadOrders();
-    
-    // Setup event listeners
+// Initialize orders page
+document.addEventListener('DOMContentLoaded', function() {
+    updateAdminName();
+    loadOrders();
     setupEventListeners();
     
     // Check for order ID in URL
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get('id');
     if (orderId) {
-        showOrderDetails(orderId);
+        viewOrderDetails(orderId);
     }
 });
 
-async function loadOrders() {
-    const container = document.getElementById('ordersTable');
-    if (!container) return;
-    
-    try {
-        container.innerHTML = '<tr><td colspan="7"><div class="spinner"></div></td></tr>';
-        
-        allOrders = await API.orders.getAll();
-        filteredOrders = [...allOrders];
-        
-        applyFilters();
-        
-    } catch (error) {
-        console.error('Failed to load orders:', error);
-        container.innerHTML = '<tr><td colspan="7">Failed to load orders</td></tr>';
-    }
-}
-
-function applyFilters() {
-    const statusFilter = document.getElementById('statusFilter')?.value || 'all';
-    const dateFilter = document.getElementById('dateFilter')?.value || 'all';
-    const searchTerm = document.getElementById('searchOrder')?.value.toLowerCase() || '';
-    
-    // Start with all orders
-    let filtered = [...allOrders];
-    
-    // Apply status filter
-    if (statusFilter !== 'all') {
-        filtered = filtered.filter(order => order.status === statusFilter);
-    }
-    
-    // Apply date filter
-    if (dateFilter !== 'all') {
-        const today = new Date();
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        
-        filtered = filtered.filter(order => {
-            const orderDate = new Date(order.orderDate);
-            
-            switch(dateFilter) {
-                case 'today':
-                    return orderDate.toDateString() === today.toDateString();
-                case 'week':
-                    return orderDate >= weekAgo;
-                case 'month':
-                    return orderDate >= monthAgo;
-                default:
-                    return true;
-            }
+// Update admin name in header
+function updateAdminName() {
+    const user = Auth.getCurrentUser();
+    if (user) {
+        const adminNameElements = document.querySelectorAll('#adminName');
+        adminNameElements.forEach(el => {
+            if (el) el.textContent = user.name;
         });
     }
-    
-    // Apply search
-    if (searchTerm) {
-        filtered = filtered.filter(order => 
-            order.id.toLowerCase().includes(searchTerm) ||
-            order.customerName.toLowerCase().includes(searchTerm) ||
-            order.customerPhone.includes(searchTerm)
-        );
-    }
-    
-    filteredOrders = filtered;
-    
-    // Calculate pagination
-    totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-    if (currentPage > totalPages) currentPage = totalPages || 1;
-    
-    displayOrders();
-    updatePagination();
 }
 
-function displayOrders() {
-    const container = document.getElementById('ordersTable');
-    if (!container) return;
+// Load orders from localStorage
+function loadOrders() {
+    const stored = localStorage.getItem('markanOrders');
+    if (stored) {
+        allOrders = JSON.parse(stored);
+    } else {
+        // Default orders if none exist
+        allOrders = [
+            { 
+                id: 'ORD-1001', 
+                customerName: 'John Customer', 
+                customerPhone: '+251922345678',
+                orderDate: '2025-02-20T10:30:00Z',
+                items: [
+                    { name: 'Ethiopian Coffee', quantity: 2, price: 4.50 },
+                    { name: 'Sambusa', quantity: 1, price: 3.50 }
+                ],
+                subtotal: 12.50,
+                tax: 1.25,
+                total: 13.75,
+                status: 'completed',
+                paymentMethod: 'cash'
+            },
+            { 
+                id: 'ORD-1002', 
+                customerName: 'Sarah Wilson', 
+                customerPhone: '+251933456789',
+                orderDate: '2025-02-20T09:15:00Z',
+                items: [
+                    { name: 'Doro Wat', quantity: 1, price: 12.99 },
+                    { name: 'Injera', quantity: 2, price: 2.50 }
+                ],
+                subtotal: 17.99,
+                tax: 1.80,
+                total: 19.79,
+                status: 'preparing',
+                paymentMethod: 'card'
+            },
+            { 
+                id: 'ORD-1003', 
+                customerName: 'Mike Johnson', 
+                customerPhone: '+251944567890',
+                orderDate: '2025-02-19T14:20:00Z',
+                items: [
+                    { name: 'Kitfo', quantity: 1, price: 14.50 }
+                ],
+                subtotal: 14.50,
+                tax: 1.45,
+                total: 15.95,
+                status: 'pending',
+                paymentMethod: 'online'
+            }
+        ];
+        localStorage.setItem('markanOrders', JSON.stringify(allOrders));
+    }
     
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    const pageOrders = filteredOrders.slice(start, end);
+    filteredOrders = [...allOrders];
+    displayOrders(filteredOrders);
+}
+
+// Display orders in table
+function displayOrders(orders) {
+    const tbody = document.getElementById('ordersTable');
+    if (!tbody) return;
     
-    if (pageOrders.length === 0) {
-        container.innerHTML = '<tr><td colspan="7">No orders found</td></tr>';
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No orders found</td></tr>';
         return;
     }
     
-    container.innerHTML = pageOrders.map(order => `
+    tbody.innerHTML = orders.map(order => `
         <tr>
-            <td>${order.id}</td>
-            <td>${order.customerName}</td>
-            <td>${formatDate(order.orderDate)}</td>
-            <td>${order.items.length} items</td>
-            <td>${formatCurrency(order.total)}</td>
+            <td>${order.id || 'N/A'}</td>
+            <td>${order.customerName || 'Guest'}</td>
+            <td>${new Date(order.orderDate).toLocaleDateString()}</td>
+            <td>${order.items ? order.items.length : 0} items</td>
+            <td>$${(order.total || 0).toFixed(2)}</td>
             <td>
-                <select class="status-select ${order.status}" onchange="updateOrderStatus('${order.id}', this.value)">
+                <select class="status-select ${order.status || 'pending'}" 
+                        onchange="updateOrderStatus('${order.id}', this.value)"
+                        style="padding: 5px; border-radius: 20px; border: 1px solid #ddd;">
                     <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Pending</option>
                     <option value="preparing" ${order.status === 'preparing' ? 'selected' : ''}>Preparing</option>
                     <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Completed</option>
@@ -132,200 +128,175 @@ function displayOrders() {
                     <button class="action-btn view" onclick="viewOrderDetails('${order.id}')">
                         <i class="fas fa-eye"></i>
                     </button>
+                    <button class="action-btn edit" onclick="editOrder('${order.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
                 </div>
             </td>
         </tr>
     `).join('');
 }
 
-window.updateOrderStatus = async function(orderId, newStatus) {
-    try {
-        await API.orders.updateStatus(orderId, newStatus);
+// Update order status
+window.updateOrderStatus = function(orderId, newStatus) {
+    const order = allOrders.find(o => o.id === orderId);
+    if (order) {
+        order.status = newStatus;
+        if (newStatus === 'completed') {
+            order.completedDate = new Date().toISOString();
+        }
+        localStorage.setItem('markanOrders', JSON.stringify(allOrders));
         showNotification(`Order ${orderId} status updated to ${newStatus}`, 'success');
-        await loadOrders(); // Reload orders
-    } catch (error) {
-        console.error('Failed to update order status:', error);
-        showNotification('Failed to update order status', 'error');
+        applyFilters();
     }
 };
 
+// View order details
 window.viewOrderDetails = function(orderId) {
     const order = allOrders.find(o => o.id === orderId);
     if (!order) return;
     
-    const modalId = 'orderDetailsModal';
-    let modal = document.getElementById(modalId);
+    currentOrderId = orderId;
     
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = modalId;
-        modal.className = 'modal';
-        document.body.appendChild(modal);
-    }
-    
-    const itemsHtml = order.items.map(item => `
+    const itemsHtml = order.items ? order.items.map(item => `
         <tr>
             <td>${item.name}</td>
             <td>${item.quantity}</td>
             <td>$${item.price.toFixed(2)}</td>
             <td>$${(item.price * item.quantity).toFixed(2)}</td>
         </tr>
-    `).join('');
+    `).join('') : '<tr><td colspan="4">No items</td></tr>';
     
-    modal.innerHTML = `
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h3>Order Details - ${order.id}</h3>
-                <button class="modal-close"><i class="fas fa-times"></i></button>
+    const modalContent = document.getElementById('orderDetails');
+    if (modalContent) {
+        modalContent.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <h4>Order Information</h4>
+                <p><strong>Order ID:</strong> ${order.id}</p>
+                <p><strong>Customer:</strong> ${order.customerName || 'Guest'}</p>
+                <p><strong>Phone:</strong> ${order.customerPhone || 'N/A'}</p>
+                <p><strong>Date:</strong> ${new Date(order.orderDate).toLocaleString()}</p>
+                <p><strong>Payment Method:</strong> ${order.paymentMethod || 'N/A'}</p>
+                <p><strong>Status:</strong> <span class="status-badge ${order.status || 'pending'}">${order.status || 'pending'}</span></p>
             </div>
-            <div class="modal-body">
-                <div class="order-info-grid">
-                    <div class="info-section">
-                        <h4>Customer Information</h4>
-                        <p><strong>Name:</strong> ${order.customerName}</p>
-                        <p><strong>Phone:</strong> ${order.customerPhone || 'N/A'}</p>
-                    </div>
-                    <div class="info-section">
-                        <h4>Order Information</h4>
-                        <p><strong>Date:</strong> ${formatDate(order.orderDate)}</p>
-                        <p><strong>Status:</strong> <span class="status-badge ${order.status}">${order.status}</span></p>
-                        <p><strong>Payment:</strong> ${order.paymentMethod}</p>
-                    </div>
-                </div>
-                
-                <h4>Order Items</h4>
-                <table class="details-table">
-                    <thead>
-                        <tr>
-                            <th>Item</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${itemsHtml}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="3"><strong>Subtotal</strong></td>
-                            <td>$${order.subtotal.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3"><strong>Tax</strong></td>
-                            <td>$${order.tax.toFixed(2)}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3"><strong>Total</strong></td>
-                            <td><strong>$${order.total.toFixed(2)}</strong></td>
-                        </tr>
-                    </tfoot>
-                </table>
-                
-                ${order.specialInstructions ? `
-                    <div class="special-instructions">
-                        <h4>Special Instructions</h4>
-                        <p>${order.specialInstructions}</p>
-                    </div>
-                ` : ''}
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-primary" onclick="window.print()">
-                    <i class="fas fa-print"></i> Print
-                </button>
-                <button class="btn btn-outline" onclick="this.closest('.modal').classList.remove('active')">
-                    Close
-                </button>
-            </div>
-        </div>
-    `;
+            
+            <h4>Order Items</h4>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Subtotal:</strong></td>
+                        <td>$${(order.subtotal || 0).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Tax (10%):</strong></td>
+                        <td>$${(order.tax || 0).toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" style="text-align: right;"><strong>Total:</strong></td>
+                        <td><strong>$${(order.total || 0).toFixed(2)}</strong></td>
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+    }
     
-    modal.classList.add('active');
-    
-    // Add close button handlers
-    modal.querySelector('.modal-close').addEventListener('click', () => {
-        modal.classList.remove('active');
-    });
-    
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.remove('active');
-        }
-    });
+    document.getElementById('orderModal').classList.add('active');
 };
 
-function updatePagination() {
-    const container = document.getElementById('pagination');
-    if (!container) return;
-    
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
-    
-    let html = '<div class="pagination">';
-    
-    // Previous button
-    html += `<button class="page-btn" onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="fas fa-chevron-left"></i>
-    </button>`;
-    
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
-        } else if (i === currentPage - 3 || i === currentPage + 3) {
-            html += `<span class="page-dots">...</span>`;
+// Edit order
+window.editOrder = function(orderId) {
+    viewOrderDetails(orderId);
+    // You can add edit functionality here
+};
+
+// Close order modal
+window.closeOrderModal = function() {
+    document.getElementById('orderModal').classList.remove('active');
+    currentOrderId = null;
+};
+
+// Apply filters
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+    const dateFilter = document.getElementById('dateFilter')?.value || 'all';
+    const searchTerm = document.getElementById('searchOrder')?.value.toLowerCase() || '';
+
+    filteredOrders = allOrders.filter(order => {
+        // Status filter
+        if (statusFilter !== 'all' && order.status !== statusFilter) {
+            return false;
         }
-    }
+        
+        // Date filter
+        if (dateFilter !== 'all') {
+            const orderDate = new Date(order.orderDate);
+            const today = new Date();
+            const weekAgo = new Date(today);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            const monthAgo = new Date(today);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            
+            switch(dateFilter) {
+                case 'today':
+                    if (orderDate.toDateString() !== today.toDateString()) return false;
+                    break;
+                case 'week':
+                    if (orderDate < weekAgo) return false;
+                    break;
+                case 'month':
+                    if (orderDate < monthAgo) return false;
+                    break;
+            }
+        }
+        
+        // Search filter
+        if (searchTerm) {
+            const matchesId = order.id?.toLowerCase().includes(searchTerm);
+            const matchesCustomer = order.customerName?.toLowerCase().includes(searchTerm);
+            if (!matchesId && !matchesCustomer) return false;
+        }
+        
+        return true;
+    });
     
-    // Next button
-    html += `<button class="page-btn" onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        <i class="fas fa-chevron-right"></i>
-    </button>`;
-    
-    html += '</div>';
-    
-    container.innerHTML = html;
+    displayOrders(filteredOrders);
 }
 
-window.changePage = function(page) {
-    if (page < 1 || page > totalPages) return;
-    currentPage = page;
-    displayOrders();
-    updatePagination();
-};
-
-window.refreshOrders = async function() {
-    await loadOrders();
+// Refresh orders
+window.refreshOrders = function() {
+    loadOrders();
     showNotification('Orders refreshed', 'success');
 };
 
+// Setup event listeners
 function setupEventListeners() {
-    // Filter changes
-    const statusFilter = document.getElementById('statusFilter');
-    const dateFilter = document.getElementById('dateFilter');
+    // Search input
     const searchInput = document.getElementById('searchOrder');
-    
-    if (statusFilter) {
-        statusFilter.addEventListener('change', () => {
-            currentPage = 1;
-            applyFilters();
-        });
-    }
-    
-    if (dateFilter) {
-        dateFilter.addEventListener('change', () => {
-            currentPage = 1;
-            applyFilters();
-        });
-    }
-    
     if (searchInput) {
-        searchInput.addEventListener('input', debounce(() => {
-            currentPage = 1;
-            applyFilters();
-        }, 300));
+        searchInput.addEventListener('input', debounce(applyFilters, 300));
+    }
+    
+    // Status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', applyFilters);
+    }
+    
+    // Date filter
+    const dateFilter = document.getElementById('dateFilter');
+    if (dateFilter) {
+        dateFilter.addEventListener('change', applyFilters);
     }
     
     // Refresh button
@@ -333,4 +304,33 @@ function setupEventListeners() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', refreshOrders);
     }
+    
+    // Modal close button
+    const modalClose = document.querySelector('#orderModal .modal-close');
+    if (modalClose) {
+        modalClose.addEventListener('click', closeOrderModal);
+    }
+    
+    // Close modal on outside click
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            e.target.classList.remove('active');
+        }
+    });
 }
+
+// Debounce function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Export functions
+window.applyFilters = applyFilters;

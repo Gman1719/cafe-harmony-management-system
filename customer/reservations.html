@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservations - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/customer-style.css">
+    <link rel="stylesheet" href="css/customer-responsive.css">
+    <style>
+        /* Reservations Page Specific Styles */
+        .reservations-header {
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            padding: 3rem;
+            border-radius: 0 0 50px 50px;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+        }
+
+        .reservations-header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .reservation-cta {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reservation-cta::before {
+            content: '📅';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 120px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+        }
+
+        .reservation-cta h2 {
+            color: var(--primary-brown);
+            font-size: 2.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .reservation-cta p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .btn-reserve {
+            background: var(--primary-gold);
+            color: var(--primary-brown);
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-reserve:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            background: #FFE55C;
+        }
+
+        .my-reservations {
+            margin-top: 3rem;
+        }
+
+        .my-reservations h2 {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .reservations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .reservation-card {
+            background: white;
+            border-radius: 15px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary-brown);
+        }
+
+        .reservation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .reservation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--primary-cream);
+        }
+
+        .reservation-id {
+            font-weight: 600;
+            color: var(--primary-brown);
+        }
+
+        .reservation-status {
+            padding: 0.3rem 1rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .reservation-status.pending {
+            background: #FFF3CD;
+            color: #856404;
+        }
+
+        .reservation-status.confirmed {
+            background: #D4EDDA;
+            color: #155724;
+        }
+
+        .reservation-status.completed {
+            background: #CCE5FF;
+            color: #004085;
+        }
+
+        .reservation-status.cancelled {
+            background: #F8D7DA;
+            color: #721C24;
+        }
+
+        .reservation-details {
+            margin-bottom: 1rem;
+        }
+
+        .reservation-details p {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+            color: var(--text-muted);
+        }
+
+        .reservation-details i {
+            color: var(--primary-gold);
+            width: 20px;
+        }
+
+        .reservation-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--primary-cream);
+        }
+
+        .reservation-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel-reservation {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .btn-cancel-reservation:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+        }
+
+        .no-reservations {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .no-reservations i {
+            font-size: 4rem;
+            color: var(--primary-gold);
+            margin-bottom: 1rem;
+        }
+
+        .no-reservations h3 {
+            color: var(--primary-brown);
+            margin-bottom: 0.5rem;
+        }
+
+        .no-reservations p {
+            color: var(--text-muted);
+        }
+
+        /* Reservation Form Modal */
+        .reservation-form {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 500;
+            color: var(--primary-brown);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid var(--primary-cream);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 0 3px rgba(255,215,0,0.2);
+        }
+
+        .form-group input.error {
+            border-color: var(--danger-red);
+        }
+
+        .field-error {
+            color: var(--danger-red);
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .reservations-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .reservation-cta {
+                padding: 2rem;
+            }
+
+            .reservation-cta h2 {
+                font-size: 1.8rem;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../assets/images/logo.png" alt="Markan Cafe" class="logo">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html" class="active"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <span class="user-greeting" id="userGreeting">Hi, Customer</span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Reservations Header -->
+    <div class="reservations-header">
+        <div class="container">
+            <h1><i class="fas fa-calendar-check"></i> Reservations</h1>
+            <p>Plan your visit and skip the wait</p>
+        </div>
+    </div>
+
+    <!-- Reservation CTA -->
+    <div class="container">
+        <div class="reservation-cta">
+            <h2>Plan Your Visit</h2>
+            <p>Plan your visit in advance and skip the wait. Reserve a table for you and your friends at Markan Cafe.</p>
+            <button class="btn-reserve" id="openReservationModal">
+                <i class="fas fa-calendar-plus"></i> Reserve Now
+            </button>
+        </div>
+    </div>
+
+    <!-- My Reservations -->
+    <div class="container">
+        <div class="my-reservations">
+            <h2><i class="fas fa-clock"></i> My Reservations</h2>
+            <div class="reservations-grid" id="reservationsGrid">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reservation Modal -->
+    <div class="modal" id="reservationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-check"></i> Reserve Your Table</h3>
+                <button class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="reservationForm" class="reservation-form">
+                    <div class="form-group">
+                        <label for="resName">Full Name</label>
+                        <input type="text" id="resName" placeholder="Enter your full name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resEmail">Email</label>
+                        <input type="email" id="resEmail" placeholder="Enter your email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resPhone">Phone Number</label>
+                        <input type="tel" id="resPhone" placeholder="0912345678 or +251912345678" required>
+                        <small class="hint">Format: 09XXXXXXXX or +2519XXXXXXXX</small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resGuests">Number of Guests</label>
+                            <select id="resGuests" required>
+                                <option value="">Select</option>
+                                <option value="1">1 Guest</option>
+                                <option value="2">2 Guests</option>
+                                <option value="3">3 Guests</option>
+                                <option value="4">4 Guests</option>
+                                <option value="5">5 Guests</option>
+                                <option value="6">6+ Guests</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resDate">Date</label>
+                            <input type="date" id="resDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resTime">Time</label>
+                            <input type="time" id="resTime" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resDuration">Duration</label>
+                            <select id="resDuration">
+                                <option value="1">1 hour</option>
+                                <option value="1.5">1.5 hours</option>
+                                <option value="2">2 hours</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resRequests">Special Requests</label>
+                        <textarea id="resRequests" rows="3" placeholder="Any special requests? (dietary restrictions, occasion, etc.)"></textarea>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-outline" onclick="closeReservationModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Confirm Reservation</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="js/reservations.js"></script>
+    <script>
+        // Authentication check
+        (function() {
+            const user = Auth.getCurrentUser();
+            if (!user) {
+                window.location.href = '../login.html';
+                return;
+            }
+        })();
+
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Modal functionality
+        const modal = document.getElementById('reservationModal');
+        const openBtn = document.getElementById('openReservationModal');
+        const closeBtn = document.querySelector('#reservationModal .modal-close');
+
+        function openReservationModal() {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeReservationModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        openBtn.addEventListener('click', openReservationModal);
+        closeBtn.addEventListener('click', closeReservationModal);
+
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeReservationModal();
+            }
+        });
+
+        // Make close function global
+        window.closeReservationModal = closeReservationModal;
+    </script>
+</body>
+</html>

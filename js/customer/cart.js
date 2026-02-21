@@ -1,43 +1,36 @@
 // js/customer/cart.js - Shopping Cart Logic
 // Markan Cafe - Debre Birhan University
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Check authentication
-    if (!Auth.requireAuth()) return;
-    
-    // Display cart items
+// Initialize cart page
+document.addEventListener('DOMContentLoaded', function() {
     displayCart();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Load saved orders
     loadSavedOrders();
+    updateCartCount();
+    setupEventListeners();
 });
 
+// Display cart items
 function displayCart() {
-    const container = document.getElementById('cartItems');
-    const countElement = document.getElementById('cartItemsCount');
+    const cartContainer = document.getElementById('cartItems');
+    const cart = AppState.cart || [];
     
-    if (!container) return;
+    if (!cartContainer) return;
     
-    if (AppState.cart.length === 0) {
-        container.innerHTML = `
+    if (cart.length === 0) {
+        cartContainer.innerHTML = `
             <div class="empty-cart">
                 <i class="fas fa-shopping-cart"></i>
                 <h3>Your cart is empty</h3>
                 <p>Looks like you haven't added any Ethiopian dishes yet</p>
-                <a href="menu.html" class="btn btn-primary">Browse Menu</a>
+                <a href="menu.html" class="btn-large">Browse Menu</a>
             </div>
         `;
-        
-        if (countElement) countElement.textContent = '0 items';
         updateCartSummary();
         return;
     }
     
     let html = '';
-    AppState.cart.forEach(item => {
+    cart.forEach(item => {
         const itemTotal = (item.price * (item.quantity || 1));
         html += `
             <div class="cart-item" data-id="${item.id}">
@@ -62,14 +55,18 @@ function displayCart() {
         `;
     });
     
-    container.innerHTML = html;
+    cartContainer.innerHTML = html;
     
-    const totalItems = AppState.cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
-    if (countElement) countElement.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+    const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const countElement = document.getElementById('cartItemsCount');
+    if (countElement) {
+        countElement.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+    }
     
     updateCartSummary();
 }
 
+// Update cart summary
 function updateCartSummary() {
     const summaryContainer = document.getElementById('cartSummary');
     if (!summaryContainer) return;
@@ -87,13 +84,14 @@ function updateCartSummary() {
             <span>Tax (10%):</span>
             <span>$${tax.toFixed(2)}</span>
         </div>
-        <div class="summary-row total">
+        <div class="summary-row grand-total">
             <span>Total:</span>
             <span>$${total.toFixed(2)}</span>
         </div>
     `;
 }
 
+// Update quantity
 window.updateQuantity = function(itemId, change) {
     const item = AppState.cart.find(i => i.id === itemId);
     if (!item) return;
@@ -106,31 +104,29 @@ window.updateQuantity = function(itemId, change) {
         item.quantity = newQuantity;
         saveCart();
         displayCart();
+        showNotification('Cart updated', 'success');
     }
 };
 
+// Remove from cart
 window.removeFromCart = function(itemId) {
-    const index = AppState.cart.findIndex(i => i.id === itemId);
-    if (index !== -1) {
-        const item = AppState.cart[index];
-        AppState.cart.splice(index, 1);
-        saveCart();
-        displayCart();
-        showNotification(`${item.name} removed from cart`, 'info');
-    }
+    removeFromCart(itemId);
+    displayCart();
+    showNotification('Item removed from cart', 'info');
 };
 
+// Clear cart
 window.clearCart = function() {
     if (AppState.cart.length === 0) return;
     
     if (confirm('Are you sure you want to clear your cart?')) {
-        AppState.cart = [];
-        saveCart();
+        clearCart();
         displayCart();
         showNotification('Cart cleared', 'warning');
     }
 };
 
+// Apply promo code
 window.applyPromoCode = function() {
     const input = document.getElementById('promoCode');
     const code = input?.value.trim().toUpperCase();
@@ -149,13 +145,15 @@ window.applyPromoCode = function() {
     };
     
     if (promos[code]) {
-        showNotification(`Promo code applied! You saved ${promos[code]}%`, 'success');
+        const discount = promos[code];
+        showNotification(`Promo code applied! You saved ${discount}%`, 'success');
         // Apply discount logic here
     } else {
         showNotification('Invalid promo code', 'error');
     }
 };
 
+// Proceed to checkout
 window.proceedToCheckout = function() {
     if (AppState.cart.length === 0) {
         showNotification('Your cart is empty', 'error');
@@ -165,6 +163,7 @@ window.proceedToCheckout = function() {
     window.location.href = 'checkout.html';
 };
 
+// Save current order
 window.saveOrder = async function() {
     if (AppState.cart.length === 0) {
         showNotification('Cannot save empty cart', 'error');
@@ -187,11 +186,16 @@ window.saveOrder = async function() {
         subtotal: getCartSubtotal(),
         tax: getCartTax(),
         total: getCartTotal(),
-        status: 'saved'
+        status: 'saved',
+        orderDate: new Date().toISOString()
     };
     
     try {
-        await API.orders.create(orderData);
+        // Get existing saved orders
+        const savedOrders = JSON.parse(localStorage.getItem('markanSavedOrders')) || [];
+        savedOrders.push(orderData);
+        localStorage.setItem('markanSavedOrders', JSON.stringify(savedOrders));
+        
         showNotification('Order saved successfully', 'success');
         loadSavedOrders();
     } catch (error) {
@@ -200,73 +204,92 @@ window.saveOrder = async function() {
     }
 };
 
-async function loadSavedOrders() {
+// Load saved orders
+function loadSavedOrders() {
     const container = document.getElementById('savedOrders');
-    if (!container) return;
+    const listContainer = document.getElementById('savedOrdersList');
+    
+    if (!container || !listContainer) return;
     
     const user = Auth.getCurrentUser();
     if (!user) return;
     
-    try {
-        const orders = await API.orders.getByCustomerId(user.id);
-        const savedOrders = orders.filter(o => o.status === 'saved');
-        
-        if (savedOrders.length === 0) {
-            container.style.display = 'none';
-            return;
-        }
-        
-        container.style.display = 'block';
-        container.innerHTML = `
-            <h2>Saved Orders</h2>
-            <div class="saved-orders-grid">
-                ${savedOrders.map(order => `
-                    <div class="saved-order-card">
-                        <div class="saved-order-header">
-                            <span class="saved-order-id">${order.id}</span>
-                            <span class="saved-order-date">${formatDate(order.orderDate)}</span>
-                        </div>
-                        <div class="saved-order-total">Total: ${formatCurrency(order.total)}</div>
-                        <div class="saved-order-actions">
-                            <button class="btn btn-primary btn-small" onclick="loadSavedOrder('${order.id}')">
-                                Load Order
-                            </button>
-                        </div>
+    const savedOrders = JSON.parse(localStorage.getItem('markanSavedOrders')) || [];
+    const userSavedOrders = savedOrders.filter(o => o.customerId === user.id);
+    
+    if (userSavedOrders.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    container.style.display = 'block';
+    
+    listContainer.innerHTML = userSavedOrders.slice(-5).reverse().map(order => `
+        <div class="saved-order-card">
+            <div class="saved-order-header">
+                <span class="saved-order-id">${order.id || 'Order'}</span>
+                <span class="saved-order-date">${new Date(order.orderDate).toLocaleDateString()}</span>
+            </div>
+            <div class="saved-order-items">
+                ${order.items.map(item => `
+                    <div class="saved-order-item">
+                        <span>${item.quantity}x ${item.name}</span>
+                        <span>$${(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                 `).join('')}
             </div>
-        `;
-        
-    } catch (error) {
-        console.error('Failed to load saved orders:', error);
-    }
+            <div class="saved-order-total">Total: $${order.total.toFixed(2)}</div>
+            <div class="saved-order-actions">
+                <button class="load-order-btn" onclick="loadSavedOrder('${order.id}')">
+                    <i class="fas fa-download"></i> Load Order
+                </button>
+            </div>
+        </div>
+    `).join('');
 }
 
-window.loadSavedOrder = async function(orderId) {
-    try {
-        const order = await API.orders.getById(orderId);
-        if (order) {
-            AppState.cart = [];
-            order.items.forEach(item => {
-                for (let i = 0; i < item.quantity; i++) {
-                    AppState.cart.push({
-                        id: item.id,
-                        name: item.name,
-                        price: item.price,
-                        quantity: 1
-                    });
-                }
-            });
-            saveCart();
-            displayCart();
-            showNotification('Saved order loaded', 'success');
-        }
-    } catch (error) {
-        console.error('Failed to load saved order:', error);
-        showNotification('Failed to load saved order', 'error');
+// Load saved order
+window.loadSavedOrder = function(orderId) {
+    const savedOrders = JSON.parse(localStorage.getItem('markanSavedOrders')) || [];
+    const order = savedOrders.find(o => o.id === orderId);
+    
+    if (order) {
+        // Clear current cart
+        AppState.cart = [];
+        
+        // Add items from saved order
+        order.items.forEach(item => {
+            for (let i = 0; i < item.quantity; i++) {
+                AppState.cart.push({
+                    id: item.id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: 1,
+                    category: item.category
+                });
+            }
+        });
+        
+        saveCart();
+        displayCart();
+        showNotification('Saved order loaded', 'success');
     }
 };
 
+// Update cart count
+function updateCartCount() {
+    const cart = AppState.cart || [];
+    const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+    const badges = document.querySelectorAll('.cart-count, #cartCount');
+    badges.forEach(badge => {
+        if (badge) {
+            badge.textContent = totalItems;
+            badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+        }
+    });
+}
+
+// Setup event listeners
 function setupEventListeners() {
     const clearCartBtn = document.getElementById('clearCartBtn');
     if (clearCartBtn) {

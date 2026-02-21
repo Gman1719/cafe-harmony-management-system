@@ -3,17 +3,13 @@
 
 let currentStep = 1;
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Check authentication
-    if (!Auth.requireAuth()) return;
-    
-    // Load checkout items
+// Initialize checkout page
+document.addEventListener('DOMContentLoaded', function() {
     loadCheckoutItems();
-    
-    // Setup event listeners
-    setupEventListeners();
+    updateSteps();
 });
 
+// Load checkout items
 function loadCheckoutItems() {
     const billingCard = document.getElementById('billingCard');
     if (!billingCard) return;
@@ -24,7 +20,7 @@ function loadCheckoutItems() {
                 <i class="fas fa-shopping-cart"></i>
                 <h3>Your cart is empty</h3>
                 <p>Add some Ethiopian dishes before checkout</p>
-                <a href="menu.html" class="btn btn-primary">Browse Menu</a>
+                <a href="menu.html" class="btn-large">Browse Menu</a>
             </div>
         `;
         return;
@@ -33,6 +29,7 @@ function loadCheckoutItems() {
     displayOrderReview();
 }
 
+// Display order review
 function displayOrderReview() {
     const billingCard = document.getElementById('billingCard');
     const subtotal = getCartSubtotal();
@@ -40,6 +37,15 @@ function displayOrderReview() {
     const total = getCartTotal();
     
     const user = Auth.getCurrentUser();
+    
+    const itemsHtml = AppState.cart.map(item => `
+        <tr>
+            <td>${item.name}</td>
+            <td>${item.quantity || 1}</td>
+            <td>$${item.price.toFixed(2)}</td>
+            <td>$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
+        </tr>
+    `).join('');
     
     billingCard.innerHTML = `
         <div class="bill-header">
@@ -79,14 +85,7 @@ function displayOrderReview() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${AppState.cart.map(item => `
-                        <tr>
-                            <td>${item.name}</td>
-                            <td>${item.quantity || 1}</td>
-                            <td>$${item.price.toFixed(2)}</td>
-                            <td>$${(item.price * (item.quantity || 1)).toFixed(2)}</td>
-                        </tr>
-                    `).join('')}
+                    ${itemsHtml}
                 </tbody>
             </table>
         </div>
@@ -134,7 +133,7 @@ function displayOrderReview() {
         </div>
         
         <div class="payment-actions">
-            <button class="btn btn-primary" onclick="processPayment()">
+            <button class="checkout-btn" onclick="processPayment()">
                 <i class="fas fa-lock"></i> Place Order • $${total.toFixed(2)}
             </button>
             <button class="btn btn-outline" onclick="window.location.href='cart.html'">
@@ -144,7 +143,8 @@ function displayOrderReview() {
     `;
 }
 
-window.processPayment = async function() {
+// Process payment
+window.processPayment = function() {
     const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value || 'card';
     
     const user = Auth.getCurrentUser();
@@ -155,6 +155,7 @@ window.processPayment = async function() {
     const total = getCartTotal();
     
     const orderData = {
+        id: 'ORD-' + Date.now().toString().slice(-6),
         customerId: user.id,
         customerName: user.name,
         customerPhone: user.phone,
@@ -169,30 +170,32 @@ window.processPayment = async function() {
         total,
         paymentMethod,
         status: 'pending',
-        specialInstructions: document.getElementById('specialInstructions')?.value || ''
+        orderDate: new Date().toISOString()
     };
     
-    try {
-        showNotification('Processing your order...', 'info');
-        
-        // Simulate payment processing
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Create order
-        const order = await API.orders.create(orderData);
+    // Simulate payment processing
+    showNotification('Processing your order...', 'info');
+    
+    setTimeout(() => {
+        // Save order to localStorage
+        const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
+        orders.push(orderData);
+        localStorage.setItem('markanOrders', JSON.stringify(orders));
         
         // Clear cart
         clearCart();
         
         // Show confirmation
-        showOrderConfirmation(order);
+        showOrderConfirmation(orderData);
         
-    } catch (error) {
-        console.error('Payment failed:', error);
-        showNotification('Payment failed. Please try again.', 'error');
-    }
+        // Update step
+        currentStep = 3;
+        updateSteps();
+        
+    }, 2000);
 };
 
+// Show order confirmation
 function showOrderConfirmation(order) {
     const billingCard = document.getElementById('billingCard');
     
@@ -224,7 +227,7 @@ function showOrderConfirmation(order) {
             </div>
             
             <div class="confirmation-actions">
-                <button class="btn btn-primary" onclick="window.location.href='orders.html'">
+                <button class="btn-large" onclick="window.location.href='orders.html'">
                     Track Order
                 </button>
                 <button class="btn btn-outline" onclick="window.location.href='menu.html'">
@@ -233,11 +236,9 @@ function showOrderConfirmation(order) {
             </div>
         </div>
     `;
-    
-    currentStep = 3;
-    updateSteps();
 }
 
+// Update checkout steps
 function updateSteps() {
     const steps = document.querySelectorAll('.step');
     steps.forEach((step, index) => {
@@ -252,15 +253,13 @@ function updateSteps() {
     });
 }
 
-function setupEventListeners() {
-    // Delivery method selection
-    const deliveryMethod = document.getElementById('deliveryMethod');
-    if (deliveryMethod) {
-        deliveryMethod.addEventListener('change', (e) => {
-            if (e.target.value === 'delivery') {
-                showNotification('Delivery option coming soon!', 'info');
-                e.target.value = 'pickup';
-            }
-        });
+// Go to previous step
+window.previousStep = function() {
+    if (currentStep > 1) {
+        currentStep--;
+        updateSteps();
+        if (currentStep === 1) {
+            displayOrderReview();
+        }
     }
-}
+};

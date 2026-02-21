@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html" class="active"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchUser" placeholder="Search users...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">2</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>User Management</h1>
+                <button class="btn btn-primary" onclick="openAddUserModal()">
+                    <i class="fas fa-user-plus"></i> Add New User
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
+                <select id="roleFilter" class="form-control" style="width: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="all">All Roles</option>
+                    <option value="customer">Customer</option>
+                    <option value="admin">Admin</option>
+                </select>
+                
+                <select id="statusFilter" class="form-control" style="width: 150px; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
+            <!-- Users Table -->
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTable">
+                        <!-- Will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="userModalTitle">Add New User</h3>
+                <button class="modal-close" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label for="userName">Full Name</label>
+                        <input type="text" id="userName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userEmail">Email</label>
+                        <input type="email" id="userEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="userPhone">Phone Number</label>
+                        <input type="tel" id="userPhone" placeholder="+251912345678" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="userRole">Role</label>
+                            <select id="userRole" required>
+                                <option value="customer">Customer</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="userStatus">Status</label>
+                            <select id="userStatus" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="passwordField">
+                        <label for="userPassword">Password</label>
+                        <input type="password" id="userPassword" placeholder="Leave blank to keep current">
+                    </div>
+                    
+                    <input type="hidden" id="userId">
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeUserModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div class="modal" id="deleteUserModal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Confirm Delete</h3>
+                <button class="modal-close" onclick="closeDeleteUserModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this user? This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeDeleteUserModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteUser()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        // Check admin authentication
+        if (!Auth.requireAdmin()) {
+            window.location.href = '../login.html';
+        }
+
+        let allUsers = [];
+        let currentUserId = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAdminName();
+            loadUsers();
+            setupEventListeners();
+        });
+
+        function updateAdminName() {
+            const user = Auth.getCurrentUser();
+            if (user) {
+                document.getElementById('adminName').textContent = user.name;
+            }
+        }
+
+        function loadUsers() {
+            // Get users from localStorage or use mock data
+            const storedUsers = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            
+            if (storedUsers.length > 0) {
+                allUsers = storedUsers;
+            } else {
+                // Mock data
+                allUsers = [
+                    { 
+                        id: 1, 
+                        name: 'Admin User', 
+                        email: 'admin@markan.com', 
+                        phone: '+251911234567',
+                        role: 'admin', 
+                        status: 'active',
+                        joined: '2025-01-01T00:00:00Z'
+                    },
+                    { 
+                        id: 2, 
+                        name: 'John Customer', 
+                        email: 'customer@markan.com', 
+                        phone: '+251922345678',
+                        role: 'customer', 
+                        status: 'active',
+                        joined: '2025-01-15T10:30:00Z'
+                    },
+                    { 
+                        id: 3, 
+                        name: 'Sarah Wilson', 
+                        email: 'sarah@example.com', 
+                        phone: '+251933456789',
+                        role: 'customer', 
+                        status: 'active',
+                        joined: '2025-01-20T09:15:00Z'
+                    },
+                    { 
+                        id: 4, 
+                        name: 'Mike Johnson', 
+                        email: 'mike@example.com', 
+                        phone: '+251944567890',
+                        role: 'customer', 
+                        status: 'inactive',
+                        joined: '2025-02-01T13:20:00Z'
+                    }
+                ];
+            }
+            
+            displayUsers(allUsers);
+        }
+
+        function displayUsers(users) {
+            const tbody = document.getElementById('usersTable');
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <img src="https://via.placeholder.com/30x30/8B4513/FFD700?text=${user.name.charAt(0)}" style="width: 30px; height: 30px; border-radius: 50%;">
+                            ${user.name}
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>${user.phone}</td>
+                    <td><span class="role-badge" style="background: ${user.role === 'admin' ? '#8B4513' : '#4CAF50'}; color: white; padding: 3px 10px; border-radius: 12px;">${user.role}</span></td>
+                    <td><span class="status-badge ${user.status}">${user.status}</span></td>
+                    <td>${new Date(user.joined).toLocaleDateString()}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="action-btn edit" onclick="editUser(${user.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-btn delete" onclick="deleteUser(${user.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddUserModal() {
+            currentUserId = null;
+            document.getElementById('userModalTitle').textContent = 'Add New User';
+            document.getElementById('userForm').reset();
+            document.getElementById('userId').value = '';
+            document.getElementById('passwordField').style.display = 'block';
+            document.getElementById('userPassword').required = true;
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        function editUser(id) {
+            const user = allUsers.find(u => u.id === id);
+            if (!user) return;
+
+            currentUserId = id;
+            document.getElementById('userModalTitle').textContent = 'Edit User';
+            document.getElementById('userName').value = user.name;
+            document.getElementById('userEmail').value = user.email;
+            document.getElementById('userPhone').value = user.phone;
+            document.getElementById('userRole').value = user.role;
+            document.getElementById('userStatus').value = user.status;
+            document.getElementById('userId').value = user.id;
+            document.getElementById('passwordField').style.display = 'none';
+            document.getElementById('userPassword').required = false;
+            
+            document.getElementById('userModal').classList.add('active');
+        }
+
+        function saveUser() {
+            const name = document.getElementById('userName').value;
+            const email = document.getElementById('userEmail').value;
+            const phone = document.getElementById('userPhone').value;
+            const role = document.getElementById('userRole').value;
+            const status = document.getElementById('userStatus').value;
+            const password = document.getElementById('userPassword').value;
+
+            if (!name || !email || !phone) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+
+            // Validate phone
+            const phoneRegex = /^(09|\+2519)\d{8}$/;
+            if (!phoneRegex.test(phone)) {
+                showNotification('Please enter a valid Ethiopian phone number', 'error');
+                return;
+            }
+
+            if (currentUserId) {
+                // Update existing user
+                const index = allUsers.findIndex(u => u.id === currentUserId);
+                if (index !== -1) {
+                    allUsers[index] = {
+                        ...allUsers[index],
+                        name, email, phone, role, status
+                    };
+                    
+                    // Update localStorage
+                    localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+                    
+                    showNotification('User updated successfully', 'success');
+                }
+            } else {
+                // Add new user
+                if (!password) {
+                    showNotification('Password is required for new users', 'error');
+                    return;
+                }
+
+                const newId = Math.max(...allUsers.map(u => u.id), 0) + 1;
+                const newUser = {
+                    id: newId,
+                    name, email, phone, role, status,
+                    password: password,
+                    joined: new Date().toISOString()
+                };
+                allUsers.push(newUser);
+                
+                // Update localStorage
+                localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+                
+                showNotification('User added successfully', 'success');
+            }
+
+            displayUsers(allUsers);
+            closeUserModal();
+        }
+
+        function deleteUser(id) {
+            const currentUser = Auth.getCurrentUser();
+            if (currentUser && currentUser.id === id) {
+                showNotification('You cannot delete your own account', 'error');
+                return;
+            }
+            
+            currentUserId = id;
+            document.getElementById('deleteUserModal').classList.add('active');
+        }
+
+        function confirmDeleteUser() {
+            if (currentUserId) {
+                allUsers = allUsers.filter(u => u.id !== currentUserId);
+                localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+                displayUsers(allUsers);
+                showNotification('User deleted successfully', 'success');
+                closeDeleteUserModal();
+            }
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').classList.remove('active');
+            currentUserId = null;
+        }
+
+        function closeDeleteUserModal() {
+            document.getElementById('deleteUserModal').classList.remove('active');
+            currentUserId = null;
+        }
+
+        function applyFilters() {
+            const roleFilter = document.getElementById('roleFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const searchTerm = document.getElementById('searchUser').value.toLowerCase();
+
+            let filtered = [...allUsers];
+
+            if (roleFilter !== 'all') {
+                filtered = filtered.filter(u => u.role === roleFilter);
+            }
+
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(u => u.status === statusFilter);
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(u => 
+                    u.name.toLowerCase().includes(searchTerm) ||
+                    u.email.toLowerCase().includes(searchTerm) ||
+                    u.phone.includes(searchTerm)
+                );
+            }
+
+            displayUsers(filtered);
+        }
+
+        function setupEventListeners() {
+            document.getElementById('roleFilter').addEventListener('change', applyFilters);
+            document.getElementById('statusFilter').addEventListener('change', applyFilters);
+            document.getElementById('searchUser').addEventListener('input', applyFilters);
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            Auth.logout();
+        });
+    </script>
+</body>
+</html>

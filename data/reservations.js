@@ -46,36 +46,6 @@ const reservationsDatabase = [
         specialRequests: 'Birthday celebration, need cake arrangement',
         createdAt: '2025-02-20T11:45:00Z',
         updatedAt: null
-    },
-    {
-        id: 'RES-1004',
-        customerId: 2,
-        customerName: 'John Customer',
-        customerEmail: 'customer@markan.com',
-        customerPhone: '+251922345678',
-        guests: 3,
-        date: '2025-02-21',
-        time: '12:30',
-        duration: 1,
-        status: 'cancelled',
-        specialRequests: 'Quick lunch',
-        createdAt: '2025-02-15T14:20:00Z',
-        updatedAt: '2025-02-16T10:00:00Z'
-    },
-    {
-        id: 'RES-1005',
-        customerId: 5,
-        customerName: 'Tigist Haile',
-        customerEmail: 'tigist@example.com',
-        customerPhone: '+251955678901',
-        guests: 2,
-        date: '2025-02-23',
-        time: '13:00',
-        duration: 1.5,
-        status: 'completed',
-        specialRequests: 'Coffee ceremony experience',
-        createdAt: '2025-02-10T16:30:00Z',
-        updatedAt: '2025-02-23T15:00:00Z'
     }
 ];
 
@@ -134,30 +104,6 @@ const ReservationsDB = {
         return null;
     },
     
-    // Update reservation
-    update: function(reservationId, updates) {
-        const reservations = this.getAll();
-        const index = reservations.findIndex(res => res.id === reservationId);
-        if (index !== -1) {
-            reservations[index] = { 
-                ...reservations[index], 
-                ...updates,
-                updatedAt: new Date().toISOString()
-            };
-            localStorage.setItem('markanReservations', JSON.stringify(reservations));
-            return reservations[index];
-        }
-        return null;
-    },
-    
-    // Delete reservation
-    delete: function(reservationId) {
-        const reservations = this.getAll();
-        const filtered = reservations.filter(res => res.id !== reservationId);
-        localStorage.setItem('markanReservations', JSON.stringify(filtered));
-        return filtered;
-    },
-    
     // Get reservations by date
     getByDate: function(date) {
         const reservations = this.getAll();
@@ -178,46 +124,6 @@ const ReservationsDB = {
         return reservations.filter(res => res.date >= today && res.status !== 'cancelled')
                     .sort((a, b) => new Date(a.date) - new Date(b.date))
                     .slice(0, limit);
-    },
-    
-    // Get today's reservations
-    getToday: function() {
-        const today = new Date().toISOString().split('T')[0];
-        return this.getByDate(today);
-    },
-    
-    // Check availability
-    checkAvailability: function(date, time, guests) {
-        const reservations = this.getByDate(date);
-        const requestedTime = parseInt(time.split(':')[0]);
-        
-        // Count reservations at the same time
-        const sameTimeReservations = reservations.filter(res => {
-            if (res.status === 'cancelled') return false;
-            const resTime = parseInt(res.time.split(':')[0]);
-            return Math.abs(resTime - requestedTime) < 2; // Within 2 hours
-        });
-        
-        // Assume max capacity of 30 people per time slot
-        const totalGuests = sameTimeReservations.reduce((sum, res) => sum + res.guests, 0);
-        const available = (totalGuests + guests) <= 30;
-        
-        return {
-            available,
-            currentGuests: totalGuests,
-            maxGuests: 30,
-            remainingGuests: 30 - totalGuests
-        };
-    },
-    
-    // Get reservation count
-    getCount: function() {
-        return this.getAll().length;
-    },
-    
-    // Get pending count
-    getPendingCount: function() {
-        return this.getByStatus('pending').length;
     }
 };
 

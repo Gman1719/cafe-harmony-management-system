@@ -18,6 +18,33 @@
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    
+    <style>
+        /* Additional styles to ensure buttons are visible */
+        .navbar-buttons {
+            display: flex !important;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .navbar-buttons .btn {
+            display: inline-flex !important;
+        }
+        
+        /* Make sure navigation links are visible */
+        .navbar-menu {
+            display: flex !important;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar-menu {
+                display: none !important;
+            }
+            .navbar-menu.active {
+                display: flex !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -47,7 +74,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section -->
+    <!-- Hero Section - Simplified to match the image -->
     <section class="hero">
         <div class="container">
             <div class="hero-content">
@@ -74,6 +101,7 @@
         </div>
     </section>
 
+    <!-- Rest of your content remains the same -->
     <!-- Features Section -->
     <section class="features">
         <div class="container">
@@ -221,6 +249,7 @@
                         <div>
                             <h3>Call Us</h3>
                             <p><a href="tel:+251906902551">+251 906 902 551</a></p>
+                            <p>Mon-Fri: 8am - 10pm<br>Sat-Sun: 9am - 11pm</p>
                         </div>
                     </div>
                     
@@ -400,6 +429,11 @@
     <script src="js/validation.js"></script>
     <script src="data/menu-items.js"></script>
     <script>
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
         // Reservation modal functionality
         const modal = document.getElementById('reservationModal');
         const openBtn = document.getElementById('openReservationModal');
@@ -455,7 +489,7 @@
                 const items = MenuDB.getPopular(4);
                 container.innerHTML = items.map(item => `
                     <div class="menu-card" onclick="window.location.href='menu.html?id=${item.id}'">
-                        <div class="menu-card-image" style="background-image: url('${item.image || 'assets/images/menu/placeholders/placeholder-food.jpg'}')">
+                        <div class="menu-card-image" style="background-image: url('${item.image || 'assets/images/placeholders/placeholder-food.jpg'}')">
                             <span class="menu-card-badge popular">Popular</span>
                         </div>
                         <div class="menu-card-content">

@@ -2,30 +2,30 @@
 // Markan Cafe - Debre Birhan University
 
 const menuDatabase = [
-    // Ethiopian Coffee & Beverages
+    // Beverages
     {
         id: 1,
         name: 'Ethiopian Coffee',
         description: 'Traditional Ethiopian coffee ceremony style, served with popcorn',
         price: 4.50,
         category: 'beverages',
-        image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=300',
+        image: 'assets/images/menu/beverages/ethiopian-coffee.jpg',
         rating: 4.9,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 2,
         name: 'Macchiato',
-        description: 'Espresso with a dash of steamed milk - Italian style',
+        description: 'Espresso with a dash of steamed milk',
         price: 3.75,
         category: 'beverages',
-        image: 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?w=300',
+        image: 'assets/images/menu/beverages/macchiato.jpg',
         rating: 4.7,
         popular: true,
-        inStock: true,
-        ethiopian: false
+        ethiopian: false,
+        inStock: true
     },
     {
         id: 3,
@@ -33,11 +33,11 @@ const menuDatabase = [
         description: 'Traditional Ethiopian spiced tea with cinnamon and cardamom',
         price: 3.25,
         category: 'beverages',
-        image: 'https://images.unsplash.com/photo-1594631252845-29fc4cc8cde9?w=300',
+        image: 'assets/images/menu/beverages/spiced-tea.jpg',
         rating: 4.6,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 4,
@@ -45,25 +45,25 @@ const menuDatabase = [
         description: 'Freshly squeezed Ethiopian oranges',
         price: 4.00,
         category: 'beverages',
-        image: 'https://images.unsplash.com/photo-1613478225719-9c25d6b8f3d2?w=300',
+        image: 'assets/images/menu/beverages/fresh-juice.jpg',
         rating: 4.5,
         popular: false,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     
-    // Ethiopian Dishes
+    // Meals
     {
         id: 5,
         name: 'Doro Wat',
         description: 'Spicy Ethiopian chicken stew with hard-boiled eggs, served with injera',
         price: 12.99,
         category: 'meals',
-        image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=300',
+        image: 'assets/images/menu/meals/doro-wat.jpg',
         rating: 4.9,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 6,
@@ -71,11 +71,11 @@ const menuDatabase = [
         description: 'Minced raw beef seasoned with mitmita and niter kibbeh, served with ayib',
         price: 14.50,
         category: 'meals',
-        image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=300',
+        image: 'assets/images/menu/meals/kitfo.jpg',
         rating: 4.8,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 7,
@@ -83,11 +83,11 @@ const menuDatabase = [
         description: 'Sautéed meat with onions, peppers, and traditional spices',
         price: 13.50,
         category: 'meals',
-        image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=300',
+        image: 'assets/images/menu/meals/tibs.jpg',
         rating: 4.7,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 8,
@@ -95,12 +95,12 @@ const menuDatabase = [
         description: 'Chickpea stew with berbere spice, vegan-friendly',
         price: 8.99,
         category: 'meals',
-        image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=300',
+        image: 'assets/images/menu/meals/shiro-wat.jpg',
         rating: 4.6,
         popular: true,
-        inStock: true,
         ethiopian: true,
-        vegetarian: true
+        vegetarian: true,
+        inStock: true
     },
     {
         id: 9,
@@ -108,12 +108,12 @@ const menuDatabase = [
         description: 'Red lentil stew with berbere spice, vegan-friendly',
         price: 8.99,
         category: 'meals',
-        image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=300',
+        image: 'assets/images/menu/meals/misir-wat.jpg',
         rating: 4.5,
         popular: false,
-        inStock: true,
         ethiopian: true,
-        vegetarian: true
+        vegetarian: true,
+        inStock: true
     },
     {
         id: 10,
@@ -121,26 +121,26 @@ const menuDatabase = [
         description: 'Sautéed collard greens with garlic and ginger, vegan-friendly',
         price: 7.99,
         category: 'meals',
-        image: 'https://images.unsplash.com/photo-1604329760661-e71dc83f8f26?w=300',
+        image: 'assets/images/menu/meals/gomen.jpg',
         rating: 4.4,
         popular: false,
-        inStock: true,
         ethiopian: true,
-        vegetarian: true
+        vegetarian: true,
+        inStock: true
     },
     
-    // Snacks & Sides
+    // Snacks
     {
         id: 11,
         name: 'Sambusa',
         description: 'Fried pastry filled with lentils or meat, Ethiopian style',
         price: 3.50,
         category: 'snacks',
-        image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300',
+        image: 'assets/images/menu/snacks/sambusa.jpg',
         rating: 4.7,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 12,
@@ -148,12 +148,12 @@ const menuDatabase = [
         description: 'Roasted barley snack, traditional Ethiopian street food',
         price: 2.50,
         category: 'snacks',
-        image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300',
+        image: 'assets/images/menu/snacks/kolo.jpg',
         rating: 4.3,
         popular: false,
-        inStock: true,
         ethiopian: true,
-        vegan: true
+        vegan: true,
+        inStock: true
     },
     {
         id: 13,
@@ -161,11 +161,11 @@ const menuDatabase = [
         description: 'Ethiopian flatbread with fresh cottage cheese',
         price: 5.99,
         category: 'snacks',
-        image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=300',
+        image: 'assets/images/menu/snacks/injera-ayib.jpg',
         rating: 4.5,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     
     // Desserts
@@ -175,11 +175,11 @@ const menuDatabase = [
         description: 'Traditional sweet bread made with honey and spices',
         price: 4.99,
         category: 'desserts',
-        image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=300',
+        image: 'assets/images/menu/desserts/honey-bread.jpg',
         rating: 4.6,
         popular: true,
-        inStock: true,
-        ethiopian: true
+        ethiopian: true,
+        inStock: true
     },
     {
         id: 15,
@@ -187,11 +187,11 @@ const menuDatabase = [
         description: 'Layered pastry with nuts and honey',
         price: 5.50,
         category: 'desserts',
-        image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=300',
+        image: 'assets/images/menu/desserts/baklava.jpg',
         rating: 4.7,
         popular: true,
-        inStock: true,
-        ethiopian: false
+        ethiopian: false,
+        inStock: true
     },
     {
         id: 16,
@@ -199,12 +199,12 @@ const menuDatabase = [
         description: 'Assorted Ethiopian seasonal fruits',
         price: 6.50,
         category: 'desserts',
-        image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=300',
+        image: 'assets/images/menu/desserts/fruit-platter.jpg',
         rating: 4.4,
         popular: false,
-        inStock: true,
         ethiopian: true,
-        vegan: true
+        vegan: true,
+        inStock: true
     }
 ];
 

@@ -287,14 +287,18 @@
         function filterItems() {
             const category = document.querySelector('.category-nav-item.active')?.dataset.category || 'all';
             const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            const minPrice = parseFloat(document.getElementById('minPrice')?.value || 0);
+            const maxPrice = parseFloat(document.getElementById('maxPrice')?.value || 50);
             
             filteredItems = allMenuItems.filter(item => {
                 if (category !== 'all' && item.category !== category) return false;
                 if (searchTerm && !item.name.toLowerCase().includes(searchTerm)) return false;
+                if (item.price < minPrice || item.price > maxPrice) return false;
                 return true;
             });
             
             displayMenuItems(filteredItems);
+            document.getElementById('priceRangeValue').textContent = `$${minPrice} - $${maxPrice}`;
         }
 
         function setupEventListeners() {
@@ -307,6 +311,8 @@
             });
             
             document.getElementById('searchInput')?.addEventListener('input', filterItems);
+            document.getElementById('minPrice')?.addEventListener('input', filterItems);
+            document.getElementById('maxPrice')?.addEventListener('input', filterItems);
             
             document.querySelector('#itemModal .modal-close')?.addEventListener('click', closeModal);
             document.getElementById('itemModal')?.addEventListener('click', (e) => {

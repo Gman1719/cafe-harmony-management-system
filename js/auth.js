@@ -18,7 +18,9 @@ const Auth = {
             try {
                 this.currentUser = JSON.parse(savedUser);
                 this.updateUI();
+                console.log('User session restored:', this.currentUser);
             } catch (e) {
+                console.error('Failed to parse user data');
                 this.logout();
             }
         }
@@ -38,94 +40,62 @@ const Auth = {
         }
         
         try {
-            // Check if UsersDB exists
-            if (typeof UsersDB !== 'undefined') {
-                const user = UsersDB.authenticate(email, password);
+            // Get users from localStorage
+            const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            console.log('Users found:', users.length);
+            
+            // Find user with matching email and password
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                console.log('User found:', user.name, 'Role:', user.role);
                 
-                if (user) {
-                    // Remove password from user object
-                    const { password: pwd, ...userWithoutPassword } = user;
-                    
-                    this.currentUser = userWithoutPassword;
-                    
-                    // Save to storage
-                    if (remember) {
-                        localStorage.setItem('markanUser', JSON.stringify(userWithoutPassword));
+                // Check if user is active
+                if (user.status === 'inactive') {
+                    showNotification('Your account is inactive. Please contact admin.', 'error');
+                    return false;
+                }
+                
+                // Create user object without password
+                const { password: pwd, ...userWithoutPassword } = user;
+                this.currentUser = userWithoutPassword;
+                
+                // Save to storage
+                if (remember) {
+                    localStorage.setItem('markanUser', JSON.stringify(userWithoutPassword));
+                } else {
+                    sessionStorage.setItem('markanUser', JSON.stringify(userWithoutPassword));
+                }
+                
+                // Also save to localStorage for persistence
+                localStorage.setItem('markanUser', JSON.stringify(userWithoutPassword));
+                
+                // Update last login
+                const userIndex = users.findIndex(u => u.id === user.id);
+                if (userIndex !== -1) {
+                    users[userIndex].lastLogin = new Date().toISOString();
+                    localStorage.setItem('markanUsers', JSON.stringify(users));
+                }
+                
+                this.updateUI();
+                showNotification(`Welcome back, ${user.name}!`, 'success');
+                
+                // Redirect based on role - USING RELATIVE PATHS
+                setTimeout(() => {
+                    if (user.role === 'admin') {
+                        console.log('Redirecting to admin dashboard');
+                        window.location.href = 'admin/dashboard.html';
                     } else {
-                        sessionStorage.setItem('markanUser', JSON.stringify(userWithoutPassword));
+                        console.log('Redirecting to customer dashboard');
+                        window.location.href = 'customer/dashboard.html';
                     }
-                    
-                    this.updateUI();
-                    showNotification(`Welcome back, ${user.name}!`, 'success');
-                    
-                    // Redirect based on role
-                    setTimeout(() => {
-                        if (user.role === 'admin') {
-                            window.location.href = 'admin/dashboard.html';
-                        } else {
-                            window.location.href = 'customer/dashboard.html';
-                        }
-                    }, 1500);
-                    
-                    return true;
-                }
-            }
-            
-            // Fallback for demo
-            if (email === 'admin@markan.com' && password === 'Admin@123') {
-                const user = {
-                    id: 1,
-                    name: 'Admin User',
-                    email: 'admin@markan.com',
-                    role: 'admin',
-                    phone: '+251912345678'
-                };
-                
-                this.currentUser = user;
-                
-                if (remember) {
-                    localStorage.setItem('markanUser', JSON.stringify(user));
-                } else {
-                    sessionStorage.setItem('markanUser', JSON.stringify(user));
-                }
-                
-                this.updateUI();
-                showNotification('Welcome back, Admin!', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = 'admin/dashboard.html';
                 }, 1500);
                 
                 return true;
             }
             
-            if (email === 'customer@markan.com' && password === 'Customer@123') {
-                const user = {
-                    id: 2,
-                    name: 'John Customer',
-                    email: 'customer@markan.com',
-                    role: 'customer',
-                    phone: '+251998765432'
-                };
-                
-                this.currentUser = user;
-                
-                if (remember) {
-                    localStorage.setItem('markanUser', JSON.stringify(user));
-                } else {
-                    sessionStorage.setItem('markanUser', JSON.stringify(user));
-                }
-                
-                this.updateUI();
-                showNotification('Welcome back, Customer!', 'success');
-                
-                setTimeout(() => {
-                    window.location.href = 'customer/dashboard.html';
-                }, 1500);
-                
-                return true;
-            }
-            
+            // If no user found, show error
+            console.log('No user found with these credentials');
             showNotification('Invalid email or password', 'error');
             return false;
             
@@ -160,30 +130,46 @@ const Auth = {
         }
         
         try {
-            // Check if UsersDB exists
-            if (typeof UsersDB !== 'undefined') {
-                // Check if email already exists
-                const existingUser = UsersDB.getByEmail(userData.email);
-                if (existingUser) {
-                    showNotification('Email already registered', 'error');
-                    return false;
-                }
-                
-                // Add user
-                const newUser = UsersDB.add(userData);
-                
-                if (newUser) {
-                    showNotification('Registration successful! Please login.', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 1500);
-                    
-                    return true;
-                }
+            // Get existing users
+            const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            
+            // Check if email already exists
+            if (users.some(u => u.email === userData.email)) {
+                showNotification('Email already registered', 'error');
+                return false;
             }
             
-            // Fallback
+            // Create new user
+            const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+            
+            const newUser = {
+                id: newId,
+                name: userData.name,
+                email: userData.email,
+                phone: userData.phone,
+                password: userData.password,
+                role: userData.role || 'customer',
+                avatar: `https://via.placeholder.com/150/8B4513/FFD700?text=${userData.name.charAt(0)}`,
+                createdAt: new Date().toISOString(),
+                lastLogin: null,
+                status: 'active',
+                address: '',
+                preferences: {
+                    notifications: true,
+                    darkMode: false,
+                    language: 'en'
+                },
+                rewards: {
+                    points: 0,
+                    tier: 'bronze'
+                }
+            };
+            
+            // Add to users array
+            users.push(newUser);
+            localStorage.setItem('markanUsers', JSON.stringify(users));
+            
+            console.log('New user registered:', newUser);
             showNotification('Registration successful! Please login.', 'success');
             
             setTimeout(() => {
@@ -229,7 +215,23 @@ const Auth = {
     
     // Get current user
     getCurrentUser() {
-        return this.currentUser;
+        // Try to get from memory first
+        if (this.currentUser) {
+            return this.currentUser;
+        }
+        
+        // Then try localStorage
+        const savedUser = localStorage.getItem('markanUser');
+        if (savedUser) {
+            try {
+                this.currentUser = JSON.parse(savedUser);
+                return this.currentUser;
+            } catch (e) {
+                console.error('Failed to parse user data');
+            }
+        }
+        
+        return null;
     },
     
     // Update user profile
@@ -237,26 +239,25 @@ const Auth = {
         if (!this.currentUser) return false;
         
         try {
-            // Check if UsersDB exists
-            if (typeof UsersDB !== 'undefined') {
-                const updatedUser = UsersDB.update(this.currentUser.id, updates);
-                if (updatedUser) {
-                    this.currentUser = updatedUser;
-                    localStorage.setItem('markanUser', JSON.stringify(updatedUser));
-                    sessionStorage.setItem('markanUser', JSON.stringify(updatedUser));
-                    this.updateUI();
-                    showNotification('Profile updated successfully', 'success');
-                    return true;
-                }
+            // Get users from localStorage
+            const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            const userIndex = users.findIndex(u => u.id === this.currentUser.id);
+            
+            if (userIndex !== -1) {
+                // Update user
+                users[userIndex] = { ...users[userIndex], ...updates };
+                localStorage.setItem('markanUsers', JSON.stringify(users));
+                
+                // Update current user
+                this.currentUser = { ...this.currentUser, ...updates };
+                localStorage.setItem('markanUser', JSON.stringify(this.currentUser));
+                
+                showNotification('Profile updated successfully', 'success');
+                return true;
             }
             
-            // Fallback
-            this.currentUser = { ...this.currentUser, ...updates };
-            localStorage.setItem('markanUser', JSON.stringify(this.currentUser));
-            sessionStorage.setItem('markanUser', JSON.stringify(this.currentUser));
-            this.updateUI();
-            showNotification('Profile updated successfully', 'success');
-            return true;
+            showNotification('User not found', 'error');
+            return false;
             
         } catch (error) {
             console.error('Profile update error:', error);
@@ -275,21 +276,27 @@ const Auth = {
         }
         
         try {
-            // Check if UsersDB exists
-            if (typeof UsersDB !== 'undefined') {
-                const success = UsersDB.updatePassword(this.currentUser.id, currentPassword, newPassword);
-                if (success) {
-                    showNotification('Password changed successfully', 'success');
-                    return true;
-                } else {
+            // Get users from localStorage
+            const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            const userIndex = users.findIndex(u => u.id === this.currentUser.id);
+            
+            if (userIndex !== -1) {
+                // Verify current password
+                if (users[userIndex].password !== currentPassword) {
                     showNotification('Current password is incorrect', 'error');
                     return false;
                 }
+                
+                // Update password
+                users[userIndex].password = newPassword;
+                localStorage.setItem('markanUsers', JSON.stringify(users));
+                
+                showNotification('Password changed successfully', 'success');
+                return true;
             }
             
-            // Fallback
-            showNotification('Password changed successfully', 'success');
-            return true;
+            showNotification('User not found', 'error');
+            return false;
             
         } catch (error) {
             console.error('Password change error:', error);
@@ -380,7 +387,8 @@ const Auth = {
     
     // Require authentication
     requireAuth(redirectTo = 'login.html') {
-        if (!this.isAuthenticated()) {
+        const user = this.getCurrentUser();
+        if (!user) {
             showNotification('Please login to access this page', 'warning');
             setTimeout(() => {
                 window.location.href = redirectTo;
@@ -391,17 +399,39 @@ const Auth = {
     },
     
     // Require admin role
-    requireAdmin(redirectTo = 'customer/dashboard.html') {
-        if (!this.isAuthenticated()) {
+    requireAdmin(redirectTo = '../customer/dashboard.html') {
+        const user = this.getCurrentUser();
+        if (!user) {
             showNotification('Please login to access this page', 'warning');
             setTimeout(() => {
-                window.location.href = 'login.html';
+                window.location.href = '../login.html';
             }, 1500);
             return false;
         }
         
-        if (!this.isAdmin()) {
+        if (user.role !== 'admin') {
             showNotification('Access denied. Admin privileges required.', 'error');
+            setTimeout(() => {
+                window.location.href = redirectTo;
+            }, 1500);
+            return false;
+        }
+        return true;
+    },
+    
+    // Require customer role
+    requireCustomer(redirectTo = '../admin/dashboard.html') {
+        const user = this.getCurrentUser();
+        if (!user) {
+            showNotification('Please login to access this page', 'warning');
+            setTimeout(() => {
+                window.location.href = '../login.html';
+            }, 1500);
+            return false;
+        }
+        
+        if (user.role !== 'customer') {
+            showNotification('Access denied. Customer area.', 'error');
             setTimeout(() => {
                 window.location.href = redirectTo;
             }, 1500);
