@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Dashboard - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/responsive.css">
+</head>
+<body>
+    <!-- Customer Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../assets/images/logo.svg" alt="Markan Cafe" class="logo" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html" class="active">Dashboard</a>
+                <a href="menu.html">Menu</a>
+                <a href="cart.html">Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html">My Orders</a>
+                <a href="reservations.html">Reservations</a>
+                <a href="profile.html">Profile</a>
+                
+                <div class="navbar-buttons">
+                    <span class="user-greeting" id="userGreeting">Hi, Customer</span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard">
+        <div class="container">
+            <!-- Welcome Banner -->
+            <div class="welcome-banner">
+                <div class="welcome-content">
+                    <h1>Welcome back, <span id="userName">Customer</span>! 👋</h1>
+                    <p>Ready to order your favorite Ethiopian dishes?</p>
+                </div>
+                <a href="menu.html" class="btn btn-primary btn-large">
+                    <i class="fas fa-utensils"></i> Order Now
+                </a>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <h3 id="pendingOrders">0</h3>
+                        <p>Pending Orders</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle"></i>
+                    <div>
+                        <h3 id="completedOrders">0</h3>
+                        <p>Completed Orders</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-dollar-sign"></i>
+                    <div>
+                        <h3 id="totalSpent">$0</h3>
+                        <p>Total Spent</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-calendar-check"></i>
+                    <div>
+                        <h3 id="upcomingReservations">0</h3>
+                        <p>Upcoming Reservations</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2>Quick Actions</h2>
+                <div class="action-grid">
+                    <a href="menu.html" class="action-card">
+                        <i class="fas fa-coffee"></i>
+                        <span>Browse Menu</span>
+                    </a>
+                    <a href="cart.html" class="action-card">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>View Cart</span>
+                    </a>
+                    <a href="reservations.html" class="action-card">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Make Reservation</span>
+                    </a>
+                    <a href="orders.html" class="action-card">
+                        <i class="fas fa-history"></i>
+                        <span>Order History</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recommended Items -->
+            <section class="featured-section">
+                <h2>Recommended for You</h2>
+                <div class="menu-grid" id="recommendedItems">
+                    <!-- Will be populated by JS -->
+                </div>
+            </section>
+
+            <!-- Recent Orders -->
+            <section class="recent-orders">
+                <h2>Recent Orders</h2>
+                <div class="orders-list" id="recentOrdersList">
+                    <!-- Will be populated by JS -->
+                </div>
+                <div class="text-center">
+                    <a href="orders.html" class="btn btn-outline">View All Orders</a>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../assets/images/logo.svg" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <div id="notificationContainer"></div>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/customer/dashboard.js"></script>
+</body>
+</html>

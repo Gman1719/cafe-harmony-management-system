@@ -1,0 +1,45 @@
+# robots.txt for Markan Cafe
+
+User-agent: *
+Allow: /
+Allow: /menu
+Allow: /about
+Allow: /contact
+Allow: /faq
+
+Disallow: /admin/
+Disallow: /customer/
+Disallow: /login
+Disallow: /register
+Disallow: /cart
+Disallow: /checkout
+Disallow: /orders
+Disallow: /profile
+
+# Sitemap
+Sitemap: https://markancafe.com/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 10
+
+# Specific bot rules
+User-agent: Googlebot
+Allow: /
+Allow: /menu
+Allow: /about
+Disallow: /admin/
+Disallow: /customer/
+
+User-agent: Bingbot
+Allow: /
+Allow: /menu
+Disallow: /admin/
+Disallow: /customer/
+
+User-agent: Twitterbot
+Allow: /
+Allow: /images/
+
+User-agent: FacebookExternalHit
+Allow: /
+Allow: /images/

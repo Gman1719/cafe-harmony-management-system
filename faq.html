@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ - Markan Cafe</title>
+    <meta name="description" content="Frequently asked questions about Markan Cafe - Ethiopian cuisine, reservations, delivery, and more at Debre Birhan University.">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="assets/images/logo.png" alt="Markan Cafe Logo" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="index.html">Home</a>
+                <a href="menu.html">Menu</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+                <a href="faq.html" class="active">FAQ</a>
+                
+                <div class="navbar-buttons">
+                    <a href="login.html" class="btn btn-outline">Login</a>
+                    <a href="register.html" class="btn btn-primary">Sign Up</a>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Page Hero -->
+    <section class="page-hero">
+        <div class="container">
+            <h1>Frequently Asked Questions</h1>
+            <p>Find answers to common questions about Markan Cafe</p>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section">
+        <div class="container">
+            <div class="faq-header">
+                <p>Can't find what you're looking for? <a href="contact.html">Contact us</a> and we'll help!</p>
+            </div>
+            
+            <div class="faq-categories">
+                <button class="category-btn active" data-category="general">General</button>
+                <button class="category-btn" data-category="menu">Menu & Food</button>
+                <button class="category-btn" data-category="reservations">Reservations</button>
+                <button class="category-btn" data-category="delivery">Delivery</button>
+                <button class="category-btn" data-category="events">Events</button>
+            </div>
+            
+            <div class="faq-list" id="faqList">
+                <!-- General FAQs -->
+                <div class="faq-category-content active" data-category="general">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>What are your opening hours?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>We're open Monday to Friday from 8:00 AM to 10:00 PM, and Saturday to Sunday from 9:00 AM to 11:00 PM. We're closed on Ethiopian public holidays.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Where are you located?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>We're located on the main campus of Debre Birhan University, near the library. Look for our traditional Ethiopian coffee ceremony sign!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do you have parking available?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes, there is parking available for university staff and visitors near our location. Street parking is also available nearby.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Is there Wi-Fi available?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes, we offer free Wi-Fi for all customers. Just ask our staff for the password when you visit.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Menu & Food FAQs -->
+                <div class="faq-category-content" data-category="menu">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do you offer vegetarian or vegan options?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Absolutely! Ethiopian cuisine has many delicious vegan and vegetarian options. Try our Shiro Wat, Misir Wat, Gomen, or the vegetarian combination platter. All our vegetarian dishes are clearly marked on the menu.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>What is injera? Is it gluten-free?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Injera is a sourdough flatbread made from teff flour, which is naturally gluten-free. It's the staple of Ethiopian cuisine and used to scoop up stews and dishes. We offer both traditional teff injera and mixed injera.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>How spicy is Ethiopian food?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Ethiopian food can range from mild to very spicy. Many dishes use berbere spice which has some heat, but we can adjust spice levels to your preference. Just let your server know how spicy you'd like your meal!</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do you have gluten-free options?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes! In addition to gluten-free teff injera, many of our stews and dishes are naturally gluten-free. Please inform our staff about your dietary needs, and we'll guide you to suitable options.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>What is the Ethiopian coffee ceremony?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>The Ethiopian coffee ceremony is a traditional ritual where green coffee beans are roasted, ground, and brewed in a clay pot called a jebena. It's served in three rounds and accompanied by popcorn or traditional snacks. It's a symbol of hospitality and community.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reservations FAQs -->
+                <div class="faq-category-content" data-category="reservations">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do I need a reservation?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>While walk-ins are always welcome, we recommend making a reservation, especially for weekend evenings and for groups larger than 4 people. You can book through our website, by phone, or in person.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>How do I make a reservation?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>You can make a reservation by clicking the "Reserve Now" button on our homepage, calling us at +251 906 902 551, or visiting us in person. Online reservations are confirmed immediately via email.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Can I book for large groups?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes, we accommodate groups up to 20 people. For parties larger than 8, please call us directly at least 48 hours in advance so we can prepare the best seating arrangement for you.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>What's your cancellation policy?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>We kindly ask that you cancel at least 2 hours before your reservation time. For groups larger than 6, please give us 24 hours notice. You can cancel by calling us or through the confirmation email.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Delivery FAQs -->
+                <div class="faq-category-content" data-category="delivery">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do you offer delivery?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes, we deliver within the Debre Birhan University campus and nearby areas. Delivery is available during our opening hours. Minimum order for delivery is 150 ETB.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>How do I place a delivery order?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>You can place delivery orders through our website by logging into your account and using the online ordering system. We're also available on delivery apps like Deliver Addis and Ethio Delivery.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>How much does delivery cost?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Delivery within the university campus is free for orders over 150 ETB. For nearby neighborhoods, there's a small delivery fee of 30-50 ETB depending on distance.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>How long does delivery take?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Delivery typically takes 30-45 minutes within the campus area, and 45-60 minutes for nearby neighborhoods. During peak hours, it may take a little longer.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Events FAQs -->
+                <div class="faq-category-content" data-category="events">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do you host private events?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes! We host private events including birthdays, graduation celebrations, team lunches, and small gatherings. Our space can accommodate up to 40 guests for seated events and 60 for cocktail-style gatherings.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Do you offer catering?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes, we offer catering services for university events, meetings, and private parties. We have various catering packages that include traditional Ethiopian dishes, coffee ceremonies, and more. Contact our events team for a quote.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Can you accommodate dietary restrictions for events?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Absolutely. We're happy to accommodate vegetarian, vegan, and gluten-free needs for your event. Please discuss your requirements when booking so we can prepare accordingly.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Still Have Questions -->
+    <section class="contact-cta">
+        <div class="container">
+            <h2>Still Have Questions?</h2>
+            <p>We're here to help! Reach out to us directly.</p>
+            <div class="cta-buttons">
+                <a href="tel:+251906902551" class="btn btn-outline">
+                    <i class="fas fa-phone"></i> Call Us
+                </a>
+                <a href="contact.html" class="btn btn-primary">
+                    <i class="fas fa-envelope"></i> Contact Form
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="assets/images/logo.svg" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine and warm hospitality at Debre Birhan University.</p>
+                    <div class="social-links">
+                        <a href="https://www.tiktok.com/@gman1719" target="_blank"><i class="fab fa-tiktok"></i></a>
+                        <a href="https://www.instagram.com/getiyedemis17/" target="_blank"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-telegram"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="menu.html">Menu</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="contact.html">Contact</a></li>
+                        <li><a href="faq.html">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h3>For Customers</h3>
+                    <ul>
+                        <li><a href="login.html">Login</a></li>
+                        <li><a href="register.html">Register</a></li>
+                        <li><a href="#">Reservations</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-contact">
+                    <h3>Contact Us</h3>
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved. Located at Debre Birhan University.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        // FAQ accordion functionality
+        document.querySelectorAll('.faq-question').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.closest('.faq-item');
+                const isOpen = item.classList.contains('open');
+                
+                // Close all other items
+                document.querySelectorAll('.faq-item').forEach(i => {
+                    i.classList.remove('open');
+                    i.querySelector('.faq-toggle').textContent = '+';
+                });
+                
+                // Open clicked item if it wasn't open
+                if (!isOpen) {
+                    item.classList.add('open');
+                    btn.querySelector('.faq-toggle').textContent = '-';
+                }
+            });
+        });
+        
+        // Category filtering
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const category = btn.dataset.category;
+                
+                // Update active button
+                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Show selected category
+                document.querySelectorAll('.faq-category-content').forEach(content => {
+                    content.classList.remove('active');
+                    if (content.dataset.category === category) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

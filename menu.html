@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Menu - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/menu.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="assets/images/logo.png" alt="Markan Cafe Logo" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="index.html">Home</a>
+                <a href="menu.html" class="active">Menu</a>
+                <a href="about.html">About</a>
+                <a href="contact.html">Contact</a>
+                <a href="faq.html">FAQ</a>
+                
+                <div class="navbar-buttons">
+                    <a href="login.html" class="btn btn-outline">Login</a>
+                    <a href="register.html" class="btn btn-primary">Sign Up</a>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Menu Hero -->
+    <section class="menu-hero">
+        <div class="container">
+            <h1>Our Menu</h1>
+            <p>Discover the rich flavors of Ethiopian cuisine</p>
+        </div>
+    </section>
+
+    <!-- Menu Controls -->
+    <div class="container">
+        <div class="menu-controls">
+            <!-- Search -->
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search menu items...">
+                </div>
+            </div>
+            
+            <!-- Category Navigation -->
+            <div class="category-nav" id="categoryNav">
+                <!-- Will be populated by JS -->
+            </div>
+            
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <div class="price-filter">
+                    <label>Price Range: <span id="priceRangeValue">$0 - $50</span></label>
+                    <div class="range-slider">
+                        <input type="range" id="minPrice" min="0" max="50" value="0" step="1">
+                        <input type="range" id="maxPrice" min="0" max="50" value="50" step="1">
+                    </div>
+                </div>
+                
+                <div class="dietary-filters">
+                    <button class="dietary-tag" data-diet="ethiopian">
+                        <i class="fas fa-flag"></i> Ethiopian
+                    </button>
+                    <button class="dietary-tag" data-diet="vegetarian">
+                        <i class="fas fa-leaf"></i> Vegetarian
+                    </button>
+                    <button class="dietary-tag" data-diet="vegan">
+                        <i class="fas fa-seedling"></i> Vegan
+                    </button>
+                </div>
+                
+                <div class="view-options">
+                    <button class="view-option active" data-view="grid"><i class="fas fa-th"></i></button>
+                    <button class="view-option" data-view="list"><i class="fas fa-list"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Grid -->
+    <div class="container">
+        <div class="menu-grid" id="menuGrid">
+            <!-- Will be populated by JS -->
+        </div>
+    </div>
+
+    <!-- Menu Item Modal -->
+    <div class="menu-modal" id="itemModal">
+        <div class="menu-modal-content">
+            <button class="modal-close"><i class="fas fa-times"></i></button>
+            <div class="menu-modal-grid" id="modalContent">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="assets/images/logo-white.jpg" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                    <div class="social-links">
+                        <a href="https://www.tiktok.com/@gman1719" target="_blank"><i class="fab fa-tiktok"></i></a>
+                        <a href="https://www.instagram.com/getiyedemis17/" target="_blank"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. Debre Birhan University</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="js/main.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="data/menu-items.js"></script>
+    <script>
+        // Menu page JavaScript with all features
+        let allMenuItems = [];
+        let filteredItems = [];
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadMenuItems();
+            setupEventListeners();
+            
+            // Check for item ID in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const itemId = urlParams.get('id');
+            if (itemId) {
+                setTimeout(() => showItemModal(parseInt(itemId)), 500);
+            }
+        });
+
+        function loadCategories() {
+            const nav = document.getElementById('categoryNav');
+            if (!nav) return;
+            
+            const categories = [
+                { id: 'all', name: 'All Items' },
+                { id: 'beverages', name: 'Beverages' },
+                { id: 'meals', name: 'Meals' },
+                { id: 'snacks', name: 'Snacks' },
+                { id: 'desserts', name: 'Desserts' }
+            ];
+            
+            nav.innerHTML = categories.map(cat => `
+                <button class="category-nav-item ${cat.id === 'all' ? 'active' : ''}" data-category="${cat.id}">
+                    ${cat.name}
+                </button>
+            `).join('');
+        }
+
+        function loadMenuItems() {
+            const grid = document.getElementById('menuGrid');
+            if (!grid) return;
+            
+            if (typeof MenuDB !== 'undefined') {
+                allMenuItems = MenuDB.getAll();
+                filteredItems = [...allMenuItems];
+                displayMenuItems(filteredItems);
+            } else {
+                // Fallback data
+                allMenuItems = [
+                    { id: 1, name: 'Ethiopian Coffee', description: 'Traditional Ethiopian coffee ceremony', price: 4.50, category: 'beverages', image: 'assets/images/menu/beverages/ethiopian-coffee.jpg', rating: 4.9, popular: true, ethiopian: true },
+                    { id: 2, name: 'Doro Wat', description: 'Spicy Ethiopian chicken stew', price: 12.99, category: 'meals', image: 'assets/images/menu/meals/doro-wat.jpg', rating: 4.8, popular: true, ethiopian: true }
+                ];
+                displayMenuItems(allMenuItems);
+            }
+        }
+
+        function displayMenuItems(items) {
+            const grid = document.getElementById('menuGrid');
+            if (!grid) return;
+            
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="no-results"><i class="fas fa-search"></i><h3>No items found</h3></div>';
+                return;
+            }
+            
+            grid.innerHTML = items.map(item => `
+                <div class="menu-item" onclick="showItemModal(${item.id})">
+                    <div class="menu-item-image" style="background-image: url('${item.image || 'assets/images/placeholders/placeholder-food.jpg'}')">
+                        ${item.popular ? '<span class="menu-item-badge popular">Popular</span>' : ''}
+                        ${item.ethiopian ? '<span class="menu-item-badge ethiopian">Ethiopian</span>' : ''}
+                    </div>
+                    <div class="menu-item-content">
+                        <h3 class="menu-item-name">${item.name}</h3>
+                        <p class="menu-item-description">${item.description.substring(0, 60)}...</p>
+                        <div class="menu-item-footer">
+                            <span class="menu-item-price">$${item.price.toFixed(2)}</span>
+                            <button class="add-to-cart-btn" onclick="addToCartFromCard(${item.id}); event.stopPropagation();">
+                                <i class="fas fa-cart-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.addToCartFromCard = function(itemId) {
+            const item = allMenuItems.find(i => i.id === itemId);
+            if (item && window.addToCart) {
+                window.addToCart(item, 1);
+            }
+        };
+
+        window.showItemModal = function(itemId) {
+            const item = allMenuItems.find(i => i.id === itemId);
+            if (!item) return;
+            
+            const modal = document.getElementById('itemModal');
+            const content = document.getElementById('modalContent');
+            
+            content.innerHTML = `
+                <div class="menu-modal-image" style="background-image: url('${item.image || 'assets/images/placeholders/placeholder-food.jpg'}')"></div>
+                <div class="menu-modal-details">
+                    <h2>${item.name}</h2>
+                    <span class="menu-modal-category">${item.category}</span>
+                    <p class="menu-modal-description">${item.description}</p>
+                    <div class="menu-modal-price">$${item.price.toFixed(2)}</div>
+                    <div class="menu-modal-quantity">
+                        <span>Quantity:</span>
+                        <div class="quantity-selector">
+                            <button class="quantity-btn" onclick="updateModalQuantity(-1)">-</button>
+                            <input type="number" class="quantity-input" id="modalQuantity" value="1" min="1" max="10">
+                            <button class="quantity-btn" onclick="updateModalQuantity(1)">+</button>
+                        </div>
+                    </div>
+                    <div class="menu-modal-actions">
+                        <button class="btn btn-primary" onclick="addToCartFromModal(${item.id})">Add to Cart</button>
+                        <button class="btn btn-outline" onclick="closeModal()">Continue Shopping</button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+            window.currentModalItem = item;
+        };
+
+        window.updateModalQuantity = function(change) {
+            const input = document.getElementById('modalQuantity');
+            if (!input) return;
+            let newValue = parseInt(input.value) + change;
+            newValue = Math.max(1, Math.min(10, newValue));
+            input.value = newValue;
+        };
+
+        window.addToCartFromModal = function(itemId) {
+            const quantity = parseInt(document.getElementById('modalQuantity')?.value || '1');
+            const item = window.currentModalItem;
+            if (item && window.addToCart) {
+                window.addToCart(item, quantity);
+                closeModal();
+            }
+        };
+
+        window.closeModal = function() {
+            document.getElementById('itemModal').classList.remove('active');
+        };
+
+        function filterItems() {
+            const category = document.querySelector('.category-nav-item.active')?.dataset.category || 'all';
+            const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+            
+            filteredItems = allMenuItems.filter(item => {
+                if (category !== 'all' && item.category !== category) return false;
+                if (searchTerm && !item.name.toLowerCase().includes(searchTerm)) return false;
+                return true;
+            });
+            
+            displayMenuItems(filteredItems);
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.category-nav-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.category-nav-item').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    filterItems();
+                });
+            });
+            
+            document.getElementById('searchInput')?.addEventListener('input', filterItems);
+            
+            document.querySelector('#itemModal .modal-close')?.addEventListener('click', closeModal);
+            document.getElementById('itemModal')?.addEventListener('click', (e) => {
+                if (e.target === document.getElementById('itemModal')) closeModal();
+            });
+        }
+    </script>
+</body>
+</html>
