@@ -1,0 +1,375 @@
+/* ========================================
+   menu-management.css - Menu Management Styles
+   Markan Cafe - Coffee Theme
+   ======================================== */
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+.stat-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--coffee-brown);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-brown));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon i {
+    font-size: 2rem;
+    color: var(--text-primary);
+}
+
+.stat-content h3 {
+    font-size: 2rem;
+    margin: 0 0 var(--spacing-xs) 0;
+    color: var(--text-primary);
+}
+
+.stat-content p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Filters Section */
+.filters-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-color);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: var(--spacing-sm) var(--spacing-xl);
+    border: 1px solid var(--border-color);
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border-radius: var(--radius-full);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.filter-btn:hover {
+    border-color: var(--coffee-brown);
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.filter-btn.active {
+    background: var(--coffee-brown);
+    border-color: var(--coffee-brown);
+    color: var(--text-primary);
+}
+
+.filter-btn .badge {
+    background: var(--bg-card);
+    color: var(--coffee-brown);
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.filter-btn.active .badge {
+    background: var(--text-primary);
+    color: var(--coffee-brown);
+}
+
+.category-filter select {
+    padding: var(--spacing-sm) var(--spacing-xl) var(--spacing-sm) var(--spacing-lg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-full);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    min-width: 180px;
+}
+
+.category-filter select:focus {
+    outline: none;
+    border-color: var(--coffee-brown);
+}
+
+/* Menu Items Grid */
+.menu-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Menu Card */
+.menu-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    position: relative;
+    animation: cardFadeIn 0.5s ease;
+}
+
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--coffee-brown);
+}
+
+.menu-card.low-stock {
+    border-left: 4px solid var(--status-pending);
+}
+
+.menu-card.out-of-stock {
+    opacity: 0.7;
+    filter: grayscale(0.5);
+}
+
+.menu-card-image {
+    position: relative;
+    height: 200px;
+    overflow: hidden;
+}
+
+.menu-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.menu-card:hover .menu-card-image img {
+    transform: scale(1.1);
+}
+
+.stock-badge {
+    position: absolute;
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    z-index: 1;
+    box-shadow: var(--shadow-sm);
+}
+
+.stock-badge.low {
+    background: var(--status-pending);
+    color: var(--text-primary);
+}
+
+.stock-badge.out {
+    background: var(--status-cancelled);
+    color: var(--text-primary);
+}
+
+.menu-card-content {
+    padding: var(--spacing-xl);
+}
+
+.menu-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.menu-card-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    font-family: 'Playfair Display', serif;
+}
+
+.menu-price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--coffee-brown);
+}
+
+.menu-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+}
+
+.menu-meta {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    padding: var(--spacing-md) 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.menu-meta i {
+    color: var(--coffee-brown);
+    margin-right: var(--spacing-xs);
+}
+
+.menu-card-actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.menu-card-actions .action-btn {
+    flex: 1;
+    padding: var(--spacing-md);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.menu-card-actions .action-btn.edit {
+    background: var(--coffee-brown);
+    color: var(--text-primary);
+}
+
+.menu-card-actions .action-btn.edit:hover {
+    background: var(--coffee-light);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.menu-card-actions .action-btn.delete {
+    background: var(--status-cancelled);
+    color: var(--text-primary);
+}
+
+.menu-card-actions .action-btn.delete:hover {
+    background: #b71c1c;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* No Items State */
+.no-items {
+    text-align: center;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    grid-column: 1 / -1;
+    border: 1px solid var(--border-color);
+}
+
+.no-items i {
+    font-size: 4rem;
+    color: var(--coffee-brown);
+    margin-bottom: var(--spacing-lg);
+    opacity: 0.5;
+}
+
+.no-items h3 {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+}
+
+.no-items p {
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Image Preview */
+.image-preview {
+    margin-top: var(--spacing-md);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    max-width: 150px;
+}
+
+.image-preview img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .filters-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-tabs {
+        justify-content: center;
+    }
+    
+    .menu-items-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .menu-card-actions {
+        flex-direction: column;
+    }
+    
+    .category-filter select {
+        width: 100%;
+    }
+}

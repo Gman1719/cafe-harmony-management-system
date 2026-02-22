@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Orders - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/customer-style.css">
+    <link rel="stylesheet" href="../css/customer-responsive.css">
+    <style>
+        .orders-header {
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            padding: 3rem;
+            border-radius: 0 0 50px 50px;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .orders-header::before {
+            content: '📦';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 120px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        .orders-header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .order-filters {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.8rem 1.5rem;
+            border: 2px solid var(--border-color);
+            background: white;
+            border-radius: var(--border-radius-full);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+
+        .filter-btn:hover {
+            border-color: var(--coffee-medium);
+            color: var(--coffee-medium);
+        }
+
+        .filter-btn.active {
+            background: var(--coffee-medium);
+            border-color: var(--coffee-medium);
+            color: white;
+        }
+
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .order-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(139,69,19,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .order-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--coffee-medium);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-cream);
+        }
+
+        .order-id {
+            font-weight: 600;
+            color: var(--coffee-dark);
+        }
+
+        .order-status {
+            padding: 0.3rem 1rem;
+            border-radius: var(--border-radius-full);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+
+        .order-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .order-status.preparing {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .order-status.ready {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .order-status.completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .order-status.cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .order-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .order-items {
+            margin: 1rem 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            font-size: 0.9rem;
+        }
+
+        .order-item-name {
+            color: var(--text-dark);
+        }
+
+        .order-item-quantity {
+            color: var(--coffee-medium);
+            font-weight: 500;
+        }
+
+        .order-item-price {
+            color: var(--text-muted);
+        }
+
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--coffee-medium);
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-reorder {
+            padding: 0.5rem 1rem;
+            background: var(--coffee-medium);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-reorder:hover {
+            background: var(--coffee-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-details {
+            padding: 0.5rem 1rem;
+            background: none;
+            border: 2px solid var(--coffee-medium);
+            color: var(--coffee-medium);
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-details:hover {
+            background: var(--coffee-medium);
+            color: white;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
+            grid-column: 1 / -1;
+        }
+
+        .no-orders i {
+            font-size: 5rem;
+            color: var(--coffee-medium);
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .no-orders h3 {
+            font-size: 2rem;
+            color: var(--coffee-dark);
+            margin-bottom: 1rem;
+        }
+
+        .no-orders p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        /* Order Details Modal */
+        .order-details-modal {
+            max-width: 600px;
+        }
+
+        .order-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .order-details-id {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--coffee-dark);
+        }
+
+        .order-details-status {
+            padding: 0.3rem 1rem;
+            border-radius: var(--border-radius-full);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .order-info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-warm);
+            border-radius: var(--border-radius-md);
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .info-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: var(--coffee-dark);
+        }
+
+        .order-timeline {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: var(--bg-warm);
+            border-radius: var(--border-radius-md);
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            position: relative;
+        }
+
+        .timeline-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 30px;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+        }
+
+        .timeline-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--coffee-medium);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .timeline-icon.completed {
+            background: var(--coffee-medium);
+            color: white;
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+
+        .timeline-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .tracking-progress {
+            margin: 1.5rem 0;
+        }
+
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+        }
+
+        .progress-step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+
+        .progress-step::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .progress-step:first-child::before {
+            left: 50%;
+        }
+
+        .progress-step:last-child::before {
+            right: 50%;
+        }
+
+        .step-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid var(--border-color);
+            margin: 0 auto 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-dot.completed {
+            background: var(--success-green);
+            border-color: var(--success-green);
+        }
+
+        .step-dot.active {
+            border-color: var(--coffee-medium);
+            animation: pulse 1.5s infinite;
+        }
+
+        .step-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .step-label.active {
+            color: var(--coffee-dark);
+            font-weight: 600;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @media (max-width: 768px) {
+            .orders-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .order-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .order-footer {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .order-actions {
+                width: 100%;
+            }
+
+            .btn-reorder,
+            .btn-details {
+                flex: 1;
+            }
+
+            .progress-steps {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .progress-step::before {
+                display: none;
+            }
+
+            .step-dot {
+                margin: 0 1rem 0 0;
+                display: inline-block;
+                vertical-align: middle;
+            }
+
+            .step-label {
+                display: inline-block;
+                vertical-align: middle;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+    // ===== PROTECTION - MUST BE FIRST =====
+    (function() {
+        if (window.__customerProtected) return;
+        window.__customerProtected = true;
+        
+        try {
+            const userStr = localStorage.getItem('markanUser');
+            
+            if (!userStr) {
+                window.location.replace('../../login.html');
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            if (user.role !== 'customer') {
+                window.location.replace('../../admin/html/dashboard.html');
+                return;
+            }
+            
+            window.currentUser = user;
+            
+        } catch (e) {
+            console.error('Auth error:', e);
+            localStorage.removeItem('markanUser');
+            window.location.replace('../../login.html');
+        }
+    })();
+    </script>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html" class="active"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Orders Header -->
+    <div class="orders-header">
+        <div class="container">
+            <h1><i class="fas fa-history"></i> My Orders</h1>
+            <p>Track and manage your orders</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Order Filters -->
+        <div class="order-filters">
+            <button class="filter-btn active" data-filter="all">All Orders</button>
+            <button class="filter-btn" data-filter="pending">Pending</button>
+            <button class="filter-btn" data-filter="preparing">Preparing</button>
+            <button class="filter-btn" data-filter="ready">Ready</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+            <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+        </div>
+
+        <!-- Orders Grid -->
+        <div class="orders-grid" id="ordersGrid">
+            <!-- Loading skeleton will be shown initially -->
+            <div class="loading-skeleton" style="height: 200px;"></div>
+            <div class="loading-skeleton" style="height: 200px;"></div>
+            <div class="loading-skeleton" style="height: 200px;"></div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content order-details-modal">
+            <div class="modal-header">
+                <h3>Order Details</h3>
+                <button class="modal-close" onclick="closeOrderModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="orderModalContent">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/orders.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Single logout handler
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Set user name from global
+        if (window.currentUser) {
+            const firstName = window.currentUser.name.split(' ')[0];
+            document.getElementById('userName').textContent = firstName;
+            document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+        }
+
+        // Close modal function
+        window.closeOrderModal = function() {
+            document.getElementById('orderModal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        // Click outside modal to close
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('orderModal');
+            if (e.target === modal) {
+                closeOrderModal();
+            }
+        });
+
+        // Update cart count
+        function updateCartCount() {
+            if (window.currentUser) {
+                const cartKey = `cart_${window.currentUser.id}`;
+                const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartBadge = document.getElementById('cartCount');
+                if (cartBadge) {
+                    cartBadge.textContent = totalItems;
+                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
+            }
+        }
+
+        // Initial cart count
+        updateCartCount();
+    </script>
+</body>
+</html>

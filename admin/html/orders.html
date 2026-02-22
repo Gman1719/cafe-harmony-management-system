@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Management - Markan Cafe Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/orders.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html" class="active"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchOrders" placeholder="Search orders by ID or customer...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationCount">0</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Orders Management</h1>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="exportOrders()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn btn-outline" onclick="printOrders()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="filterOrders('pending')">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pendingOrders">0</h3>
+                        <p>Pending Orders</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterOrders('preparing')">
+                    <div class="stat-icon preparing">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="preparingOrders">0</h3>
+                        <p>Preparing</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterOrders('ready')">
+                    <div class="stat-icon ready">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="readyOrders">0</h3>
+                        <p>Ready to Serve</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterOrders('completed')">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="completedOrders">0</h3>
+                        <p>Completed</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterOrders('cancelled')">
+                    <div class="stat-icon cancelled">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="cancelledOrders">0</h3>
+                        <p>Cancelled</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="date-filter">
+                    <select id="dateFilter">
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+                <div class="status-filter">
+                    <select id="statusFilter">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="ready">Ready</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="payment-filter">
+                    <select id="paymentFilter">
+                        <option value="all">All Payments</option>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="online">Online</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="table-responsive">
+                <table class="admin-table orders-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <!-- Will be populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="page-btn" id="prevPage" disabled>
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <div class="page-numbers" id="pageNumbers"></div>
+                <button class="page-btn" id="nextPage">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Order Details <span id="modalOrderId"></span></h3>
+                <button class="modal-close" onclick="closeOrderModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="order-details-grid">
+                    <div class="detail-section">
+                        <h4><i class="fas fa-user"></i> Customer Information</h4>
+                        <p><strong>Name:</strong> <span id="orderCustomerName"></span></p>
+                        <p><strong>Phone:</strong> <span id="orderCustomerPhone"></span></p>
+                        <p><strong>Email:</strong> <span id="orderCustomerEmail"></span></p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4><i class="fas fa-clock"></i> Order Information</h4>
+                        <p><strong>Order Date:</strong> <span id="orderDate"></span></p>
+                        <p><strong>Status:</strong> <span id="orderStatus" class="status-badge"></span></p>
+                        <p><strong>Payment Method:</strong> <span id="orderPayment"></span></p>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-shopping-cart"></i> Order Items</h4>
+                    <table class="items-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItemsList"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Subtotal:</strong></td>
+                                <td id="orderSubtotal"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Tax (10%):</strong></td>
+                                <td id="orderTax"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                <td id="orderTotal" class="total-price"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-clipboard"></i> Special Instructions</h4>
+                    <p id="orderInstructions" class="instructions">No special instructions</p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="printOrder()">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <div class="status-actions" id="statusActions">
+                    <!-- Status buttons will be dynamically added -->
+                </div>
+                <button class="btn btn-primary" onclick="closeOrderModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div class="modal" id="statusModal">
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Update Order Status</h3>
+                <button class="modal-close" onclick="closeStatusModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="status-options">
+                    <button class="status-option pending" onclick="updateOrderStatus('pending')">
+                        <i class="fas fa-clock"></i> Pending
+                    </button>
+                    <button class="status-option preparing" onclick="updateOrderStatus('preparing')">
+                        <i class="fas fa-utensils"></i> Preparing
+                    </button>
+                    <button class="status-option ready" onclick="updateOrderStatus('ready')">
+                        <i class="fas fa-check-circle"></i> Ready
+                    </button>
+                    <button class="status-option completed" onclick="updateOrderStatus('completed')">
+                        <i class="fas fa-check-double"></i> Completed
+                    </button>
+                    <button class="status-option cancelled" onclick="updateOrderStatus('cancelled')">
+                        <i class="fas fa-times-circle"></i> Cancelled
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../js/orders.js"></script>
+</body>
+</html>

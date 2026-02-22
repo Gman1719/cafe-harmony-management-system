@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservations Management - Markan Cafe Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/reservations.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html" class="active"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchReservations" placeholder="Search reservations...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationCount">0</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Reservations Management</h1>
+                <button class="btn btn-primary" onclick="openAddReservationModal()">
+                    <i class="fas fa-plus"></i> Add Reservation
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="filterReservations('pending')">
+                    <div class="stat-icon pending">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pendingReservations">0</h3>
+                        <p>Pending</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterReservations('confirmed')">
+                    <div class="stat-icon confirmed">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="confirmedReservations">0</h3>
+                        <p>Confirmed</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterReservations('completed')">
+                    <div class="stat-icon completed">
+                        <i class="fas fa-check-double"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="completedReservations">0</h3>
+                        <p>Completed</p>
+                    </div>
+                </div>
+                <div class="stat-card" onclick="filterReservations('cancelled')">
+                    <div class="stat-icon cancelled">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="cancelledReservations">0</h3>
+                        <p>Cancelled</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" onclick="toggleView('list')">
+                    <i class="fas fa-list"></i> List View
+                </button>
+                <button class="view-btn" onclick="toggleView('calendar')">
+                    <i class="fas fa-calendar"></i> Calendar View
+                </button>
+            </div>
+
+            <!-- List View -->
+            <div id="listView" class="view-section active">
+                <!-- Filters -->
+                <div class="filters-section">
+                    <div class="date-filter">
+                        <input type="date" id="filterDate" class="form-control">
+                    </div>
+                    <div class="status-filter">
+                        <select id="statusFilter">
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Reservations Table -->
+                <div class="table-responsive">
+                    <table class="admin-table reservations-table">
+                        <thead>
+                            <tr>
+                                <th>Reservation ID</th>
+                                <th>Customer</th>
+                                <th>Date & Time</th>
+                                <th>Guests</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservationsTableBody">
+                            <!-- Will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn" id="prevPage" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <div class="page-numbers" id="pageNumbers"></div>
+                    <button class="page-btn" id="nextPage">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Calendar View -->
+            <div id="calendarView" class="view-section">
+                <div class="calendar-header">
+                    <button class="btn btn-outline" onclick="changeMonth(-1)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h3 id="currentMonthYear"></h3>
+                    <button class="btn btn-outline" onclick="changeMonth(1)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Reservation Details Modal -->
+    <div class="modal" id="reservationModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Reservation Details</h3>
+                <button class="modal-close" onclick="closeReservationModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="reservation-details-grid">
+                    <div class="detail-section">
+                        <h4><i class="fas fa-user"></i> Customer Information</h4>
+                        <p><strong>Name:</strong> <span id="resCustomerName"></span></p>
+                        <p><strong>Phone:</strong> <span id="resCustomerPhone"></span></p>
+                        <p><strong>Email:</strong> <span id="resCustomerEmail"></span></p>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4><i class="fas fa-calendar"></i> Reservation Details</h4>
+                        <p><strong>Date:</strong> <span id="resDate"></span></p>
+                        <p><strong>Time:</strong> <span id="resTime"></span></p>
+                        <p><strong>Guests:</strong> <span id="resGuests"></span></p>
+                        <p><strong>Duration:</strong> <span id="resDuration"></span> hours</p>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-clipboard"></i> Special Requests</h4>
+                    <p id="resRequests" class="requests">No special requests</p>
+                </div>
+
+                <div class="detail-section">
+                    <h4><i class="fas fa-history"></i> Timeline</h4>
+                    <div class="timeline" id="resTimeline"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="printReservation()">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <div class="status-actions" id="resStatusActions">
+                    <!-- Status buttons will be dynamically added -->
+                </div>
+                <button class="btn btn-primary" onclick="closeReservationModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Reservation Modal -->
+    <div class="modal" id="addReservationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="addResModalTitle">Add New Reservation</h3>
+                <button class="modal-close" onclick="closeAddReservationModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="reservationForm" onsubmit="event.preventDefault(); saveReservation();">
+                    <div class="form-group">
+                        <label for="resName">Full Name *</label>
+                        <input type="text" id="resName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resEmail">Email *</label>
+                        <input type="email" id="resEmail" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resPhone">Phone Number *</label>
+                        <input type="tel" id="resPhone" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resGuests">Number of Guests *</label>
+                            <select id="resGuests" required>
+                                <option value="">Select</option>
+                                <option value="1">1 Guest</option>
+                                <option value="2">2 Guests</option>
+                                <option value="3">3 Guests</option>
+                                <option value="4">4 Guests</option>
+                                <option value="5">5 Guests</option>
+                                <option value="6">6+ Guests</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resDate">Date *</label>
+                            <input type="date" id="resDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resTime">Time *</label>
+                            <input type="time" id="resTime" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="resDuration">Duration (hours)</label>
+                            <select id="resDuration">
+                                <option value="1">1 hour</option>
+                                <option value="1.5">1.5 hours</option>
+                                <option value="2" selected>2 hours</option>
+                                <option value="2.5">2.5 hours</option>
+                                <option value="3">3 hours</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resStatus">Status</label>
+                        <select id="resStatus">
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resRequests">Special Requests</label>
+                        <textarea id="resRequests" rows="3"></textarea>
+                    </div>
+                    
+                    <input type="hidden" id="resId">
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="closeAddReservationModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveReservation()">Save Reservation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../js/reservations.js"></script>
+</body>
+</html>

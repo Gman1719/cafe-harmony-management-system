@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Menu - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/customer-style.css">
+    <link rel="stylesheet" href="../css/customer-responsive.css">
+    <link rel="stylesheet" href="../css/menu.css">
+</head>
+<body>
+    <script>
+    // ===== PROTECTION - MUST BE FIRST =====
+    (function() {
+        if (window.__customerProtected) return;
+        window.__customerProtected = true;
+        
+        try {
+            const userStr = localStorage.getItem('markanUser');
+            
+            if (!userStr) {
+                window.location.replace('../../login.html');
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            if (user.role !== 'customer') {
+                window.location.replace('../../admin/html/dashboard.html');
+                return;
+            }
+            
+            window.currentUser = user;
+            
+        } catch (e) {
+            console.error('Auth error:', e);
+            localStorage.removeItem('markanUser');
+            window.location.replace('../../login.html');
+        }
+    })();
+    </script>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html" class="active"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Menu Hero -->
+    <div class="menu-hero">
+        <div class="container">
+            <h1>Our Menu</h1>
+            <p>Discover the rich flavors of Ethiopian cuisine</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Search and Filters -->
+        <div class="search-section">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search for coffee, dishes, snacks...">
+            </div>
+
+            <!-- Category Filters -->
+            <div class="category-filters" id="categoryFilters">
+                <button class="category-btn active" data-category="all">All Items</button>
+                <button class="category-btn" data-category="beverages">☕ Beverages</button>
+                <button class="category-btn" data-category="meals">🍛 Meals</button>
+                <button class="category-btn" data-category="snacks">🥨 Snacks</button>
+                <button class="category-btn" data-category="desserts">🍰 Desserts</button>
+            </div>
+
+            <!-- Price Range -->
+            <div class="price-filter">
+                <label>Price Range (ETB)</label>
+                <div class="range-slider">
+                    <input type="range" id="minPrice" min="0" max="5000" value="0" step="50">
+                    <input type="range" id="maxPrice" min="0" max="5000" value="5000" step="50">
+                </div>
+                <div class="price-values">
+                    <span id="minPriceValue">0 ETB</span>
+                    <span id="maxPriceValue">5,000 ETB</span>
+                </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="sort-options">
+                <label for="sortBy">Sort by:</label>
+                <select id="sortBy">
+                    <option value="default">Default</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="name">Name</option>
+                </select>
+            </div>
+
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" data-view="grid"><i class="fas fa-th"></i></button>
+                <button class="view-btn" data-view="list"><i class="fas fa-list"></i></button>
+            </div>
+        </div>
+
+        <!-- Menu Grid -->
+        <div class="menu-grid grid-view" id="menuGrid">
+            <!-- Loading skeleton will be shown initially -->
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+            <div class="loading-skeleton"></div>
+        </div>
+    </div>
+
+    <!-- Item Details Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content menu-modal">
+            <div class="modal-header">
+                <h3>Item Details</h3>
+                <button class="modal-close" onclick="closeItemModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="menu-modal-content" id="modalContent">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/menu.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Single logout handler
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Set user name from global
+        if (window.currentUser) {
+            const firstName = window.currentUser.name.split(' ')[0];
+            document.getElementById('userName').textContent = firstName;
+            document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+        }
+
+        // View toggle
+        document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const view = this.dataset.view;
+                document.getElementById('menuGrid').className = `menu-grid ${view}-view`;
+            });
+        });
+
+        // Close modal function
+        window.closeItemModal = function() {
+            document.getElementById('itemModal').classList.remove('active');
+            document.body.style.overflow = '';
+        };
+
+        // Click outside modal to close
+        window.addEventListener('click', function(e) {
+            const modal = document.getElementById('itemModal');
+            if (e.target === modal) {
+                closeItemModal();
+            }
+        });
+
+        // Update cart count
+        function updateCartCount() {
+            if (window.currentUser) {
+                const cartKey = `cart_${window.currentUser.id}`;
+                const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartBadge = document.getElementById('cartCount');
+                if (cartBadge) {
+                    cartBadge.textContent = totalItems;
+                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
+            }
+        }
+
+        // Initial cart count
+        updateCartCount();
+    </script>
+</body>
+</html>

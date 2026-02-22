@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ===== COFFEE COLOR PALETTE ===== */
+        :root {
+            --coffee-dark: #2C1810;
+            --coffee-medium: #8B4513;
+            --coffee-light: #A0522D;
+            --coffee-cream: #FDF5E6;
+            --coffee-latte: #F5E6D3;
+            --coffee-mocha: #3D2B1F;
+            --gold: #D4A373;
+            --gold-light: #E9D5B5;
+            --success: #2E7D32;
+            --warning: #B76E1E;
+            --danger: #9A2A2A;
+            --info: #1976D2;
+            --text-primary: #2C1810;
+            --text-secondary: #5C4033;
+            --text-muted: #8B7D6B;
+            --bg-body: #FDF5E6;
+            --bg-card: #FFFFFF;
+            --border-color: #E5D5C5;
+            --shadow-sm: 0 4px 6px rgba(0,0,0,0.05);
+            --shadow-md: 0 6px 12px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.15);
+            --shadow-xl: 0 15px 35px rgba(139,69,19,0.2);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-full: 9999px;
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            --font-heading: 'Playfair Display', serif;
+            --font-body: 'Poppins', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-xl);
+            width: 100%;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            padding: var(--spacing-md) 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .logo {
+            height: 45px;
+            width: auto;
+            border-radius: var(--radius-sm);
+        }
+
+        .brand-name {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--gold);
+            letter-spacing: 0.5px;
+        }
+
+        .navbar-menu {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .navbar-menu a {
+            color: var(--coffee-cream);
+            text-decoration: none;
+            font-weight: 500;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-full);
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .navbar-menu a i {
+            margin-right: var(--spacing-xs);
+            color: var(--gold);
+        }
+
+        .navbar-menu a:hover {
+            background-color: var(--coffee-light);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .navbar-menu a.active {
+            background-color: var(--coffee-medium);
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-menu a.active i {
+            color: white;
+        }
+
+        .navbar-buttons {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-left: var(--spacing-md);
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .theme-toggle:hover {
+            background: var(--gold);
+            color: var(--coffee-dark);
+            transform: rotate(15deg);
+        }
+
+        .user-greeting {
+            color: var(--gold);
+            font-weight: 500;
+            background: rgba(255,255,255,0.1);
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-full);
+        }
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 50%;
+            min-width: 18px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-full);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline:hover {
+            background: var(--gold);
+            color: var(--coffee-dark);
+        }
+
+        .navbar-toggle {
+            display: none;
+            background: none;
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: var(--spacing-xs) var(--spacing-md);
+            border-radius: var(--radius-md);
+        }
+
+        /* ===== WELCOME SECTION ===== */
+        .welcome-section {
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            margin: var(--spacing-xl) 0;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .welcome-section::before {
+            content: '☕';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 150px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+            color: var(--gold);
+        }
+
+        .welcome-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .welcome-content h1 {
+            color: white;
+            font-size: 2.2rem;
+            margin-bottom: var(--spacing-sm);
+            font-family: var(--font-heading);
+        }
+
+        .welcome-content p {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .welcome-stats {
+            display: flex;
+            gap: var(--spacing-lg);
+            flex-wrap: wrap;
+        }
+
+        .welcome-stat {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            background: rgba(255,255,255,0.1);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border-radius: var(--radius-full);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .welcome-stat i {
+            color: var(--gold);
+            font-size: 1.2rem;
+        }
+
+        .welcome-stat span {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* ===== DASHBOARD STATS ===== */
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--spacing-lg);
+            margin: var(--spacing-xl) 0;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-lg);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--coffee-medium), var(--gold));
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover::after {
+            transform: translateX(0);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--coffee-medium);
+        }
+
+        .stat-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-icon i {
+            font-size: 2rem;
+            color: var(--gold);
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-info h3 {
+            font-size: 2.2rem;
+            margin: 0 0 var(--spacing-xs) 0;
+            color: var(--coffee-dark);
+            font-family: var(--font-heading);
+        }
+
+        .stat-info p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== QUICK ACTIONS ===== */
+        .quick-actions {
+            margin: var(--spacing-2xl) 0;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: var(--spacing-xl);
+            position: relative;
+            display: inline-block;
+            color: var(--coffee-dark);
+            font-family: var(--font-heading);
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--coffee-medium), var(--gold));
+            border-radius: var(--radius-full);
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .action-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(135deg, var(--coffee-medium), var(--gold));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .action-card:hover::before {
+            opacity: 0.05;
+        }
+
+        .action-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--coffee-medium);
+        }
+
+        .action-card i {
+            font-size: 2.5rem;
+            color: var(--coffee-medium);
+            margin-bottom: var(--spacing-md);
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-card span {
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: block;
+            margin-bottom: var(--spacing-xs);
+            position: relative;
+            z-index: 1;
+        }
+
+        .action-card small {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ===== RECENT ACTIVITY ===== */
+        .recent-activity {
+            margin: var(--spacing-2xl) 0;
+        }
+
+        .activity-tabs {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: var(--spacing-xs);
+        }
+
+        .activity-tab {
+            padding: var(--spacing-sm) var(--spacing-lg);
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .activity-tab:hover {
+            color: var(--coffee-medium);
+        }
+
+        .activity-tab.active {
+            color: var(--coffee-dark);
+            font-weight: 600;
+        }
+
+        .activity-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--coffee-medium);
+            border-radius: var(--radius-full);
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: var(--spacing-sm);
+        }
+
+        .activity-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .activity-list::-webkit-scrollbar-track {
+            background: var(--border-color);
+            border-radius: var(--radius-full);
+        }
+
+        .activity-list::-webkit-scrollbar-thumb {
+            background: var(--coffee-medium);
+            border-radius: var(--radius-full);
+        }
+
+        .activity-item {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            cursor: pointer;
+        }
+
+        .activity-item:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .activity-item.order {
+            border-left-color: var(--coffee-medium);
+        }
+
+        .activity-item.reservation {
+            border-left-color: var(--gold);
+        }
+
+        .activity-item i {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold);
+            font-size: 1.2rem;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-details h4 {
+            margin: 0 0 var(--spacing-xs) 0;
+            font-size: 1rem;
+            color: var(--coffee-dark);
+        }
+
+        .activity-details p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .activity-status {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .activity-status.pending {
+            background: var(--warning);
+            color: white;
+        }
+
+        .activity-status.preparing {
+            background: var(--info);
+            color: white;
+        }
+
+        .activity-status.ready,
+        .activity-status.completed,
+        .activity-status.confirmed {
+            background: var(--success);
+            color: white;
+        }
+
+        .activity-status.cancelled {
+            background: var(--danger);
+            color: white;
+        }
+
+        .activity-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .btn-small {
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-lg);
+            background: var(--coffee-medium);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--radius-full);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-small:hover {
+            background: var(--coffee-light);
+            transform: translateY(-2px);
+        }
+
+        /* ===== SPECIAL OFFERS ===== */
+        .special-offers {
+            margin: var(--spacing-2xl) 0;
+        }
+
+        .offers-slider {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        .offer-card {
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .offer-card::before {
+            content: '🎉';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 100px;
+            opacity: 0.1;
+            transform: rotate(-15deg);
+        }
+
+        .offer-card h3 {
+            color: var(--gold);
+            margin-bottom: var(--spacing-sm);
+            font-size: 1.3rem;
+            font-family: var(--font-heading);
+        }
+
+        .offer-card p {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: var(--spacing-lg);
+            font-size: 0.95rem;
+        }
+
+        .offer-btn {
+            background: var(--gold);
+            color: var(--coffee-dark);
+            padding: var(--spacing-sm) var(--spacing-lg);
+            border: none;
+            border-radius: var(--radius-full);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .offer-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .offer-btn i {
+            margin-left: var(--spacing-xs);
+        }
+
+        /* ===== QUICK REORDER ===== */
+        .quick-reorder {
+            margin: var(--spacing-2xl) 0;
+        }
+
+        .reorder-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-lg);
+        }
+
+        /* ===== LOADING SKELETON ===== */
+        .loading-skeleton {
+            background: linear-gradient(90deg, #E5E2E0 25%, #D4D0CC 50%, #E5E2E0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: var(--radius-md);
+            height: 100px;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--coffee-dark);
+            color: white;
+            padding: var(--spacing-2xl) 0 var(--spacing-xl);
+            margin-top: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '☕';
+            position: absolute;
+            left: -20px;
+            top: 50%;
+            font-size: 200px;
+            opacity: 0.05;
+            transform: translateY(-50%) rotate(-15deg);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-2xl);
+            margin-bottom: var(--spacing-2xl);
+            position: relative;
+            z-index: 1;
+        }
+
+        .footer-logo {
+            height: 50px;
+            width: auto;
+            margin-bottom: var(--spacing-md);
+            filter: brightness(0) invert(1);
+        }
+
+        .footer-info p {
+            color: rgba(255,255,255,0.8);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .footer-contact p {
+            color: rgba(255,255,255,0.8);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .footer-contact i {
+            color: var(--gold);
+            width: 20px;
+        }
+
+        .footer-contact a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer-contact a:hover {
+            color: var(--gold);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: var(--spacing-xl);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+        }
+
+        /* ===== NOTIFICATION CONTAINER ===== */
+        #notificationContainer {
+            position: fixed;
+            top: var(--spacing-xl);
+            right: var(--spacing-xl);
+            z-index: 9999;
+        }
+
+        .notification {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md) var(--spacing-lg);
+            margin-bottom: var(--spacing-sm);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            min-width: 300px;
+            max-width: 400px;
+            animation: slideInRight 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .notification.success { border-left-color: var(--success); }
+        .notification.error { border-left-color: var(--danger); }
+        .notification.warning { border-left-color: var(--warning); }
+        .notification.info { border-left-color: var(--info); }
+
+        .notification i {
+            font-size: 1.3rem;
+        }
+
+        .notification.success i { color: var(--success); }
+        .notification.error i { color: var(--danger); }
+        .notification.warning i { color: var(--warning); }
+        .notification.info i { color: var(--info); }
+
+        .notification span {
+            flex: 1;
+        }
+
+        .notification button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 991px) {
+            .navbar-menu {
+                gap: var(--spacing-sm);
+            }
+
+            .navbar-menu a {
+                padding: var(--spacing-xs) var(--spacing-sm);
+                font-size: 0.9rem;
+            }
+
+            .dashboard-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .action-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar-menu {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+                padding: var(--spacing-lg);
+                flex-direction: column;
+                align-items: center;
+                gap: var(--spacing-sm);
+                box-shadow: var(--shadow-lg);
+                animation: slideDown 0.3s ease;
+            }
+
+            @keyframes slideDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            .navbar-menu.active {
+                display: flex;
+            }
+
+            .navbar-menu a {
+                width: 100%;
+                text-align: center;
+                padding: var(--spacing-md);
+            }
+
+            .navbar-buttons {
+                flex-direction: column;
+                width: 100%;
+                margin: var(--spacing-sm) 0 0;
+            }
+
+            .navbar-buttons .btn-outline {
+                width: 100%;
+            }
+
+            .navbar-toggle {
+                display: block;
+            }
+
+            .welcome-section {
+                padding: var(--spacing-xl);
+            }
+
+            .welcome-content h1 {
+                font-size: 1.8rem;
+            }
+
+            .welcome-stats {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .welcome-stat {
+                width: 100%;
+            }
+
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-tabs {
+                flex-direction: column;
+            }
+
+            .activity-tab {
+                width: 100%;
+                text-align: center;
+            }
+
+            .activity-tab.active::after {
+                display: none;
+            }
+
+            .activity-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .footer-contact p {
+                justify-content: center;
+            }
+
+            .notification {
+                min-width: auto;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .brand-name {
+                display: none;
+            }
+
+            .logo {
+                height: 40px;
+            }
+
+            .stat-card {
+                padding: var(--spacing-lg);
+            }
+
+            .stat-icon {
+                width: 50px;
+                height: 50px;
+            }
+
+            .stat-icon i {
+                font-size: 1.5rem;
+            }
+
+            .stat-info h3 {
+                font-size: 1.8rem;
+            }
+
+            .offer-card {
+                padding: var(--spacing-lg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+    // ===== PROTECTION - MUST BE FIRST =====
+    (function() {
+        // Prevent multiple executions
+        if (window.__customerProtected) return;
+        window.__customerProtected = true;
+        
+        try {
+            const userStr = localStorage.getItem('markanUser');
+            
+            if (!userStr) {
+                window.location.replace('../../login.html');
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            if (user.role !== 'customer') {
+                window.location.replace('../../admin/html/dashboard.html');
+                return;
+            }
+            
+            window.currentUser = user;
+            
+        } catch (e) {
+            console.error('Auth error:', e);
+            localStorage.removeItem('markanUser');
+            window.location.replace('../../login.html');
+        }
+    })();
+    </script>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html" class="active"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
+                    <button class="btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+            <div class="welcome-content">
+                <h1>Welcome back, <span id="welcomeName">Coffee Lover</span>! ☕</h1>
+                <p>Your daily dose of Ethiopian coffee and cuisine awaits</p>
+                <div class="welcome-stats">
+                    <div class="welcome-stat">
+                        <i class="fas fa-coffee"></i>
+                        <span>Member since <span id="memberSince">2025</span></span>
+                    </div>
+                    <div class="welcome-stat">
+                        <i class="fas fa-star"></i>
+                        <span id="loyaltyTier">Bronze Tier</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="dashboard-stats">
+            <div class="stat-card" onclick="window.location.href='orders.html'">
+                <div class="stat-icon">
+                    <i class="fas fa-shopping-bag"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalOrders">0</h3>
+                    <p>Total Orders</p>
+                </div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='orders.html?status=pending'">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="pendingOrders">0</h3>
+                    <p>Pending Orders</p>
+                </div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='reservations.html'">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="totalReservations">0</h3>
+                    <p>Reservations</p>
+                </div>
+            </div>
+
+            <div class="stat-card" onclick="window.location.href='reservations.html?status=upcoming'">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 id="upcomingReservations">0</h3>
+                    <p>Upcoming</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="action-grid">
+                <a href="menu.html" class="action-card">
+                    <i class="fas fa-coffee"></i>
+                    <span>Browse Menu</span>
+                    <small>Explore our dishes</small>
+                </a>
+                <a href="cart.html" class="action-card">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>View Cart</span>
+                    <small id="cartSummary">0 items</small>
+                </a>
+                <a href="reservations.html" class="action-card">
+                    <i class="fas fa-calendar-plus"></i>
+                    <span>Make Reservation</span>
+                    <small>Book a table</small>
+                </a>
+                <a href="orders.html" class="action-card">
+                    <i class="fas fa-history"></i>
+                    <span>Order History</span>
+                    <small>Track your orders</small>
+                </a>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-activity">
+            <h2 class="section-title">Recent Activity</h2>
+            
+            <div class="activity-tabs">
+                <button class="activity-tab active" data-tab="orders">Recent Orders</button>
+                <button class="activity-tab" data-tab="reservations">Reservations</button>
+            </div>
+
+            <div id="recentOrdersTab" class="activity-list">
+                <!-- Will be populated by JS -->
+                <div class="loading-skeleton"></div>
+                <div class="loading-skeleton"></div>
+                <div class="loading-skeleton"></div>
+            </div>
+
+            <div id="recentReservationsTab" class="activity-list" style="display: none;">
+                <!-- Will be populated by JS -->
+            </div>
+
+            <div class="text-center" style="margin-top: 1rem;">
+                <a href="orders.html" class="btn-small" id="viewAllBtn">View All</a>
+            </div>
+        </div>
+
+        <!-- Special Offers -->
+        <div class="special-offers">
+            <h2 class="section-title">Special Offers</h2>
+            <div class="offers-slider">
+                <div class="offer-card">
+                    <h3>Morning Coffee Deal</h3>
+                    <p>Buy any coffee, get a pastry at 50% off</p>
+                    <button class="offer-btn" onclick="window.location.href='menu.html?offer=morning'">
+                        Order Now <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="offer-card">
+                    <h3>Family Feast</h3>
+                    <p>Order for 4+ people and get free delivery</p>
+                    <button class="offer-btn" onclick="window.location.href='menu.html?offer=family'">
+                        View Deals <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+                <div class="offer-card">
+                    <h3>Loyalty Bonus</h3>
+                    <p>Earn double points on every order this week</p>
+                    <button class="offer-btn" onclick="window.location.href='menu.html'">
+                        Start Earning <i class="fas fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Reorder Section -->
+        <div class="quick-reorder" id="quickReorder" style="display: none;">
+            <h2 class="section-title">Quick Reorder</h2>
+            <div class="reorder-grid" id="reorderItems">
+                <!-- Will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Single logout handler
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Set user name from global
+        if (window.currentUser) {
+            const firstName = window.currentUser.name.split(' ')[0];
+            document.getElementById('userName').textContent = firstName;
+            document.getElementById('welcomeName').textContent = firstName;
+            document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+        }
+
+        // Activity tabs
+        document.querySelectorAll('.activity-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.activity-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                const tabName = this.dataset.tab;
+                document.getElementById('recentOrdersTab').style.display = tabName === 'orders' ? 'block' : 'none';
+                document.getElementById('recentReservationsTab').style.display = tabName === 'reservations' ? 'block' : 'none';
+                
+                const viewAllBtn = document.getElementById('viewAllBtn');
+                viewAllBtn.href = tabName === 'orders' ? 'orders.html' : 'reservations.html';
+            });
+        });
+
+        // Update cart count
+        function updateCartCount() {
+            if (window.currentUser) {
+                const cartKey = `cart_${window.currentUser.id}`;
+                const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartBadge = document.getElementById('cartCount');
+                if (cartBadge) {
+                    cartBadge.textContent = totalItems;
+                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
+            }
+        }
+
+        // Initial cart count
+        updateCartCount();
+    </script>
+</body>
+</html>

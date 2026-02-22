@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Cart - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/customer-style.css">
+    <link rel="stylesheet" href="../css/customer-responsive.css">
+    <style>
+        .cart-header {
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            padding: 3rem;
+            border-radius: 0 0 50px 50px;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cart-header::before {
+            content: '🛒';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 120px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        .cart-header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--card-bg);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(139,69,19,0.1);
+        }
+
+        .empty-cart i {
+            font-size: 5rem;
+            color: var(--coffee-medium);
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .empty-cart h3 {
+            font-size: 2rem;
+            color: var(--coffee-dark);
+            margin-bottom: 1rem;
+        }
+
+        .empty-cart p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .cart-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .cart-items {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(139,69,19,0.1);
+        }
+
+        .cart-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(139,69,19,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+        }
+
+        .cart-item:hover {
+            background: var(--bg-warm);
+            transform: translateX(5px);
+        }
+
+        .cart-item-image {
+            width: 100px;
+            height: 100px;
+            border-radius: var(--border-radius-md);
+            background-size: cover;
+            background-position: center;
+            border: 2px solid var(--primary-cream);
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-name {
+            font-size: 1.2rem;
+            color: var(--coffee-dark);
+            margin-bottom: 0.3rem;
+        }
+
+        .cart-item-category {
+            display: inline-block;
+            padding: 0.2rem 1rem;
+            background: var(--bg-warm);
+            border-radius: var(--border-radius-full);
+            font-size: 0.8rem;
+            color: var(--coffee-medium);
+            margin-bottom: 0.5rem;
+        }
+
+        .cart-item-price {
+            color: var(--coffee-medium);
+            font-weight: 600;
+        }
+
+        .cart-item-stock {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+
+        .cart-item-stock.warning {
+            color: var(--warning-orange);
+        }
+
+        .cart-item-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.8rem;
+        }
+
+        .cart-item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-warm);
+            padding: 0.3rem;
+            border-radius: var(--border-radius-full);
+        }
+
+        .quantity-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
+            font-size: 1.1rem;
+            color: var(--coffee-dark);
+        }
+
+        .quantity-btn:hover:not(:disabled) {
+            background: var(--coffee-medium);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .quantity-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quantity-value {
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .cart-item-total {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--coffee-medium);
+        }
+
+        .remove-item-btn {
+            background: none;
+            border: none;
+            color: var(--danger-red);
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            padding: 0.3rem;
+        }
+
+        .remove-item-btn:hover {
+            transform: scale(1.2);
+            color: #d32f2f;
+        }
+
+        .cart-summary {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+            border: 1px solid rgba(139,69,19,0.1);
+        }
+
+        .cart-summary h2 {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-cream);
+            color: var(--coffee-dark);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            color: var(--text-muted);
+        }
+
+        .summary-row.grand-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--coffee-dark);
+            border-top: 2px solid var(--primary-cream);
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        .promo-code {
+            margin: 1.5rem 0;
+            padding: 1.5rem 0;
+            border-top: 1px dashed var(--primary-cream);
+            border-bottom: 1px dashed var(--primary-cream);
+        }
+
+        .promo-code h4 {
+            color: var(--coffee-dark);
+            margin-bottom: 1rem;
+        }
+
+        .promo-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .promo-input input {
+            flex: 1;
+            padding: 0.8rem 1rem;
+            border: 2px solid var(--primary-cream);
+            border-radius: var(--border-radius-full);
+            font-size: 1rem;
+            background: var(--bg-warm);
+        }
+
+        .promo-input input:focus {
+            outline: none;
+            border-color: var(--coffee-medium);
+        }
+
+        .promo-input button {
+            padding: 0.8rem 1.5rem;
+            background: var(--coffee-medium);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .promo-input button:hover {
+            background: var(--coffee-dark);
+            transform: translateY(-2px);
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: var(--coffee-medium);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-full);
+            font-weight: 600;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1.5rem 0;
+        }
+
+        .checkout-btn:hover:not(:disabled) {
+            background: var(--coffee-dark);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .checkout-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .continue-shopping {
+            display: block;
+            text-align: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .continue-shopping:hover {
+            color: var(--coffee-medium);
+        }
+
+        .cart-actions {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .btn-clear {
+            padding: 0.8rem 1.5rem;
+            background: none;
+            border: 2px solid var(--danger-red);
+            color: var(--danger-red);
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-clear:hover {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .btn-save {
+            padding: 0.8rem 1.5rem;
+            background: none;
+            border: 2px solid var(--coffee-medium);
+            color: var(--coffee-medium);
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .btn-save:hover {
+            background: var(--coffee-medium);
+            color: white;
+        }
+
+        .saved-orders {
+            margin-top: 3rem;
+        }
+
+        .saved-orders h2 {
+            color: var(--coffee-dark);
+            margin-bottom: 1.5rem;
+        }
+
+        .saved-orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .saved-order-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(139,69,19,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .saved-order-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--coffee-medium);
+        }
+
+        .saved-order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--primary-cream);
+        }
+
+        .saved-order-id {
+            font-weight: 600;
+            color: var(--coffee-dark);
+        }
+
+        .saved-order-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .saved-order-items {
+            margin: 1rem 0;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .saved-order-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3rem 0;
+            font-size: 0.9rem;
+        }
+
+        .saved-order-total {
+            font-weight: 700;
+            color: var(--coffee-medium);
+            text-align: right;
+            margin: 1rem 0;
+            padding-top: 0.5rem;
+            border-top: 1px dashed var(--primary-cream);
+        }
+
+        .load-order-btn {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--coffee-medium);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-full);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .load-order-btn:hover {
+            background: var(--coffee-dark);
+        }
+
+        @media (max-width: 768px) {
+            .cart-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .cart-item {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .cart-item-image {
+                margin: 0 auto;
+            }
+
+            .cart-item-actions {
+                align-items: center;
+            }
+
+            .cart-actions {
+                flex-direction: column;
+            }
+
+            .saved-orders-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+    // ===== PROTECTION - MUST BE FIRST =====
+    (function() {
+        if (window.__customerProtected) return;
+        window.__customerProtected = true;
+        
+        try {
+            const userStr = localStorage.getItem('markanUser');
+            
+            if (!userStr) {
+                window.location.replace('../../login.html');
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            if (user.role !== 'customer') {
+                window.location.replace('../../admin/html/dashboard.html');
+                return;
+            }
+            
+            window.currentUser = user;
+            
+        } catch (e) {
+            console.error('Auth error:', e);
+            localStorage.removeItem('markanUser');
+            window.location.replace('../../login.html');
+        }
+    })();
+    </script>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html" class="active"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Cart Header -->
+    <div class="cart-header">
+        <div class="container">
+            <h1><i class="fas fa-shopping-cart"></i> Your Cart</h1>
+            <p>Review and adjust your items before checkout</p>
+        </div>
+    </div>
+
+    <!-- Cart Content -->
+    <div class="container">
+        <div class="cart-layout">
+            <!-- Cart Items -->
+            <div class="cart-items">
+                <div id="cartItems">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                
+                <div class="cart-actions">
+                    <button class="btn-save" id="saveOrderBtn">
+                        <i class="fas fa-bookmark"></i> Save Order
+                    </button>
+                    <button class="btn-clear" id="clearCartBtn">
+                        <i class="fas fa-trash"></i> Clear Cart
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="cart-summary">
+                <h2>Order Summary</h2>
+                
+                <div id="cartSummary">
+                    <div class="summary-row">
+                        <span>Subtotal:</span>
+                        <span id="subtotal">0 ETB</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Tax (10%):</span>
+                        <span id="tax">0 ETB</span>
+                    </div>
+                    <div class="summary-row grand-total">
+                        <span>Total:</span>
+                        <span id="total">0 ETB</span>
+                    </div>
+                </div>
+
+                <div class="promo-code">
+                    <h4>Have a promo code?</h4>
+                    <div class="promo-input">
+                        <input type="text" id="promoCode" placeholder="Enter code">
+                        <button onclick="applyPromoCode()">Apply</button>
+                    </div>
+                    <small class="hint" id="promoMessage"></small>
+                </div>
+
+                <button class="checkout-btn" id="checkoutBtn" onclick="proceedToCheckout()">
+                    <i class="fas fa-lock"></i> Proceed to Checkout
+                </button>
+                
+                <a href="menu.html" class="continue-shopping">
+                    <i class="fas fa-arrow-left"></i> Continue Shopping
+                </a>
+            </div>
+        </div>
+
+        <!-- Saved Orders -->
+        <div class="saved-orders" id="savedOrders" style="display: none;">
+            <h2><i class="fas fa-bookmark"></i> Your Saved Orders</h2>
+            <div class="saved-orders-grid" id="savedOrdersList">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/cart.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Single logout handler
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Set user name from global
+        if (window.currentUser) {
+            const firstName = window.currentUser.name.split(' ')[0];
+            document.getElementById('userName').textContent = firstName;
+            document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+        }
+
+        // Update cart count
+        function updateCartCount() {
+            if (window.currentUser) {
+                const cartKey = `cart_${window.currentUser.id}`;
+                const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+                const cartBadge = document.getElementById('cartCount');
+                if (cartBadge) {
+                    cartBadge.textContent = totalItems;
+                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
+            }
+        }
+
+        // Initial cart count
+        updateCartCount();
+    </script>
+</body>
+</html>

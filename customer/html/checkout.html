@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Markan Cafe</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/customer-style.css">
+    <link rel="stylesheet" href="../css/customer-responsive.css">
+    <style>
+        .checkout-header {
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
+            padding: 3rem;
+            border-radius: 0 0 50px 50px;
+            text-align: center;
+            color: white;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .checkout-header::before {
+            content: '💳';
+            position: absolute;
+            right: -20px;
+            bottom: -20px;
+            font-size: 120px;
+            opacity: 0.1;
+            transform: rotate(15deg);
+        }
+
+        .checkout-header h1 {
+            color: white;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .checkout-steps {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 3px solid var(--coffee-medium);
+            color: var(--coffee-medium);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-number {
+            background: var(--coffee-medium);
+            color: white;
+        }
+
+        .step.completed .step-number {
+            background: var(--success-green);
+            border-color: var(--success-green);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .step.active .step-label {
+            color: var(--coffee-dark);
+            font-weight: 600;
+        }
+
+        .step:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 20px;
+            width: 100%;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .checkout-container {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .checkout-section {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid rgba(139,69,19,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--coffee-dark);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-cream);
+        }
+
+        .order-summary {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 100px;
+            border: 1px solid rgba(139,69,19,0.1);
+        }
+
+        .order-items {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .order-item-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .order-item-image {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--border-radius-sm);
+            background-size: cover;
+            background-position: center;
+        }
+
+        .order-item-details h4 {
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .order-item-details p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .order-item-price {
+            font-weight: 600;
+            color: var(--coffee-medium);
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem 0;
+            color: var(--text-muted);
+        }
+
+        .summary-row.grand-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--coffee-dark);
+            border-top: 2px solid var(--primary-cream);
+            margin-top: 1rem;
+            padding-top: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--coffee-dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-md);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--bg-warm);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--coffee-medium);
+            box-shadow: 0 0 0 3px rgba(139,69,19,0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .payment-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .payment-option {
+            position: relative;
+        }
+
+        .payment-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .payment-option label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.5rem;
+            background: var(--bg-warm);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-lg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .payment-option input[type="radio"]:checked + label {
+            border-color: var(--coffee-medium);
+            background: rgba(139,69,19,0.1);
+        }
+
+        .payment-option i {
+            font-size: 2rem;
+            color: var(--coffee-medium);
+        }
+
+        .payment-option span {
+            font-weight: 500;
+        }
+
+        .payment-details {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-warm);
+            border-radius: var(--border-radius-md);
+            display: none;
+        }
+
+        .payment-details.active {
+            display: block;
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 1.2rem;
+            background: var(--coffee-medium);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-full);
+            font-weight: 600;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1.5rem 0;
+        }
+
+        .confirm-btn:hover:not(:disabled) {
+            background: var(--coffee-dark);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .confirm-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 3rem;
+            background: var(--card-bg);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
+            display: none;
+        }
+
+        .success-message i {
+            font-size: 5rem;
+            color: var(--success-green);
+            margin-bottom: 1rem;
+        }
+
+        .success-message h2 {
+            color: var(--coffee-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .success-message p {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .order-id {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--coffee-medium);
+            margin: 1rem 0;
+        }
+
+        .back-to-menu {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: var(--coffee-medium);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--border-radius-full);
+            transition: all 0.3s ease;
+        }
+
+        .back-to-menu:hover {
+            background: var(--coffee-dark);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .checkout-steps {
+                gap: 1rem;
+            }
+            
+            .step-label {
+                display: none;
+            }
+            
+            .checkout-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .payment-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script>
+    // ===== PROTECTION - MUST BE FIRST =====
+    (function() {
+        if (window.__customerProtected) return;
+        window.__customerProtected = true;
+        
+        try {
+            const userStr = localStorage.getItem('markanUser');
+            
+            if (!userStr) {
+                window.location.replace('../../login.html');
+                return;
+            }
+            
+            const user = JSON.parse(userStr);
+            
+            if (user.role !== 'customer') {
+                window.location.replace('../../admin/html/dashboard.html');
+                return;
+            }
+            
+            window.currentUser = user;
+            
+        } catch (e) {
+            console.error('Auth error:', e);
+            localStorage.removeItem('markanUser');
+            window.location.replace('../../login.html');
+        }
+    })();
+    </script>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
+                <span class="brand-name">Markan Cafe</span>
+            </div>
+            
+            <div class="navbar-menu" id="navbarMenu">
+                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
+                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
+                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
+                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
+                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                
+                <div class="navbar-buttons">
+                    <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
+                    <button class="btn btn-outline" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+            
+            <button class="navbar-toggle" id="navbarToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Checkout Header -->
+    <div class="checkout-header">
+        <div class="container">
+            <h1><i class="fas fa-lock"></i> Secure Checkout</h1>
+            <p>Almost there! Complete your order</p>
+        </div>
+    </div>
+
+    <!-- Checkout Steps -->
+    <div class="container">
+        <div class="checkout-steps">
+            <div class="step completed">
+                <div class="step-number">1</div>
+                <span class="step-label">Cart Review</span>
+            </div>
+            <div class="step active">
+                <div class="step-number">2</div>
+                <span class="step-label">Checkout</span>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <span class="step-label">Confirmation</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Checkout Content -->
+    <div class="container">
+        <div id="checkoutContent">
+            <div class="checkout-container">
+                <!-- Left Column - Forms -->
+                <div>
+                    <!-- Contact Information -->
+                    <div class="checkout-section">
+                        <h3 class="section-title"><i class="fas fa-user"></i> Contact Information</h3>
+                        <div class="form-group">
+                            <label for="fullName">Full Name</label>
+                            <input type="text" id="fullName" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" readonly>
+                        </div>
+                    </div>
+
+                    <!-- Delivery/Pickup Information -->
+                    <div class="checkout-section">
+                        <h3 class="section-title"><i class="fas fa-map-marker-alt"></i> Order Type</h3>
+                        <div class="form-group">
+                            <select id="orderType">
+                                <option value="pickup">Pickup (Free)</option>
+                                <option value="delivery">Delivery (+50 ETB)</option>
+                            </select>
+                        </div>
+                        <div id="deliveryAddress" style="display: none;">
+                            <div class="form-group">
+                                <label for="address">Delivery Address</label>
+                                <textarea id="address" rows="3" placeholder="Enter your full address"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="checkout-section">
+                        <h3 class="section-title"><i class="fas fa-credit-card"></i> Payment Method</h3>
+                        <div class="payment-options">
+                            <div class="payment-option">
+                                <input type="radio" name="payment" id="cash" value="cash" checked>
+                                <label for="cash">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                    <span>Cash</span>
+                                </label>
+                            </div>
+                            <div class="payment-option">
+                                <input type="radio" name="payment" id="telebirr" value="telebirr">
+                                <label for="telebirr">
+                                    <i class="fas fa-mobile-alt"></i>
+                                    <span>Telebirr</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Telebirr Details -->
+                        <div class="payment-details" id="telebirrDetails">
+                            <p>You will be redirected to Telebirr to complete payment.</p>
+                            <div class="form-group">
+                                <label for="phoneNumber">Telebirr Phone Number</label>
+                                <input type="tel" id="phoneNumber" placeholder="09XXXXXXXX">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Special Instructions -->
+                    <div class="checkout-section">
+                        <h3 class="section-title"><i class="fas fa-clipboard"></i> Special Instructions</h3>
+                        <div class="form-group">
+                            <textarea id="instructions" rows="3" placeholder="Any special requests? (e.g., extra spicy, no onions, etc.)"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column - Order Summary -->
+                <div>
+                    <div class="order-summary">
+                        <h3 class="section-title">Order Summary</h3>
+                        
+                        <div class="order-items" id="orderItems">
+                            <!-- Will be populated by JS -->
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">0 ETB</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Tax (10%):</span>
+                            <span id="tax">0 ETB</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Delivery Fee:</span>
+                            <span id="deliveryFee">0 ETB</span>
+                        </div>
+                        <div class="summary-row grand-total">
+                            <span>Total:</span>
+                            <span id="total">0 ETB</span>
+                        </div>
+
+                        <button class="confirm-btn" id="confirmOrderBtn" onclick="confirmOrder()">
+                            <i class="fas fa-check-circle"></i> Confirm Order
+                        </button>
+
+                        <p class="text-center">
+                            <small>By confirming your order, you agree to our terms and conditions.</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="success-message">
+            <i class="fas fa-check-circle"></i>
+            <h2>Order Confirmed!</h2>
+            <p>Thank you for your order</p>
+            <div class="order-id" id="confirmedOrderId"></div>
+            <p>Your order has been placed successfully.</p>
+            <p>You will receive a confirmation shortly.</p>
+            <a href="menu.html" class="back-to-menu">
+                <i class="fas fa-utensils"></i> Continue Shopping
+            </a>
+            <a href="orders.html" class="back-to-menu" style="background: var(--primary-gold); color: var(--coffee-dark); margin-left: 1rem;">
+                <i class="fas fa-history"></i> View Orders
+            </a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-info">
+                    <img src="../../assets/images/logo-white.png" alt="Markan Cafe" class="footer-logo" onerror="this.src='https://via.placeholder.com/120x40/8B4513/FFD700?text=Markan'">
+                    <p>Experience authentic Ethiopian cuisine at Debre Birhan University.</p>
+                </div>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt"></i> Debre Birhan University</p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+251906902551">+251 906 902 551</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:getiyedemis17@gmail.com">getiyedemis17@gmail.com</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Markan Cafe. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../../js/main.js"></script>
+    <script src="../js/theme.js"></script>
+    <script src="../js/notifications.js"></script>
+    <script src="../js/cart.js"></script>
+    <script src="../js/checkout.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Single logout handler
+        document.getElementById('logoutBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            Auth.logout();
+        });
+
+        // Set user name from global
+        if (window.currentUser) {
+            const firstName = window.currentUser.name.split(' ')[0];
+            document.getElementById('userName').textContent = firstName;
+            document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+        }
+
+        // Order type toggle
+        document.getElementById('orderType').addEventListener('change', function() {
+            const deliveryAddress = document.getElementById('deliveryAddress');
+            const deliveryFee = document.getElementById('deliveryFee');
+            
+            if (this.value === 'delivery') {
+                deliveryAddress.style.display = 'block';
+                deliveryFee.textContent = '50 ETB';
+            } else {
+                deliveryAddress.style.display = 'none';
+                deliveryFee.textContent = '0 ETB';
+            }
+            
+            if (typeof calculateTotals === 'function') {
+                calculateTotals();
+            }
+        });
+
+        // Payment method toggle
+        document.querySelectorAll('input[name="payment"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                document.querySelectorAll('.payment-details').forEach(el => {
+                    el.classList.remove('active');
+                });
+                
+                if (this.value === 'telebirr') {
+                    document.getElementById('telebirrDetails').classList.add('active');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

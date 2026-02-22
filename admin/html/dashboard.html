@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Markan Cafe Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body class="admin-body">
+    <script>
+    // ===== SINGLE PROTECTION CHECK =====
+    (function() {
+        // Check if already processed
+        if (window.__adminProtected) return;
+        window.__adminProtected = true;
+        
+        try {
+            // Get user from localStorage
+            const userStr = localStorage.getItem('markanUser');
+            
+            // No user found - redirect to login
+            if (!userStr) {
+                window.location.replace('../../login.html');
+                return;
+            }
+            
+            // Parse user
+            const user = JSON.parse(userStr);
+            
+            // Wrong role - redirect to customer
+            if (user.role !== 'admin') {
+                window.location.replace('../../customer/html/dashboard.html');
+                return;
+            }
+            
+            // Store user for later use
+            window.currentUser = user;
+            
+        } catch (e) {
+            console.error('Auth error:', e);
+            // Clear invalid data and redirect
+            localStorage.removeItem('markanUser');
+            window.location.replace('../../login.html');
+        }
+    })();
+    </script>
+
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="globalSearch" placeholder="Search orders, customers...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications" id="notificationBell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationCount">0</span>
+                        <div class="notifications-dropdown" id="notificationsDropdown">
+                            <div class="dropdown-header">
+                                <h4>Notifications</h4>
+                                <button id="markAllRead">Mark all as read</button>
+                            </div>
+                            <div class="notifications-list" id="notificationsList">
+                                <!-- Notifications will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="header-profile" id="profileDropdown">
+                        <img src="../../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                        <i class="fas fa-chevron-down"></i>
+                        <div class="profile-dropdown">
+                            <a href="profile.html"><i class="fas fa-user"></i> My Profile</a>
+                            <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
+                            <a href="#" id="dropdownLogout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <div class="date-range">
+                    <select id="dateRange">
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month" selected>This Month</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card" onclick="window.location.href='orders.html?status=pending'">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="pendingOrders">0</h3>
+                        <p>Pending Orders</p>
+                        <span class="stat-trend" id="pendingTrend">+12% from yesterday</span>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='orders.html?status=completed'">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="completedOrders">0</h3>
+                        <p>Completed Orders</p>
+                        <span class="stat-trend positive" id="completedTrend">+8% from yesterday</span>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='reservations.html'">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="todayReservations">0</h3>
+                        <p>Today's Reservations</p>
+                        <span class="stat-trend" id="reservationTrend">3 confirmed, 2 pending</span>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='billing.html'">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="todayRevenue">0 ETB</h3>
+                        <p>Today's Revenue</p>
+                        <span class="stat-trend positive" id="revenueTrend">+15% from yesterday</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Low Stock Alert -->
+            <div class="alert-card low-stock-alert" id="lowStockAlert" style="display: none;">
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <h3>Low Stock Alert</h3>
+                    <p id="lowStockMessage">Some items are running low on stock</p>
+                </div>
+                <button class="btn btn-outline" onclick="window.location.href='menu-management.html?filter=lowstock'">
+                    View Items
+                </button>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>Revenue Overview</h3>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Popular Items</h3>
+                    <div class="popular-items-list" id="popularItems">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders & Activity -->
+            <div class="recent-activity-grid">
+                <div class="activity-card">
+                    <div class="card-header">
+                        <h3>Recent Orders</h3>
+                        <a href="orders.html" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Customer</th>
+                                    <th>Items</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentOrdersTable">
+                                <!-- Will be populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="activity-card">
+                    <div class="card-header">
+                        <h3>Recent Activity</h3>
+                    </div>
+                    <div class="activity-timeline" id="activityTimeline">
+                        <!-- Will be populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../js/dashboard.js"></script>
+    <script>
+        // Update admin name from auth
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = Auth.getCurrentUser();
+            if (user) {
+                document.getElementById('adminName').textContent = user.name;
+            }
+        });
+
+        // Single logout handler
+        function handleLogout(e) {
+            e.preventDefault();
+            Auth.logout();
+        }
+
+        document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+        document.getElementById('dropdownLogout')?.addEventListener('click', handleLogout);
+    </script>
+</body>
+</html>

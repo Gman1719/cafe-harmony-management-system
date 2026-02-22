@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Management - Markan Cafe Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/billing.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html" class="active"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchBills" placeholder="Search bills by ID or customer...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationCount">0</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>Billing Management</h1>
+                <div class="header-actions">
+                    <button class="btn btn-outline" onclick="generateReport()">
+                        <i class="fas fa-file-pdf"></i> Generate Report
+                    </button>
+                    <button class="btn btn-outline" onclick="exportBilling()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Date Range Picker -->
+            <div class="date-range-picker">
+                <div class="range-presets">
+                    <button class="range-btn active" onclick="setDateRange('today')">Today</button>
+                    <button class="range-btn" onclick="setDateRange('yesterday')">Yesterday</button>
+                    <button class="range-btn" onclick="setDateRange('week')">This Week</button>
+                    <button class="range-btn" onclick="setDateRange('month')">This Month</button>
+                    <button class="range-btn" onclick="setDateRange('custom')">Custom</button>
+                </div>
+                <div class="custom-range" id="customRange" style="display: none;">
+                    <input type="date" id="startDate" class="form-control">
+                    <span>to</span>
+                    <input type="date" id="endDate" class="form-control">
+                    <button class="btn btn-primary" onclick="applyCustomRange()">Apply</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="summary-icon revenue">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3 id="totalRevenue">0 ETB</h3>
+                        <p>Total Revenue</p>
+                        <span class="trend" id="revenueTrend">+0% from last period</span>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon orders">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3 id="totalOrders">0</h3>
+                        <p>Total Orders</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon average">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3 id="averageOrder">0 ETB</h3>
+                        <p>Average Order Value</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon payment">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="summary-content">
+                        <h3 id="paymentMethods">0</h3>
+                        <p>Payment Methods</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h3>Revenue Overview</h3>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Payment Methods</h3>
+                    <div class="chart-container">
+                        <canvas id="paymentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Second Charts Row -->
+            <div class="charts-row">
+                <div class="chart-card">
+                    <h3>Daily Transactions</h3>
+                    <div class="chart-container">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Category Revenue</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="top-products">
+                <h3>Top Selling Products</h3>
+                <div class="products-list" id="topProducts">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="transactions-section">
+                <h3>Recent Transactions</h3>
+                <div class="table-responsive">
+                    <table class="admin-table transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Date & Time</th>
+                                <th>Customer</th>
+                                <th>Items</th>
+                                <th>Amount</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionsTable">
+                            <!-- Will be populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <button class="page-btn" id="prevPage" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <div class="page-numbers" id="pageNumbers"></div>
+                    <button class="page-btn" id="nextPage">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Transaction Details Modal -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3>Transaction Details</h3>
+                <button class="modal-close" onclick="closeTransactionModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="invoice-header">
+                    <div class="invoice-logo">
+                        <img src="../../assets/images/logo.png" alt="Markan Cafe">
+                    </div>
+                    <div class="invoice-info">
+                        <h2>INVOICE</h2>
+                        <p id="invoiceNumber"></p>
+                        <p id="invoiceDate"></p>
+                    </div>
+                </div>
+
+                <div class="invoice-customer">
+                    <h4>Bill To:</h4>
+                    <p id="invoiceCustomer"></p>
+                    <p id="invoiceCustomerPhone"></p>
+                    <p id="invoiceCustomerEmail"></p>
+                </div>
+
+                <div class="invoice-items">
+                    <table class="invoice-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoiceItems"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Subtotal:</strong></td>
+                                <td id="invoiceSubtotal"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Tax (10%):</strong></td>
+                                <td id="invoiceTax"></td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                                <td id="invoiceTotal" class="total-amount"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="invoice-footer">
+                    <div class="payment-info">
+                        <h4>Payment Information</h4>
+                        <p><strong>Method:</strong> <span id="invoicePayment"></span></p>
+                        <p><strong>Status:</strong> <span id="invoiceStatus" class="status-badge"></span></p>
+                    </div>
+                    <div class="thank-you">
+                        <p>Thank you for dining with Markan Cafe!</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-outline" onclick="printInvoice()">
+                    <i class="fas fa-print"></i> Print Invoice
+                </button>
+                <button class="btn btn-outline" onclick="downloadInvoice()">
+                    <i class="fas fa-download"></i> Download PDF
+                </button>
+                <button class="btn btn-primary" onclick="closeTransactionModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../../js/auth.js"></script>
+    <script src="../js/billing.js"></script>
+</body>
+</html>

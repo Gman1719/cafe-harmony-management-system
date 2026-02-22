@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Markan Cafe Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/profile.css">
+</head>
+<body class="admin-body">
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-header">
+                <img src="../../assets/images/logo.png" alt="Markan Cafe" onerror="this.src='https://via.placeholder.com/60x60/8B4513/FFD700?text=MC'">
+                <h3>Markan Cafe</h3>
+                <p>Admin Panel</p>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="dashboard.html"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+                    <li><a href="menu-management.html"><i class="fas fa-utensils"></i> <span>Menu Management</span></a></li>
+                    <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
+                    <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
+                    <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
+                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
+                    <li><a href="profile.html" class="active"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
+                    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <!-- Top Header -->
+            <header class="admin-top-header">
+                <div class="header-search">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="header-user">
+                    <div class="header-notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge" id="notificationCount">0</span>
+                    </div>
+                    <div class="header-profile">
+                        <img src="../../assets/images/team/admin.jpg" alt="Admin" onerror="this.src='https://via.placeholder.com/40x40/8B4513/FFD700?text=Admin'">
+                        <div class="profile-info">
+                            <h4 id="adminName">Admin User</h4>
+                            <p>Administrator</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1>My Profile</h1>
+            </div>
+
+            <!-- Profile Content -->
+            <div class="profile-container">
+                <!-- Profile Sidebar -->
+                <div class="profile-sidebar">
+                    <div class="profile-avatar-section">
+                        <div class="avatar-wrapper">
+                            <img id="profileAvatar" src="" alt="Profile Avatar" class="profile-avatar">
+                            <div class="avatar-overlay" onclick="document.getElementById('avatarInput').click()">
+                                <i class="fas fa-camera"></i>
+                                <span>Change Photo</span>
+                            </div>
+                        </div>
+                        <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                        <h2 id="profileName">Admin User</h2>
+                        <p id="profileRole">Administrator</p>
+                        <div class="profile-status">
+                            <span class="status-dot active"></span>
+                            <span>Active</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalActions">0</span>
+                            <span class="stat-label">Actions Today</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="loginStreak">0</span>
+                            <span class="stat-label">Day Streak</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="totalLogins">0</span>
+                            <span class="stat-label">Total Logins</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-menu">
+                        <a href="#personal" class="profile-menu-item active" onclick="showSection('personal')">
+                            <i class="fas fa-user"></i> Personal Information
+                        </a>
+                        <a href="#security" class="profile-menu-item" onclick="showSection('security')">
+                            <i class="fas fa-shield-alt"></i> Security
+                        </a>
+                        <a href="#preferences" class="profile-menu-item" onclick="showSection('preferences')">
+                            <i class="fas fa-sliders-h"></i> Preferences
+                        </a>
+                        <a href="#activity" class="profile-menu-item" onclick="showSection('activity')">
+                            <i class="fas fa-history"></i> Activity Log
+                        </a>
+                        <a href="#notifications" class="profile-menu-item" onclick="showSection('notifications')">
+                            <i class="fas fa-bell"></i> Notifications
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Profile Content Area -->
+                <div class="profile-content">
+                    <!-- Personal Information Section -->
+                    <div id="personal" class="profile-section active">
+                        <h3>Personal Information</h3>
+                        <form id="personalForm" onsubmit="event.preventDefault(); savePersonalInfo();">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fullName">Full Name</label>
+                                    <input type="text" id="fullName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" id="email" required>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="tel" id="phone" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="department">Department</label>
+                                    <input type="text" id="department" value="Administration" readonly>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="address">Address</label>
+                                <textarea id="address" rows="3"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bio">Bio</label>
+                                <textarea id="bio" rows="4" placeholder="Tell us a little about yourself..."></textarea>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                                <button type="button" class="btn btn-outline" onclick="resetPersonalForm()">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Security Section -->
+                    <div id="security" class="profile-section">
+                        <h3>Security Settings</h3>
+                        
+                        <div class="security-card">
+                            <h4>Change Password</h4>
+                            <form id="passwordForm" onsubmit="event.preventDefault(); changePassword();">
+                                <div class="form-group">
+                                    <label for="currentPassword">Current Password</label>
+                                    <input type="password" id="currentPassword" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword">New Password</label>
+                                    <input type="password" id="newPassword" required>
+                                    <div class="password-strength" id="passwordStrength">
+                                        <div class="strength-bar"></div>
+                                    </div>
+                                    <small class="hint">Minimum 8 characters with at least one special character</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPassword">Confirm New Password</label>
+                                    <input type="password" id="confirmPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Update Password</button>
+                            </form>
+                        </div>
+
+                        <div class="security-card">
+                            <h4>Two-Factor Authentication</h4>
+                            <div class="two-factor-status">
+                                <div class="status-info">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <div>
+                                        <p><strong>Status:</strong> <span id="twoFactorStatus">Disabled</span></p>
+                                        <p>Add an extra layer of security to your account</p>
+                                    </div>
+                                </div>
+                                <button class="btn btn-outline" onclick="toggleTwoFactor()">
+                                    Enable 2FA
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="security-card">
+                            <h4>Login Sessions</h4>
+                            <div class="sessions-list" id="sessionsList">
+                                <!-- Will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preferences Section -->
+                    <div id="preferences" class="profile-section">
+                        <h3>Preferences</h3>
+                        
+                        <div class="preferences-card">
+                            <h4>Theme Settings</h4>
+                            <div class="theme-options">
+                                <div class="theme-option" onclick="setTheme('light')">
+                                    <div class="theme-preview light"></div>
+                                    <span>Light</span>
+                                </div>
+                                <div class="theme-option" onclick="setTheme('dark')">
+                                    <div class="theme-preview dark"></div>
+                                    <span>Dark</span>
+                                </div>
+                                <div class="theme-option" onclick="setTheme('system')">
+                                    <div class="theme-preview system"></div>
+                                    <span>System</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="preferences-card">
+                            <h4>Language & Region</h4>
+                            <div class="form-group">
+                                <label for="language">Language</label>
+                                <select id="language">
+                                    <option value="en">English</option>
+                                    <option value="am">አማርኛ</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="timezone">Timezone</label>
+                                <select id="timezone">
+                                    <option value="Africa/Addis_Ababa">Africa/Addis Ababa (UTC+3)</option>
+                                    <option value="UTC">UTC</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="dateFormat">Date Format</label>
+                                <select id="dateFormat">
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="preferences-card">
+                            <h4>Dashboard Preferences</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="showStats" checked>
+                                    <span>Show statistics cards</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="showCharts" checked>
+                                    <span>Show charts</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="showRecentOrders" checked>
+                                    <span>Show recent orders</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="compactView">
+                                    <span>Compact view</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="savePreferences()">Save Preferences</button>
+                        </div>
+                    </div>
+
+                    <!-- Activity Log Section -->
+                    <div id="activity" class="profile-section">
+                        <h3>Activity Log</h3>
+                        
+                        <div class="activity-filters">
+                            <select id="activityType">
+                                <option value="all">All Activities</option>
+                                <option value="login">Logins</option>
+                                <option value="order">Orders</option>
+                                <option value="menu">Menu Changes</option>
+                                <option value="user">User Management</option>
+                            </select>
+                            <input type="date" id="activityDate">
+                            <button class="btn btn-outline" onclick="filterActivity()">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+
+                        <div class="activity-timeline" id="activityTimeline">
+                            <!-- Will be populated by JS -->
+                        </div>
+
+                        <div class="load-more">
+                            <button class="btn btn-outline" onclick="loadMoreActivity()">
+                                Load More
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Section -->
+                    <div id="notifications" class="profile-section">
+                        <div class="notifications-header">
+                            <h3>Notification Settings</h3>
+                            <button class="btn btn-outline btn-small" onclick="markAllRead()">
+                                Mark All as Read
+                            </button>
+                        </div>
+
+                        <div class="notification-preferences">
+                            <h4>Email Notifications</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="emailNewOrder" checked>
+                                    <span>New orders</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="emailNewReservation" checked>
+                                    <span>New reservations</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="emailLowStock" checked>
+                                    <span>Low stock alerts</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="emailNewUser" checked>
+                                    <span>New user registrations</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="notification-preferences">
+                            <h4>Push Notifications</h4>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pushNewOrder" checked>
+                                    <span>New orders</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pushNewReservation" checked>
+                                    <span>New reservations</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pushLowStock" checked>
+                                    <span>Low stock alerts</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="recent-notifications">
+                            <h4>Recent Notifications</h4>
+                            <div id="recentNotificationsList">
+                                <!-- Will be populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <script src="../../js/auth.js"></script>
+    <script src="../js/profile.js"></script>
+</body>
+</html>
