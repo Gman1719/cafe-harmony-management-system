@@ -115,7 +115,7 @@ function displayCart() {
                 <i class="fas fa-shopping-cart"></i>
                 <h3>Your cart is empty</h3>
                 <p>Looks like you haven't added any Ethiopian dishes yet</p>
-                <a href="menu.html" class="btn btn-primary">Browse Menu</a>
+                <a href="../../menu.html" class="btn btn-primary">Browse Menu</a>
             </div>
         `;
         updateCartSummary();
@@ -224,7 +224,8 @@ function updateCartSummary() {
         subtotal += price * item.quantity;
     });
     
-    const tax = subtotal * 0.1; // 10% tax
+    // Tax is 10%
+    const tax = subtotal * 0.1;
     const total = subtotal + tax;
     
     const subtotalEl = document.getElementById('subtotal');
@@ -316,7 +317,10 @@ window.applyPromoCode = function() {
     const input = document.getElementById('promoCode');
     const messageEl = document.getElementById('promoMessage');
     
-    if (!input || !messageEl) return;
+    if (!input || !messageEl) {
+        showNotification('Promo code feature is not available', 'info');
+        return;
+    }
     
     const code = input.value.trim().toUpperCase();
     
@@ -670,12 +674,12 @@ function setupEventListeners() {
         });
     }
     
-    // Continue shopping link
+    // Continue shopping link - FIXED to point to root menu.html
     const continueLink = document.querySelector('.continue-shopping');
     if (continueLink) {
         continueLink.addEventListener('click', function(e) {
             e.preventDefault();
-            window.location.href = 'menu.html';
+            window.location.href = '../../menu.html';
         });
     }
     
@@ -716,6 +720,7 @@ function showNotification(message, type = 'info') {
         // Create container if it doesn't exist
         const newContainer = document.createElement('div');
         newContainer.id = 'notificationContainer';
+        newContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
         document.body.appendChild(newContainer);
     }
     
@@ -724,6 +729,19 @@ function showNotification(message, type = 'info') {
     
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    notification.style.cssText = `
+        background: white;
+        border-radius: 8px;
+        padding: 12px 20px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        animation: slideIn 0.3s ease;
+        border-left: 4px solid ${type === 'success' ? '#2e7d32' : type === 'error' ? '#d32f2f' : type === 'warning' ? '#ed6c02' : '#0288d1'};
+    `;
     
     const icons = {
         success: 'fa-check-circle',
@@ -733,9 +751,11 @@ function showNotification(message, type = 'info') {
     };
     
     notification.innerHTML = `
-        <i class="fas ${icons[type]}"></i>
-        <span>${message}</span>
-        <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        <i class="fas ${icons[type]}" style="font-size: 1.5rem; color: ${type === 'success' ? '#2e7d32' : type === 'error' ? '#d32f2f' : type === 'warning' ? '#ed6c02' : '#0288d1'};"></i>
+        <span style="flex: 1; color: #333;">${message}</span>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #999; cursor: pointer; font-size: 1.2rem;">
+            <i class="fas fa-times"></i>
+        </button>
     `;
     
     notifContainer.appendChild(notification);
@@ -746,6 +766,22 @@ function showNotification(message, type = 'info') {
         }
     }, 5000);
 }
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
 
 // ===== EXPORT FUNCTIONS FOR GLOBAL USE =====
 window.updateQuantity = updateQuantity;

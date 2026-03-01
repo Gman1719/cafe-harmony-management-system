@@ -1,230 +1,294 @@
-// js/customer/reservations.js - Reservation Logic
+// js/reservations.js - Shared Reservations Database
 // Markan Cafe - Debre Birhan University
+// This file is shared between homepage and customer dashboard
 
-let allReservations = [];
+// ============================================
+// RESERVATIONS DATABASE MANAGER
+// ============================================
 
-// Initialize reservations page
-document.addEventListener('DOMContentLoaded', function() {
-    loadReservations();
-    setupDatePicker();
-});
-
-// Load reservations
-function loadReservations() {
-    const container = document.getElementById('reservationsGrid');
-    if (!container) return;
+const ReservationsDB = {
+    // Storage key
+    STORAGE_KEY: 'markanReservations',
     
-    const user = Auth.getCurrentUser();
-    if (!user) return;
+    // Data
+    reservations: [],
     
-    // Get reservations from localStorage
-    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
-    allReservations = reservations.filter(r => r.customerId === user.id)
-                                  .sort((a, b) => new Date(a.date) - new Date(b.date));
+    // ========================================
+    // INITIALIZATION
+    // ========================================
     
-    displayReservations(allReservations);
-}
-
-// Display reservations
-function displayReservations(reservations) {
-    const container = document.getElementById('reservationsGrid');
-    if (!container) return;
+    init() {
+        console.log('📁 Initializing ReservationsDB...');
+        this.loadFromStorage();
+        console.log('✅ ReservationsDB ready with', this.reservations.length, 'reservations');
+        return this.reservations;
+    },
     
-    const upcoming = reservations.filter(r => new Date(r.date) >= new Date() && r.status !== 'cancelled');
-    const past = reservations.filter(r => new Date(r.date) < new Date() || r.status === 'cancelled');
+    // ========================================
+    // DATA OPERATIONS
+    // ========================================
     
-    let html = '';
+    loadFromStorage() {
+        try {
+            const saved = localStorage.getItem(this.STORAGE_KEY);
+            if (saved) {
+                this.reservations = JSON.parse(saved);
+                console.log('✅ Reservations loaded from localStorage');
+            } else {
+                this.reservations = [];
+                this.createSampleReservations();
+            }
+        } catch (e) {
+            console.error('❌ Error loading reservations:', e);
+            this.reservations = [];
+        }
+    },
     
-    if (upcoming.length > 0) {
-        html += '<h3>Upcoming Reservations</h3>';
-        html += upcoming.map(res => `
-            <div class="reservation-card">
-                <div class="reservation-header">
-                    <span class="reservation-id">${res.id}</span>
-                    <span class="reservation-status ${res.status}">${res.status}</span>
-                </div>
-                <div class="reservation-details">
-                    <p><i class="fas fa-calendar"></i> ${formatDate(res.date)} at ${res.time}</p>
-                    <p><i class="fas fa-users"></i> ${res.guests} guest${res.guests > 1 ? 's' : ''}</p>
-                    ${res.specialRequests ? `<p><i class="fas fa-comment"></i> ${res.specialRequests}</p>` : ''}
-                </div>
-                ${res.status === 'pending' || res.status === 'confirmed' ? `
-                    <div class="reservation-actions">
-                        <button class="btn-cancel-reservation" onclick="cancelReservation('${res.id}')">
-                            <i class="fas fa-times"></i> Cancel
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-    }
+    saveToStorage() {
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.reservations));
+            console.log('💾 Reservations saved to localStorage');
+            return true;
+        } catch (e) {
+            console.error('❌ Error saving reservations:', e);
+            return false;
+        }
+    },
     
-    if (past.length > 0) {
-        html += '<h3 style="margin-top: 2rem;">Past Reservations</h3>';
-        html += past.map(res => `
-            <div class="reservation-card" style="opacity: 0.7;">
-                <div class="reservation-header">
-                    <span class="reservation-id">${res.id}</span>
-                    <span class="reservation-status ${res.status}">${res.status}</span>
-                </div>
-                <div class="reservation-details">
-                    <p><i class="fas fa-calendar"></i> ${formatDate(res.date)} at ${res.time}</p>
-                    <p><i class="fas fa-users"></i> ${res.guests} guest${res.guests > 1 ? 's' : ''}</p>
-                </div>
-            </div>
-        `).join('');
-    }
+    // ========================================
+    // SAMPLE DATA (for testing)
+    // ========================================
     
-    if (upcoming.length === 0 && past.length === 0) {
-        html = `
-            <div class="no-reservations">
-                <i class="fas fa-calendar-times"></i>
-                <h3>No reservations found</h3>
-                <p>You haven't made any reservations yet</p>
-                <button class="btn-reserve" onclick="openReservationModal()">
-                    Make a Reservation
-                </button>
-            </div>
-        `;
-    }
-    
-    container.innerHTML = html;
-}
-
-// Make reservation
-window.makeReservation = function() {
-    // Get form values
-    const name = document.getElementById('resName')?.value;
-    const email = document.getElementById('resEmail')?.value;
-    const phone = document.getElementById('resPhone')?.value;
-    const guests = document.getElementById('resGuests')?.value;
-    const date = document.getElementById('resDate')?.value;
-    const time = document.getElementById('resTime')?.value;
-    const duration = document.getElementById('resDuration')?.value || '1.5';
-    const requests = document.getElementById('resRequests')?.value;
-
-    // Validate
-    if (!name || !email || !phone || !guests || !date || !time) {
-        showNotification('Please fill in all required fields', 'error');
-        return;
-    }
-
-    // Validate email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showNotification('Please enter a valid email address', 'error');
-        return;
-    }
-
-    // Validate phone
-    const phoneRegex = /^(09|\+2519)\d{8}$/;
-    if (!phoneRegex.test(phone)) {
-        showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
-        return;
-    }
-
-    // Validate date (must be today or future)
-    const selectedDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (selectedDate < today) {
-        showNotification('Please select a future date', 'error');
-        return;
-    }
-
-    const user = Auth.getCurrentUser();
-    if (!user) return;
-
-    // Check availability (simple check)
-    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
-    const sameDateTime = reservations.filter(r => 
-        r.date === date && 
-        r.time === time && 
-        r.status !== 'cancelled'
-    );
-    
-    // Assume max 10 reservations per time slot
-    if (sameDateTime.length >= 10) {
-        showNotification('Sorry, this time slot is fully booked. Please choose another time.', 'error');
-        return;
-    }
-
-    // Create reservation
-    const newReservation = {
-        id: 'RES-' + Date.now().toString().slice(-4),
-        customerId: user.id,
-        customerName: name,
-        customerEmail: email,
-        customerPhone: phone,
-        guests: parseInt(guests),
-        date: date,
-        time: time,
-        duration: parseFloat(duration),
-        specialRequests: requests || '',
-        status: 'pending',
-        createdAt: new Date().toISOString()
-    };
-
-    reservations.push(newReservation);
-    localStorage.setItem('markanReservations', JSON.stringify(reservations));
-
-    showNotification('Reservation request sent successfully! We\'ll confirm shortly.', 'success');
-    
-    // Reset form and close modal
-    document.getElementById('reservationForm').reset();
-    closeReservationModal();
-    
-    // Reload reservations
-    loadReservations();
-};
-
-// Cancel reservation
-window.cancelReservation = function(reservationId) {
-    if (!confirm('Are you sure you want to cancel this reservation?')) return;
-    
-    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
-    const index = reservations.findIndex(r => r.id === reservationId);
-    
-    if (index !== -1) {
-        reservations[index].status = 'cancelled';
-        reservations[index].updatedAt = new Date().toISOString();
-        localStorage.setItem('markanReservations', JSON.stringify(reservations));
+    createSampleReservations() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const nextWeek = new Date(today);
+        nextWeek.setDate(nextWeek.getDate() + 7);
         
-        showNotification('Reservation cancelled', 'success');
-        loadReservations();
-    }
-};
-
-// Setup date picker with min date = today
-function setupDatePicker() {
-    const dateInput = document.getElementById('resDate');
-    if (dateInput) {
+        const formatDate = (date) => date.toISOString().split('T')[0];
+        
+        this.reservations = [
+            {
+                id: 'RES-123456-ABC',
+                customerId: 2,
+                customerName: 'John Doe',
+                customerEmail: 'john@example.com',
+                customerPhone: '0912345678',
+                guests: 4,
+                date: formatDate(today),
+                time: '19:00',
+                duration: 2,
+                status: 'confirmed',
+                specialRequests: 'Window table, anniversary celebration',
+                createdAt: new Date(today.setHours(10, 30)).toISOString()
+            },
+            {
+                id: 'RES-123457-DEF',
+                customerId: 3,
+                customerName: 'Sarah Smith',
+                customerEmail: 'sarah@example.com',
+                customerPhone: '0923456789',
+                guests: 2,
+                date: formatDate(today),
+                time: '20:30',
+                duration: 1.5,
+                status: 'pending',
+                specialRequests: 'Vegetarian options',
+                createdAt: new Date(today.setHours(14, 15)).toISOString()
+            },
+            {
+                id: 'RES-123458-GHI',
+                customerId: 4,
+                customerName: 'Mike Johnson',
+                customerEmail: 'mike@example.com',
+                customerPhone: '0934567890',
+                guests: 6,
+                date: formatDate(tomorrow),
+                time: '18:30',
+                duration: 2.5,
+                status: 'confirmed',
+                specialRequests: 'Birthday celebration, need cake',
+                createdAt: new Date(tomorrow.setHours(9, 45)).toISOString()
+            }
+        ];
+        this.saveToStorage();
+        console.log('✅ Sample reservations created');
+    },
+    
+    // ========================================
+    // GET METHODS
+    // ========================================
+    
+    getAll() {
+        return this.reservations;
+    },
+    
+    getById(id) {
+        return this.reservations.find(res => res.id === id);
+    },
+    
+    getByDate(date) {
+        return this.reservations.filter(res => res.date === date);
+    },
+    
+    getByCustomerId(customerId) {
+        return this.reservations.filter(res => res.customerId == customerId);
+    },
+    
+    getByStatus(status) {
+        if (status === 'all') return this.reservations;
+        return this.reservations.filter(res => res.status === status);
+    },
+    
+    getUpcoming(limit = 10) {
         const today = new Date().toISOString().split('T')[0];
-        dateInput.min = today;
-    }
-}
-
-// Format date
-function formatDate(dateString) {
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString('en-US', options);
-}
-
-// Open reservation modal (called from HTML)
-window.openReservationModal = function() {
-    const modal = document.getElementById('reservationModal');
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+        return this.reservations
+            .filter(res => res.date >= today && res.status !== 'cancelled' && res.status !== 'completed')
+            .sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time))
+            .slice(0, limit);
+    },
+    
+    // ========================================
+    // ADD METHODS
+    // ========================================
+    
+    generateId() {
+        return 'RES-' + Date.now().toString().slice(-6) + '-' + 
+               Math.random().toString(36).substr(2, 4).toUpperCase();
+    },
+    
+    add(reservationData) {
+        try {
+            const newReservation = {
+                id: this.generateId(),
+                customerId: reservationData.customerId || null,
+                customerName: reservationData.customerName,
+                customerEmail: reservationData.customerEmail,
+                customerPhone: reservationData.customerPhone,
+                guests: parseInt(reservationData.guests) || 1,
+                date: reservationData.date,
+                time: reservationData.time,
+                duration: parseFloat(reservationData.duration) || 2,
+                status: reservationData.status || 'pending',
+                specialRequests: reservationData.specialRequests || '',
+                createdAt: new Date().toISOString()
+            };
+            
+            this.reservations.push(newReservation);
+            this.saveToStorage();
+            return newReservation;
+            
+        } catch (error) {
+            console.error('❌ Error adding reservation:', error);
+            return null;
+        }
+    },
+    
+    // ========================================
+    // UPDATE METHODS
+    // ========================================
+    
+    update(id, updates) {
+        try {
+            const index = this.reservations.findIndex(res => res.id === id);
+            if (index === -1) return null;
+            
+            this.reservations[index] = {
+                ...this.reservations[index],
+                ...updates
+            };
+            
+            this.saveToStorage();
+            return this.reservations[index];
+            
+        } catch (error) {
+            console.error('❌ Error updating reservation:', error);
+            return null;
+        }
+    },
+    
+    updateStatus(id, status) {
+        return this.update(id, { status });
+    },
+    
+    delete(id) {
+        try {
+            const index = this.reservations.findIndex(res => res.id === id);
+            if (index === -1) return false;
+            
+            this.reservations.splice(index, 1);
+            this.saveToStorage();
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error deleting reservation:', error);
+            return false;
+        }
+    },
+    
+    // ========================================
+    // AVAILABILITY CHECKING
+    // ========================================
+    
+    checkAvailability(date, time, guests = 1) {
+        const reservationsOnDate = this.getByDate(date);
+        const sameSlot = reservationsOnDate.filter(res => 
+            res.time === time && res.status !== 'cancelled'
+        );
+        
+        const totalGuests = sameSlot.reduce((sum, res) => sum + (res.guests || 0), 0);
+        const maxGuests = 20; // Maximum guests per time slot
+        
+        return {
+            available: totalGuests + parseInt(guests) <= maxGuests,
+            booked: sameSlot.length,
+            totalGuests: totalGuests,
+            remaining: Math.max(0, maxGuests - totalGuests),
+            maxGuests: maxGuests
+        };
+    },
+    
+    // ========================================
+    // STATISTICS
+    // ========================================
+    
+    getStats() {
+        return {
+            total: this.reservations.length,
+            pending: this.reservations.filter(r => r.status === 'pending').length,
+            confirmed: this.reservations.filter(r => r.status === 'confirmed').length,
+            completed: this.reservations.filter(r => r.status === 'completed').length,
+            cancelled: this.reservations.filter(r => r.status === 'cancelled').length
+        };
+    },
+    
+    getCustomerStats(customerId) {
+        const userReservations = this.getByCustomerId(customerId);
+        const now = new Date();
+        
+        return {
+            total: userReservations.length,
+            pending: userReservations.filter(r => r.status === 'pending').length,
+            confirmed: userReservations.filter(r => r.status === 'confirmed').length,
+            completed: userReservations.filter(r => r.status === 'completed').length,
+            cancelled: userReservations.filter(r => r.status === 'cancelled').length,
+            upcoming: userReservations.filter(r => {
+                if (r.status === 'cancelled' || r.status === 'completed') return false;
+                const resDate = new Date(r.date + 'T' + r.time);
+                return resDate > now;
+            }).length
+        };
     }
 };
 
-// Close reservation modal (called from HTML)
-window.closeReservationModal = function() {
-    const modal = document.getElementById('reservationModal');
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
-};
+// ========================================
+// AUTO-INITIALIZE
+// ========================================
+
+// Initialize when script loads
+(function() {
+    ReservationsDB.init();
+    window.ReservationsDB = ReservationsDB;
+    console.log('📁 ReservationsDB global ready');
+})();

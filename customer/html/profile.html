@@ -1049,363 +1049,89 @@
     <script src="../../js/config.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../../js/main.js"></script>
+    <script src="../js/profile.js"></script>
     <script src="../../data/users.js"></script>
     <script src="../../data/orders.js"></script>
     <script src="../../data/reservations.js"></script>
     <script src="../js/theme.js"></script>
     <script src="../js/notifications.js"></script>
-    <script>
-        // Mobile menu toggle
-        document.getElementById('navbarToggle').addEventListener('click', function() {
-            document.getElementById('navbarMenu').classList.toggle('active');
-        });
+<!-- Scripts -->
+<script src="../../js/config.js"></script>
+<script src="../../js/auth.js"></script>
+<script src="../../js/main.js"></script>
+<script src="../../data/users.js"></script>
+<script src="../../data/orders.js"></script>
+<script src="../../data/reservations.js"></script>
+<script src="../js/theme.js"></script>
+<script src="../js/notifications.js"></script>
+<script src="../js/profile.js"></script> <!-- Your working profile.js -->
 
-        // Single logout handler
-        document.getElementById('logoutBtn').addEventListener('click', function(e) {
-            e.preventDefault();
-            Auth.logout();
-        });
+<script>
+    // Mobile menu toggle ONLY
+    document.getElementById('navbarToggle').addEventListener('click', function() {
+        document.getElementById('navbarMenu').classList.toggle('active');
+    });
 
-        // Global variables
-        let currentUser = window.currentUser;
-        let originalUserData = {};
+    // Single logout handler
+    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        Auth.logout();
+    });
 
-        // Initialize profile page
-        document.addEventListener('DOMContentLoaded', function() {
-            if (currentUser) {
-                loadUserProfile();
-                loadUserStats();
-                loadUserPreferences();
-                loadThemeOptions();
-            }
-        });
-
-        function loadUserProfile() {
-            // Set user name in greeting
-            const firstName = currentUser.name.split(' ')[0];
-            document.getElementById('userName').textContent = firstName;
-            document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
-
-            // Set profile information
-            document.getElementById('profileName').textContent = currentUser.name;
-            document.getElementById('profileEmail').textContent = currentUser.email;
-            
-            // Set form fields
-            document.getElementById('fullName').value = currentUser.name || '';
-            document.getElementById('email').value = currentUser.email || '';
-            document.getElementById('phone').value = currentUser.phone || '';
-            document.getElementById('address').value = currentUser.address || '';
-            document.getElementById('bio').value = currentUser.bio || '';
-
-            // Set avatar
-            if (currentUser.avatar) {
-                document.getElementById('profileAvatar').src = currentUser.avatar;
-            } else {
-                document.getElementById('profileAvatar').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name)}&background=8B4513&color=fff&size=150`;
-            }
-
-            // Save original data for cancel
-            originalUserData = {
-                name: currentUser.name,
-                phone: currentUser.phone,
-                address: currentUser.address,
-                bio: currentUser.bio
-            };
-        }
-
-        function loadUserStats() {
-            const statsContainer = document.getElementById('profileStats');
-            
-            // Get order stats
-            let orderCount = 0;
-            if (window.OrdersDB) {
-                const orders = OrdersDB.getByCustomerId(currentUser.id);
-                orderCount = orders.length;
-            }
-
-            // Get reservation stats
-            let reservationCount = 0;
-            if (window.ReservationsDB) {
-                const reservations = ReservationsDB.getByCustomerId(currentUser.id);
-                reservationCount = reservations.length;
-            }
-
-            // Get member since
-            const memberYear = currentUser.createdAt ? new Date(currentUser.createdAt).getFullYear() : 2025;
-
-            statsContainer.innerHTML = `
-                <div class="stat-item">
-                    <span class="stat-value">${orderCount}</span>
-                    <span class="stat-label">Orders</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">${reservationCount}</span>
-                    <span class="stat-label">Reservations</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-value">${memberYear}</span>
-                    <span class="stat-label">Member</span>
-                </div>
-            `;
-        }
-
-        function loadUserPreferences() {
-            const prefs = currentUser.preferences || {
-                notifications: true,
-                darkMode: false,
-                language: 'en',
-                theme: 'light'
-            };
-
-            // Set form fields
-            document.getElementById('language').value = prefs.language || 'en';
-            
-            // Set checkboxes
-            document.getElementById('saveAddress').checked = prefs.saveAddress || false;
-            document.getElementById('defaultTakeaway').checked = prefs.defaultTakeaway || false;
-            
-            // Set notification preferences
-            document.getElementById('notifyOrders').checked = prefs.notifyOrders !== false;
-            document.getElementById('notifyReservations').checked = prefs.notifyReservations !== false;
-            document.getElementById('notifyPromotions').checked = prefs.notifyPromotions || false;
-            document.getElementById('notifyEmail').checked = prefs.notifyEmail !== false;
-            document.getElementById('twoFactor').checked = prefs.twoFactor || false;
-        }
-
-        function loadThemeOptions() {
-            const themeContainer = document.getElementById('themeOptions');
-            const currentTheme = localStorage.getItem('theme') || 'light';
-            
-            const themes = [
-                { id: 'light', name: 'Light', class: 'light' },
-                { id: 'dark', name: 'Dark', class: 'dark' },
-                { id: 'system', name: 'System', class: 'system' }
-            ];
-
-            themeContainer.innerHTML = themes.map(theme => `
-                <div class="theme-option" onclick="setTheme('${theme.id}')">
-                    <div class="theme-preview ${theme.class} ${currentTheme === theme.id ? 'active' : ''}"></div>
-                    <span>${theme.name}</span>
-                </div>
-            `).join('');
-        }
-
-        // Show section function
-        window.showSection = function(sectionId) {
-            document.querySelectorAll('.profile-menu-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelectorAll('.profile-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            
-            document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.add('active');
-            document.getElementById(sectionId).classList.add('active');
-        };
-
-        // Personal info functions
-        window.savePersonalInfo = function() {
-            const updates = {
-                name: document.getElementById('fullName').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value,
-                bio: document.getElementById('bio').value
-            };
-
-            if (window.UsersDB) {
-                const updated = UsersDB.update(currentUser.id, updates);
-                if (updated) {
-                    // Update local storage
-                    currentUser = { ...currentUser, ...updates };
-                    localStorage.setItem('markanUser', JSON.stringify(currentUser));
-                    
-                    showNotification('Profile updated successfully!', 'success');
-                    loadUserProfile(); // Reload to show changes
-                }
-            }
-        };
-
-        window.resetPersonalForm = function() {
-            document.getElementById('fullName').value = originalUserData.name;
-            document.getElementById('phone').value = originalUserData.phone;
-            document.getElementById('address').value = originalUserData.address;
-            document.getElementById('bio').value = originalUserData.bio;
-        };
-
-        // Password functions
-        window.changePassword = function() {
-            const current = document.getElementById('currentPassword').value;
-            const newPass = document.getElementById('newPassword').value;
-            const confirm = document.getElementById('confirmPassword').value;
-
-            if (newPass !== confirm) {
-                showNotification('Passwords do not match', 'error');
-                return;
-            }
-
-            if (window.UsersDB) {
-                // Verify current password
-                const user = UsersDB.users.find(u => u.id === currentUser.id);
-                if (user.password !== current) {
-                    showNotification('Current password is incorrect', 'error');
-                    return;
-                }
-
-                // Update password
-                const success = UsersDB.updatePassword(currentUser.id, newPass);
-                if (success) {
-                    showNotification('Password updated successfully!', 'success');
-                    document.getElementById('passwordForm').reset();
-                }
-            }
-        };
-
-        // Password strength checker
-        document.getElementById('newPassword')?.addEventListener('input', function(e) {
-            const password = e.target.value;
-            const strengthBar = document.getElementById('passwordStrength');
-            
-            if (!password) {
-                strengthBar.style.width = '0';
-                strengthBar.className = 'strength-bar';
-                return;
-            }
-
-            let strength = 0;
-            if (password.length >= 8) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[!@#$%^&*]/.test(password)) strength++;
-
-            if (strength <= 2) {
-                strengthBar.className = 'strength-bar weak';
-            } else if (strength === 3) {
-                strengthBar.className = 'strength-bar medium';
-            } else {
-                strengthBar.className = 'strength-bar strong';
-            }
-        });
-
-        // Theme functions
-        window.setTheme = function(theme) {
-            localStorage.setItem('theme', theme);
-            loadThemeOptions();
-            
-            if (theme === 'dark') {
-                document.body.classList.add('dark-theme');
-            } else {
-                document.body.classList.remove('dark-theme');
-            }
-            
-            showNotification('Theme updated', 'success');
-        };
-
-        // Avatar change
-        window.handleAvatarChange = function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('profileAvatar').src = e.target.result;
-                    
-                    // Save to user data
-                    if (window.UsersDB) {
-                        UsersDB.update(currentUser.id, { avatar: e.target.result });
-                        currentUser.avatar = e.target.result;
-                        localStorage.setItem('markanUser', JSON.stringify(currentUser));
-                    }
-                    
-                    showNotification('Profile picture updated!', 'success');
-                };
-                reader.readAsDataURL(file);
-            }
-        };
-
-        // Save preferences
-        window.savePreferences = function() {
-            const updates = {
-                preferences: {
-                    language: document.getElementById('language').value,
-                    currency: document.getElementById('currency').value,
-                    saveAddress: document.getElementById('saveAddress').checked,
-                    defaultTakeaway: document.getElementById('defaultTakeaway').checked,
-                    notifyOrders: document.getElementById('notifyOrders').checked,
-                    notifyReservations: document.getElementById('notifyReservations').checked,
-                    notifyPromotions: document.getElementById('notifyPromotions').checked,
-                    notifyEmail: document.getElementById('notifyEmail').checked
-                }
-            };
-
-            if (window.UsersDB) {
-                const updated = UsersDB.update(currentUser.id, updates);
-                if (updated) {
-                    currentUser.preferences = updates.preferences;
-                    localStorage.setItem('markanUser', JSON.stringify(currentUser));
-                    showNotification('Preferences saved!', 'success');
-                }
-            }
-        };
-
-        window.saveNotificationSettings = savePreferences;
-        window.toggleTwoFactor = savePreferences;
-
-        // Delete account
-        window.confirmDeleteAccount = function() {
-            if (confirm('Are you ABSOLUTELY sure you want to delete your account? This action CANNOT be undone.')) {
-                if (window.UsersDB) {
-                    UsersDB.delete(currentUser.id);
-                    localStorage.removeItem('markanUser');
-                    showNotification('Account deleted. We\'re sorry to see you go.', 'info');
-                    setTimeout(() => {
-                        window.location.href = '../../index.html';
-                    }, 2000);
-                }
-            }
-        };
-
-        // Update sidebar badges
-        function updateSidebarBadges() {
-            // Update orders badge
-            if (window.OrdersDB) {
-                const pendingOrders = OrdersDB.getByCustomerId(currentUser.id)
-                    .filter(o => o.status === 'pending').length;
-                document.getElementById('sidebarOrdersBadge').textContent = pendingOrders;
-                document.getElementById('sidebarOrdersBadge').style.display = pendingOrders > 0 ? 'inline-block' : 'none';
-            }
-            
-            // Update cart badge
-            updateCartCount();
-            
-            // Update reservation badge
-            if (window.ReservationsDB) {
-                const upcomingReservations = ReservationsDB.getByCustomerId(currentUser.id)
-                    .filter(r => r.status === 'pending' || r.status === 'confirmed').length;
-                document.getElementById('sidebarReservationBadge').textContent = upcomingReservations;
-                document.getElementById('sidebarReservationBadge').style.display = upcomingReservations > 0 ? 'inline-block' : 'none';
-            }
-
-            // Update points and tier
-            if (currentUser.stats) {
-                document.getElementById('userPoints').textContent = currentUser.stats.points + ' pts';
-                document.getElementById('userTier').textContent = currentUser.stats.tier?.charAt(0).toUpperCase() + 
-                    currentUser.stats.tier?.slice(1) || 'Bronze';
-            }
-        }
-
-        function updateCartCount() {
-            const cartKey = `cart_${currentUser.id}`;
+    // Update sidebar badges - simple version
+    function updateSidebarBadges() {
+        if (!window.currentUser) return;
+        
+        // Update cart badge
+        const cartKey = `cart_${window.currentUser.id}`;
+        try {
             const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
             
             const cartBadges = document.querySelectorAll('#cartCount, #sidebarCartBadge');
             cartBadges.forEach(badge => {
-                badge.textContent = totalItems;
-                badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                if (badge) {
+                    badge.textContent = totalItems;
+                    badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
             });
+        } catch (e) {}
+        
+        // Update orders badge
+        if (window.OrdersDB) {
+            try {
+                const orders = OrdersDB.getByCustomerId(window.currentUser.id) || [];
+                const pendingOrders = orders.filter(o => o.status === 'pending').length;
+                const ordersBadge = document.getElementById('sidebarOrdersBadge');
+                if (ordersBadge) {
+                    ordersBadge.textContent = pendingOrders;
+                    ordersBadge.style.display = pendingOrders > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) {}
         }
+        
+        // Update reservation badge
+        if (window.ReservationsDB) {
+            try {
+                const reservations = ReservationsDB.getByCustomerId(window.currentUser.id) || [];
+                const upcoming = reservations.filter(r => r.status === 'pending' || r.status === 'confirmed').length;
+                const resBadge = document.getElementById('sidebarReservationBadge');
+                if (resBadge) {
+                    resBadge.textContent = upcoming;
+                    resBadge.style.display = upcoming > 0 ? 'inline-block' : 'none';
+                }
+            } catch (e) {}
+        }
+    }
 
-        // Call updateSidebarBadges after loading
+    // Set user name from global
+    if (window.currentUser) {
+        const firstName = window.currentUser.name.split(' ')[0];
+        document.getElementById('userName').textContent = firstName;
+        document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+        
         setTimeout(updateSidebarBadges, 500);
-    </script>
+    }
+</script>
 </body>
 </html>

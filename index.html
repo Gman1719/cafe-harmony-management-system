@@ -44,6 +44,85 @@
                 display: flex !important;
             }
         }
+
+        /* Notification styles */
+        #notificationContainer {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+            border-left: 4px solid;
+        }
+
+        .notification.success {
+            border-left-color: #2e7d32;
+        }
+
+        .notification.error {
+            border-left-color: #d32f2f;
+        }
+
+        .notification.warning {
+            border-left-color: #ed6c02;
+        }
+
+        .notification.info {
+            border-left-color: #0288d1;
+        }
+
+        .notification i {
+            font-size: 1.3rem;
+        }
+
+        .notification.success i {
+            color: #2e7d32;
+        }
+
+        .notification.error i {
+            color: #d32f2f;
+        }
+
+        .notification.warning i {
+            color: #ed6c02;
+        }
+
+        .notification.info i {
+            color: #0288d1;
+        }
+
+        .notification button {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-left: auto;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body>
@@ -74,7 +153,7 @@
         </div>
     </nav>
 
-    <!-- Hero Section - Simplified to match the image -->
+    <!-- Hero Section -->
     <section class="hero">
         <div class="container">
             <div class="hero-content">
@@ -101,7 +180,6 @@
         </div>
     </section>
 
-    <!-- Rest of your content remains the same -->
     <!-- Features Section -->
     <section class="features">
         <div class="container">
@@ -277,19 +355,44 @@
                     </div>
                 </div>
                 
-                <div class="contact-form">
-                    <form id="contactForm">
-                        <h3>Send us a message</h3>
+                <!-- Contact Form -->
+                <div class="contact-form-container">
+                    <h2>Send a Message</h2>
+                    <form id="contactForm" class="contact-form">
                         <div class="form-group">
-                            <input type="text" placeholder="Your Name" required>
+                            <label for="name">Your Name</label>
+                            <input type="text" id="name" placeholder="Enter your full name" required>
                         </div>
+                        
                         <div class="form-group">
-                            <input type="email" placeholder="Your Email" required>
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="Enter your email" required>
                         </div>
+                        
                         <div class="form-group">
-                            <textarea rows="4" placeholder="Your Message" required></textarea>
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" placeholder="0912345678" required>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+                        
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <select id="subject" required>
+                                <option value="">Select a subject</option>
+                                <option value="general">General Inquiry</option>
+                                <option value="reservation">Reservation</option>
+                                <option value="feedback">Feedback</option>
+                                <option value="catering">Catering</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea id="message" rows="5" placeholder="Tell us how we can help you..." required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-block">
+                            <i class="fas fa-paper-plane"></i> Send Message
+                        </button>
                     </form>
                 </div>
             </div>
@@ -306,24 +409,24 @@
             <div class="modal-body">
                 <form id="reservationForm">
                     <div class="form-group">
-                        <label for="resName">Full Name</label>
+                        <label for="resName">Full Name *</label>
                         <input type="text" id="resName" placeholder="Enter your full name" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="resEmail">Email</label>
+                        <label for="resEmail">Email *</label>
                         <input type="email" id="resEmail" placeholder="Enter your email" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="resPhone">Phone Number</label>
+                        <label for="resPhone">Phone Number *</label>
                         <input type="tel" id="resPhone" placeholder="0912345678 or +251912345678" required>
                         <small class="hint">Format: 09XXXXXXXX or +2519XXXXXXXX</small>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group half">
-                            <label for="resGuests">Number of Guests</label>
+                            <label for="resGuests">Number of Guests *</label>
                             <select id="resGuests" required>
                                 <option value="">Select</option>
                                 <option value="1">1 Guest</option>
@@ -336,14 +439,14 @@
                         </div>
                         
                         <div class="form-group half">
-                            <label for="resDate">Date</label>
+                            <label for="resDate">Date *</label>
                             <input type="date" id="resDate" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group half">
-                            <label for="resTime">Time</label>
+                            <label for="resTime">Time *</label>
                             <input type="time" id="resTime" required>
                         </div>
                         
@@ -352,7 +455,7 @@
                             <select id="resDuration">
                                 <option value="1">1 hour</option>
                                 <option value="1.5">1.5 hours</option>
-                                <option value="2">2 hours</option>
+                                <option value="2" selected>2 hours</option>
                             </select>
                         </div>
                     </div>
@@ -423,87 +526,180 @@
 
     <!-- Notification Container -->
     <div id="notificationContainer"></div>
+
+    <!-- Scripts - ORDER IS IMPORTANT -->
     <script src="data/users.js"></script>
+    <script src="js/reservations.js"></script>
     <script src="js/main.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/validation.js"></script>
     <script src="data/menu-items.js"></script>
+    
     <script>
         // Mobile menu toggle
         document.getElementById('navbarToggle').addEventListener('click', function() {
             document.getElementById('navbarMenu').classList.toggle('active');
         });
 
+        // Global notification function
+        window.showNotification = function(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            if (!container) return;
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const icons = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                warning: 'fa-exclamation-triangle',
+                info: 'fa-info-circle'
+            };
+            
+            notification.innerHTML = `
+                <i class="fas ${icons[type]}"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+            `;
+            
+            container.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 5000);
+        };
+
         // Reservation modal functionality
         const modal = document.getElementById('reservationModal');
         const openBtn = document.getElementById('openReservationModal');
         const closeBtn = document.querySelector('#reservationModal .modal-close');
         
-        function openReservationModal() {
+        window.openReservationModal = function() {
+            // Set min date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('resDate').min = today;
+            
+            // Pre-fill if user is logged in
+            const userStr = localStorage.getItem('markanUser');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    document.getElementById('resName').value = user.name || '';
+                    document.getElementById('resEmail').value = user.email || '';
+                    document.getElementById('resPhone').value = user.phone || '';
+                } catch (e) {}
+            }
+            
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
-        }
+        };
         
-        function closeReservationModal() {
+        window.closeReservationModal = function() {
             modal.classList.remove('active');
             document.body.style.overflow = '';
-        }
+            document.getElementById('reservationForm').reset();
+        };
         
         if (openBtn) {
-            openBtn.addEventListener('click', openReservationModal);
+            openBtn.addEventListener('click', window.openReservationModal);
         }
         
         if (closeBtn) {
-            closeBtn.addEventListener('click', closeReservationModal);
+            closeBtn.addEventListener('click', window.closeReservationModal);
         }
         
         // Close on outside click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                closeReservationModal();
+                window.closeReservationModal();
             }
         });
         
-        // Handle reservation form submission
-        document.getElementById('reservationForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            // Validate phone
-            const phone = document.getElementById('resPhone').value;
-            const phoneRegex = /^(09|\+2519)\d{8}$/;
-            
-            if (!phoneRegex.test(phone)) {
-                showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
-                return;
-            }
-            
-            showNotification('Reservation request sent successfully! We\'ll confirm shortly.', 'success');
-            closeReservationModal();
-            e.target.reset();
-        });
+
+    // Handle reservation form submission - FIXED VERSION
+    document.getElementById('reservationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        console.log('📝 Homepage reservation form submitted');
+        
+        // Validate phone
+        const phone = document.getElementById('resPhone').value;
+        const phoneRegex = /^(09|\+2519)\d{8}$/;
+        
+        if (!phoneRegex.test(phone)) {
+            alert('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)');
+            return;
+        }
+        
+        // Get form data
+        const reservationData = {
+            customerName: document.getElementById('resName').value,
+            customerEmail: document.getElementById('resEmail').value,
+            customerPhone: phone,
+            guests: parseInt(document.getElementById('resGuests').value),
+            date: document.getElementById('resDate').value,
+            time: document.getElementById('resTime').value,
+            duration: parseFloat(document.getElementById('resDuration').value) || 2,
+            specialRequests: document.getElementById('resRequests').value,
+            status: 'pending'
+        };
+        
+        // Add user ID if logged in
+        const userStr = localStorage.getItem('markanUser');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                reservationData.customerId = user.id;
+                console.log('✅ User logged in, customerId:', user.id);
+            } catch (e) {}
+        }
+        
+        // Generate ID
+        const id = 'RES-' + Date.now().toString().slice(-6) + '-' + 
+                   Math.random().toString(36).substr(2, 4).toUpperCase();
+        reservationData.id = id;
+        reservationData.createdAt = new Date().toISOString();
+        
+        // Save to localStorage
+        const existing = JSON.parse(localStorage.getItem('markanReservations')) || [];
+        existing.push(reservationData);
+        localStorage.setItem('markanReservations', JSON.stringify(existing));
+        
+        console.log('✅ Reservation saved:', reservationData);
+        console.log('Total reservations now:', existing.length);
+        
+        alert('Reservation confirmed! Your table has been booked.');
+        closeReservationModal();
+        document.getElementById('reservationForm').reset();
+    });
+
         
         // Load popular items
         window.addEventListener('load', function() {
             const container = document.getElementById('popularItems');
             if (container && typeof MenuDB !== 'undefined') {
-                const items = MenuDB.getPopular(4);
-                container.innerHTML = items.map(item => `
-                    <div class="menu-card" onclick="window.location.href='menu.html?id=${item.id}'">
-                        <div class="menu-card-image" style="background-image: url('${item.image || 'assets/images/placeholders/placeholder-food.jpg'}')">
-                            <span class="menu-card-badge popular">Popular</span>
-                        </div>
-                        <div class="menu-card-content">
-                            <h3 class="menu-card-title">${item.name}</h3>
-                            <p class="menu-card-description">${item.description.substring(0, 60)}...</p>
-                            <div class="menu-card-footer">
-                                <span class="menu-card-price">$${item.price.toFixed(2)}</span>
-                                <div class="menu-card-rating">
-                                    ${generateStars(item.rating)} <span>(${item.rating})</span>
+                const items = MenuDB.getPopular ? MenuDB.getPopular(4) : (MenuDB.getAll ? MenuDB.getAll().slice(0,4) : []);
+                
+                if (items.length > 0) {
+                    container.innerHTML = items.map(item => `
+                        <div class="menu-card" onclick="window.location.href='menu.html?id=${item.id}'">
+                            <div class="menu-card-image" style="background-image: url('${item.image || 'assets/images/placeholders/placeholder-food.jpg'}')">
+                                ${item.popular ? '<span class="menu-card-badge popular">Popular</span>' : ''}
+                            </div>
+                            <div class="menu-card-content">
+                                <h3 class="menu-card-title">${item.name}</h3>
+                                <p class="menu-card-description">${item.description ? item.description.substring(0, 60) + '...' : 'Delicious Ethiopian dish'}</p>
+                                <div class="menu-card-footer">
+                                    <span class="menu-card-price">${item.price} ETB</span>
+                                    <div class="menu-card-rating">
+                                        ${generateStars(item.rating || 4.5)}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
             }
         });
         
@@ -516,6 +712,13 @@
             for (let i = fullStars + (hasHalf ? 1 : 0); i < 5; i++) stars += '<i class="far fa-star"></i>';
             return stars;
         }
+
+        // Contact form submission
+        document.getElementById('contactForm')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            showNotification('Thank you for your message! We\'ll respond within 24 hours.', 'success');
+            this.reset();
+        });
     </script>
 </body>
 </html>

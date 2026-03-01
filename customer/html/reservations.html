@@ -593,7 +593,7 @@
     })();
     </script>
 
-    <!-- Main Navigation (Same on ALL pages - Before & After Login) -->
+    <!-- Main Navigation -->
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
@@ -713,10 +713,10 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-calendar-plus"></i> Make a Reservation</h3>
-                <button class="modal-close" onclick="closeReservationModal()"><i class="fas fa-times"></i></button>
+                <button class="modal-close" id="closeReservationModalBtn"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <form id="reservationForm" class="reservation-form" onsubmit="event.preventDefault(); makeReservation();">
+                <form id="reservationForm" class="reservation-form">
                     <div class="form-group">
                         <label for="resName">Full Name *</label>
                         <input type="text" id="resName" placeholder="Enter your full name" required>
@@ -777,7 +777,7 @@
                     </div>
                     
                     <div class="modal-actions">
-                        <button type="button" class="btn btn-outline" onclick="closeReservationModal()">Cancel</button>
+                        <button type="button" class="btn btn-outline" id="cancelReservationBtn">Cancel</button>
                         <button type="submit" class="btn btn-primary">Confirm Reservation</button>
                     </div>
                 </form>
@@ -845,140 +845,38 @@
                     window.currentUser.stats.tier?.slice(1) || 'Bronze';
             }
             
-            // Update sidebar badges
-            updateSidebarBadges();
-        }
-
-        function updateSidebarBadges() {
-            // Update orders badge
-            if (window.OrdersDB) {
-                const pendingOrders = OrdersDB.getByCustomerId(window.currentUser.id)
-                    .filter(o => o.status === 'pending').length;
-                document.getElementById('sidebarOrdersBadge').textContent = pendingOrders;
-                document.getElementById('sidebarOrdersBadge').style.display = pendingOrders > 0 ? 'inline-block' : 'none';
-            }
-            
-            // Update cart badge
-            updateCartCount();
-            
-            // Update reservation badge
-            if (window.ReservationsDB) {
-                const upcomingReservations = ReservationsDB.getByCustomerId(window.currentUser.id)
-                    .filter(r => r.status === 'pending' || r.status === 'confirmed').length;
-                document.getElementById('sidebarReservationBadge').textContent = upcomingReservations;
-                document.getElementById('sidebarReservationBadge').style.display = upcomingReservations > 0 ? 'inline-block' : 'none';
+            // Update sidebar badges - this will call functions from reservations.js
+            if (typeof updateSidebarBadges === 'function') {
+                updateSidebarBadges();
             }
         }
 
+        // Simple cart count update
         function updateCartCount() {
             const cartKey = `cart_${window.currentUser.id}`;
             const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
             
             const cartBadges = document.querySelectorAll('#cartCount, #sidebarCartBadge');
             cartBadges.forEach(badge => {
-                badge.textContent = totalItems;
-                badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                if (badge) {
+                    badge.textContent = totalItems;
+                    badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+                }
             });
         }
 
-        // Modal functions
-        function openReservationModal() {
-            document.getElementById('reservationModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-            
-            // Set min date to today
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('resDate').min = today;
-            
-            // Pre-fill user data if available
-            if (window.currentUser) {
-                document.getElementById('resName').value = window.currentUser.name || '';
-                document.getElementById('resEmail').value = window.currentUser.email || '';
-                document.getElementById('resPhone').value = window.currentUser.phone || '';
-            }
-        }
-
-        function closeReservationModal() {
-            document.getElementById('reservationModal').classList.remove('active');
-            document.body.style.overflow = '';
-            document.getElementById('reservationForm').reset();
-        }
-
-        window.openReservationModal = openReservationModal;
-        window.closeReservationModal = closeReservationModal;
-
-        // Open modal button
-        document.getElementById('openReservationModal').addEventListener('click', openReservationModal);
-
-        // Tab switching
+        // Tab switching - call the function from reservations.js
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
                 
-                // Trigger filter in reservations.js
                 if (typeof window.filterReservations === 'function') {
                     window.filterReservations(this.dataset.tab);
                 }
             });
         });
-
-        // Make reservation function
-        window.makeReservation = function() {
-            // Validate phone
-            const phone = document.getElementById('resPhone').value;
-            const phoneRegex = /^(09|\+2519)\d{8}$/;
-            
-            if (!phoneRegex.test(phone)) {
-                showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
-                return;
-            }
-            
-            // Get form data
-            const reservationData = {
-                customerId: window.currentUser.id,
-                customerName: document.getElementById('resName').value,
-                customerEmail: document.getElementById('resEmail').value,
-                customerPhone: phone,
-                guests: document.getElementById('resGuests').value,
-                date: document.getElementById('resDate').value,
-                time: document.getElementById('resTime').value,
-                duration: document.getElementById('resDuration').value,
-                specialRequests: document.getElementById('resRequests').value
-            };
-            
-            // Check availability
-            if (window.ReservationsDB) {
-                const availability = ReservationsDB.checkAvailability(
-                    reservationData.date, 
-                    reservationData.time, 
-                    reservationData.guests
-                );
-                
-                if (!availability.available) {
-                    showNotification(`Sorry, this time slot is full. Only ${availability.remaining} spots left.`, 'error');
-                    return;
-                }
-                
-                // Save reservation
-                const newReservation = ReservationsDB.add(reservationData);
-                
-                if (newReservation) {
-                    showNotification('Reservation confirmed!', 'success');
-                    closeReservationModal();
-                    
-                    // Reload reservations
-                    if (typeof window.loadReservations === 'function') {
-                        window.loadReservations('upcoming');
-                    }
-                } else {
-                    showNotification('Error creating reservation. Please try again.', 'error');
-                }
-            } else {
-                showNotification('Reservation system is temporarily unavailable', 'error');
-            }
-        };
     </script>
 </body>
 </html>
