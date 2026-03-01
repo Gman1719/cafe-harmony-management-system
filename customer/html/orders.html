@@ -9,11 +9,163 @@
     <link rel="stylesheet" href="../css/customer-style.css">
     <link rel="stylesheet" href="../css/customer-responsive.css">
     <style>
+        /* Dashboard Layout with Sidebar */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: calc(100vh - 80px);
+            background: #f9f5f0;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .dashboard-sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #4a2c1a 0%, #5d3a1a 100%);
+            color: white;
+            padding: 2rem 0;
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            border-right: 3px solid #c49a6c;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-bottom: 2px solid rgba(196, 154, 108, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-header h3 {
+            color: #c49a6c;
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .sidebar-header p {
+            color: #d4b08c;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.3rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1.5rem;
+            color: #f5e6d3;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(196, 154, 108, 0.15);
+            border-left-color: #c49a6c;
+            color: #c49a6c;
+        }
+
+        .sidebar-menu a i {
+            width: 24px;
+            font-size: 1.2rem;
+            color: #c49a6c;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover i,
+        .sidebar-menu a.active i {
+            color: #c49a6c;
+            transform: scale(1.1);
+        }
+
+        .sidebar-menu .badge {
+            margin-left: auto;
+            background: #c49a6c;
+            color: #4a2c1a;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-top: 2px solid rgba(196, 154, 108, 0.3);
+        }
+
+        .loyalty-card {
+            background: rgba(196, 154, 108, 0.1);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid rgba(196, 154, 108, 0.3);
+        }
+
+        .loyalty-card h4 {
+            color: #c49a6c;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .points {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #c49a6c;
+            margin-bottom: 0.3rem;
+        }
+
+        .tier {
+            display: inline-block;
+            padding: 0.3rem 1rem;
+            background: #c49a6c;
+            color: #4a2c1a;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Main Content Area */
+        .dashboard-content {
+            flex: 1;
+            padding: 2rem;
+            background: #f9f5f0;
+            max-width: calc(100% - 280px);
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        .content-header h1 {
+            color: #4a2c1a;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-header p {
+            color: #736b66;
+        }
+
+        /* Orders specific styles */
         .orders-header {
-            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
-            padding: 3rem;
-            border-radius: 0 0 50px 50px;
-            text-align: center;
+            background: linear-gradient(135deg, #4a2c1a, #c49a6c);
+            padding: 2rem;
+            border-radius: 15px;
             color: white;
             margin-bottom: 2rem;
             position: relative;
@@ -23,17 +175,10 @@
         .orders-header::before {
             content: '📦';
             position: absolute;
-            right: -20px;
-            bottom: -20px;
-            font-size: 120px;
+            right: 20px;
+            bottom: 10px;
+            font-size: 80px;
             opacity: 0.1;
-            transform: rotate(15deg);
-        }
-
-        .orders-header h1 {
-            color: white;
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
         }
 
         .order-filters {
@@ -46,23 +191,23 @@
 
         .filter-btn {
             padding: 0.8rem 1.5rem;
-            border: 2px solid var(--border-color);
+            border: 2px solid #c49a6c;
             background: white;
-            border-radius: var(--border-radius-full);
+            border-radius: 30px;
             font-weight: 500;
             cursor: pointer;
             transition: all 0.3s ease;
-            color: var(--text-muted);
+            color: #736b66;
         }
 
         .filter-btn:hover {
-            border-color: var(--coffee-medium);
-            color: var(--coffee-medium);
+            border-color: #4a2c1a;
+            color: #4a2c1a;
         }
 
         .filter-btn.active {
-            background: var(--coffee-medium);
-            border-color: var(--coffee-medium);
+            background: #c49a6c;
+            border-color: #c49a6c;
             color: white;
         }
 
@@ -74,10 +219,10 @@
         }
 
         .order-card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius-lg);
+            background: white;
+            border-radius: 15px;
             padding: 1.5rem;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             border: 1px solid rgba(139,69,19,0.1);
             transition: all 0.3s ease;
             cursor: pointer;
@@ -85,8 +230,8 @@
 
         .order-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--coffee-medium);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #c49a6c;
         }
 
         .order-header {
@@ -95,17 +240,17 @@
             align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--primary-cream);
+            border-bottom: 2px solid #f5e6d3;
         }
 
         .order-id {
             font-weight: 600;
-            color: var(--coffee-dark);
+            color: #4a2c1a;
         }
 
         .order-status {
             padding: 0.3rem 1rem;
-            border-radius: var(--border-radius-full);
+            border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
             text-transform: capitalize;
@@ -138,7 +283,7 @@
 
         .order-date {
             font-size: 0.85rem;
-            color: var(--text-muted);
+            color: #736b66;
             margin-bottom: 1rem;
         }
 
@@ -156,16 +301,16 @@
         }
 
         .order-item-name {
-            color: var(--text-dark);
+            color: #4a2c1a;
         }
 
         .order-item-quantity {
-            color: var(--coffee-medium);
+            color: #c49a6c;
             font-weight: 500;
         }
 
         .order-item-price {
-            color: var(--text-muted);
+            color: #736b66;
         }
 
         .order-footer {
@@ -174,13 +319,13 @@
             align-items: center;
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px dashed var(--border-color);
+            border-top: 1px dashed #c49a6c;
         }
 
         .order-total {
             font-size: 1.2rem;
             font-weight: 700;
-            color: var(--coffee-medium);
+            color: #4a2c1a;
         }
 
         .order-actions {
@@ -190,60 +335,60 @@
 
         .btn-reorder {
             padding: 0.5rem 1rem;
-            background: var(--coffee-medium);
+            background: #c49a6c;
             color: white;
             border: none;
-            border-radius: var(--border-radius-full);
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.9rem;
         }
 
         .btn-reorder:hover {
-            background: var(--coffee-dark);
+            background: #4a2c1a;
             transform: translateY(-2px);
         }
 
         .btn-details {
             padding: 0.5rem 1rem;
             background: none;
-            border: 2px solid var(--coffee-medium);
-            color: var(--coffee-medium);
-            border-radius: var(--border-radius-full);
+            border: 2px solid #c49a6c;
+            color: #c49a6c;
+            border-radius: 20px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.9rem;
         }
 
         .btn-details:hover {
-            background: var(--coffee-medium);
+            background: #c49a6c;
             color: white;
         }
 
         .no-orders {
             text-align: center;
             padding: 4rem 2rem;
-            background: var(--card-bg);
-            border-radius: var(--border-radius-xl);
-            box-shadow: var(--shadow-lg);
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             grid-column: 1 / -1;
         }
 
         .no-orders i {
             font-size: 5rem;
-            color: var(--coffee-medium);
+            color: #c49a6c;
             margin-bottom: 1.5rem;
             opacity: 0.5;
         }
 
         .no-orders h3 {
             font-size: 2rem;
-            color: var(--coffee-dark);
+            color: #4a2c1a;
             margin-bottom: 1rem;
         }
 
         .no-orders p {
-            color: var(--text-muted);
+            color: #736b66;
             margin-bottom: 2rem;
         }
 
@@ -252,220 +397,77 @@
             max-width: 600px;
         }
 
-        .order-details-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .order-details-id {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--coffee-dark);
-        }
-
-        .order-details-status {
-            padding: 0.3rem 1rem;
-            border-radius: var(--border-radius-full);
-            font-size: 0.9rem;
-            font-weight: 600;
-        }
-
-        .order-info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: var(--bg-warm);
-            border-radius: var(--border-radius-md);
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.3rem;
-        }
-
-        .info-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .info-value {
-            font-weight: 600;
-            color: var(--coffee-dark);
-        }
-
-        .order-timeline {
-            margin: 1.5rem 0;
-            padding: 1rem;
-            background: var(--bg-warm);
-            border-radius: var(--border-radius-md);
-        }
-
-        .timeline-item {
-            display: flex;
-            gap: 1rem;
-            padding: 0.5rem 0;
-            position: relative;
-        }
-
-        .timeline-item:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            left: 11px;
-            top: 30px;
-            bottom: 0;
-            width: 2px;
-            background: var(--border-color);
-        }
-
-        .timeline-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: white;
-            border: 2px solid var(--coffee-medium);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1;
-        }
-
-        .timeline-icon.completed {
-            background: var(--coffee-medium);
-            color: white;
-        }
-
-        .timeline-content {
-            flex: 1;
-        }
-
-        .timeline-title {
-            font-weight: 600;
-            margin-bottom: 0.2rem;
-        }
-
-        .timeline-time {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .tracking-progress {
-            margin: 1.5rem 0;
-        }
-
-        .progress-steps {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 1rem;
-        }
-
-        .progress-step {
-            flex: 1;
-            text-align: center;
-            position: relative;
-        }
-
-        .progress-step::before {
-            content: '';
-            position: absolute;
-            top: 15px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--border-color);
-            z-index: 0;
-        }
-
-        .progress-step:first-child::before {
-            left: 50%;
-        }
-
-        .progress-step:last-child::before {
-            right: 50%;
-        }
-
-        .step-dot {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: white;
-            border: 3px solid var(--border-color);
-            margin: 0 auto 0.5rem;
-            position: relative;
-            z-index: 1;
-        }
-
-        .step-dot.completed {
-            background: var(--success-green);
-            border-color: var(--success-green);
-        }
-
-        .step-dot.active {
-            border-color: var(--coffee-medium);
-            animation: pulse 1.5s infinite;
-        }
-
-        .step-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .step-label.active {
-            color: var(--coffee-dark);
-            font-weight: 600;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+        /* Responsive */
+        @media (max-width: 992px) {
+            .dashboard-wrapper {
+                flex-direction: column;
+            }
+            
+            .dashboard-sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding: 1rem 0;
+            }
+            
+            .dashboard-content {
+                max-width: 100%;
+            }
+            
+            .sidebar-menu {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .sidebar-menu li {
+                width: auto;
+            }
+            
+            .sidebar-menu a {
+                padding: 0.7rem 1rem;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .sidebar-menu a:hover,
+            .sidebar-menu a.active {
+                border-left-color: transparent;
+                border-bottom-color: #c49a6c;
+            }
         }
 
         @media (max-width: 768px) {
+            .sidebar-menu {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .sidebar-menu li {
+                width: 100%;
+            }
+            
             .orders-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .order-info-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .order-footer {
                 flex-direction: column;
                 gap: 1rem;
                 align-items: flex-start;
             }
-
+            
             .order-actions {
                 width: 100%;
             }
-
+            
             .btn-reorder,
             .btn-details {
                 flex: 1;
-            }
-
-            .progress-steps {
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .progress-step::before {
-                display: none;
-            }
-
-            .step-dot {
-                margin: 0 1rem 0 0;
-                display: inline-block;
-                vertical-align: middle;
-            }
-
-            .step-label {
-                display: inline-block;
-                vertical-align: middle;
             }
         }
     </style>
@@ -502,7 +504,7 @@
     })();
     </script>
 
-    <!-- Navigation -->
+    <!-- Main Navigation (Same on ALL pages - Before & After Login) -->
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
@@ -511,18 +513,17 @@
             </div>
             
             <div class="navbar-menu" id="navbarMenu">
-                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
-                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
-                <a href="orders.html" class="active"><i class="fas fa-history"></i> Orders</a>
-                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
-                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                <a href="../../index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="../../menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="../../about.html"><i class="fas fa-info-circle"></i> About</a>
+                <a href="../../contact.html"><i class="fas fa-envelope"></i> Contact</a>
+                <a href="../../faq.html"><i class="fas fa-question-circle"></i> FAQ</a>
+                <a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                 
                 <div class="navbar-buttons">
                     <button class="theme-toggle" id="themeToggle" title="Toggle theme">
                         <i class="fas fa-moon"></i>
                     </button>
-                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
                     <button class="btn btn-outline" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
@@ -535,33 +536,77 @@
         </div>
     </nav>
 
-    <!-- Orders Header -->
-    <div class="orders-header">
-        <div class="container">
-            <h1><i class="fas fa-history"></i> My Orders</h1>
-            <p>Track and manage your orders</p>
-        </div>
-    </div>
+    <!-- Dashboard Wrapper with Sidebar -->
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-header">
+                <h3>Customer Dashboard</h3>
+                <p>Manage your account</p>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html" class="active">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>My Orders</span>
+                        <span class="badge" id="sidebarOrdersBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="cart.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>My Cart</span>
+                        <span class="badge" id="sidebarCartBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="reservations.html">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Reservations</span>
+                        <span class="badge" id="sidebarReservationBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="profile.html">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Profile Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
 
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Order Filters -->
-        <div class="order-filters">
-            <button class="filter-btn active" data-filter="all">All Orders</button>
-            <button class="filter-btn" data-filter="pending">Pending</button>
-            <button class="filter-btn" data-filter="preparing">Preparing</button>
-            <button class="filter-btn" data-filter="ready">Ready</button>
-            <button class="filter-btn" data-filter="completed">Completed</button>
-            <button class="filter-btn" data-filter="cancelled">Cancelled</button>
-        </div>
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <div class="content-header">
+                <h1>My Orders</h1>
+                <p>Track and manage your orders</p>
+            </div>
 
-        <!-- Orders Grid -->
-        <div class="orders-grid" id="ordersGrid">
-            <!-- Loading skeleton will be shown initially -->
-            <div class="loading-skeleton" style="height: 200px;"></div>
-            <div class="loading-skeleton" style="height: 200px;"></div>
-            <div class="loading-skeleton" style="height: 200px;"></div>
-        </div>
+            <!-- Order Filters -->
+            <div class="order-filters">
+                <button class="filter-btn active" data-filter="all">All Orders</button>
+                <button class="filter-btn" data-filter="pending">Pending</button>
+                <button class="filter-btn" data-filter="preparing">Preparing</button>
+                <button class="filter-btn" data-filter="ready">Ready</button>
+                <button class="filter-btn" data-filter="completed">Completed</button>
+                <button class="filter-btn" data-filter="cancelled">Cancelled</button>
+            </div>
+
+            <!-- Orders Grid -->
+            <div class="orders-grid" id="ordersGrid">
+                <!-- Loading skeleton will be shown initially -->
+                <div class="loading-skeleton" style="height: 200px;"></div>
+                <div class="loading-skeleton" style="height: 200px;"></div>
+                <div class="loading-skeleton" style="height: 200px;"></div>
+            </div>
+        </main>
     </div>
 
     <!-- Order Details Modal -->
@@ -624,6 +669,54 @@
             const firstName = window.currentUser.name.split(' ')[0];
             document.getElementById('userName').textContent = firstName;
             document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+            
+            // Load user data
+            loadUserData();
+        }
+
+        function loadUserData() {
+            // Get points and tier
+            if (window.currentUser.stats) {
+                document.getElementById('userPoints').textContent = window.currentUser.stats.points + ' pts';
+                document.getElementById('userTier').textContent = window.currentUser.stats.tier?.charAt(0).toUpperCase() + 
+                    window.currentUser.stats.tier?.slice(1) || 'Bronze';
+            }
+            
+            // Update sidebar badges
+            updateSidebarBadges();
+        }
+
+        function updateCartCount() {
+            const cartKey = `cart_${window.currentUser.id}`;
+            const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            
+            const cartBadges = document.querySelectorAll('#cartCount, #sidebarCartBadge');
+            cartBadges.forEach(badge => {
+                badge.textContent = totalItems;
+                badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+            });
+        }
+
+        function updateSidebarBadges() {
+            // Update orders badge
+            if (window.OrdersDB) {
+                const pendingOrders = OrdersDB.getByCustomerId(window.currentUser.id)
+                    .filter(o => o.status === 'pending').length;
+                document.getElementById('sidebarOrdersBadge').textContent = pendingOrders;
+                document.getElementById('sidebarOrdersBadge').style.display = pendingOrders > 0 ? 'inline-block' : 'none';
+            }
+            
+            // Update cart badge
+            updateCartCount();
+            
+            // Update reservation badge
+            if (window.ReservationsDB) {
+                const upcomingReservations = ReservationsDB.getByCustomerId(window.currentUser.id)
+                    .filter(r => r.status === 'pending' || r.status === 'confirmed').length;
+                document.getElementById('sidebarReservationBadge').textContent = upcomingReservations;
+                document.getElementById('sidebarReservationBadge').style.display = upcomingReservations > 0 ? 'inline-block' : 'none';
+            }
         }
 
         // Close modal function
@@ -639,23 +732,6 @@
                 closeOrderModal();
             }
         });
-
-        // Update cart count
-        function updateCartCount() {
-            if (window.currentUser) {
-                const cartKey = `cart_${window.currentUser.id}`;
-                const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
-                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-                const cartBadge = document.getElementById('cartCount');
-                if (cartBadge) {
-                    cartBadge.textContent = totalItems;
-                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
-                }
-            }
-        }
-
-        // Initial cart count
-        updateCartCount();
     </script>
 </body>
 </html>

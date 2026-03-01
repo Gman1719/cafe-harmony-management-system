@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
     <style>
-        /* Your existing styles */
         .auth-footer {
             margin-top: 1.5rem;
             text-align: center;
@@ -42,6 +41,25 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+        }
+        
+        /* Demo credentials box */
+        .demo-credentials {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: rgba(139, 69, 19, 0.1);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .demo-credentials p {
+            margin: 0.3rem 0;
+            color: #8B4513;
+        }
+        
+        .demo-credentials strong {
+            color: #4a2c1a;
         }
     </style>
 </head>
@@ -113,6 +131,13 @@
                 </button>
             </form>
             
+            <!-- Demo Credentials -->
+            <div class="demo-credentials">
+                <p><strong>Demo Credentials:</strong></p>
+                <p>Admin: admin@markan.com / Admin@123</p>
+                <p>Customer: john@example.com / Customer@123</p>
+            </div>
+            
             <div class="auth-footer">
                 <p>Don't have an account? <a href="register.html">Sign up</a></p>
             </div>
@@ -131,6 +156,8 @@
 
     <!-- Notification Container -->
     <div id="notificationContainer"></div>
+    
+    <!-- CRITICAL: Scripts must load in this exact order -->
     <script src="js/users.js"></script>
     <script src="js/main.js"></script>
     <script src="js/auth.js"></script>
@@ -151,6 +178,18 @@
                 navbar.classList.remove('scrolled');
             }
         });
+        
+        // Debug: Check loaded modules
+        console.log('🔍 Checking loaded modules:');
+        setTimeout(() => {
+            console.log('- UsersDB:', typeof UsersDB !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+            console.log('- Auth:', typeof Auth !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+            console.log('- Validator:', typeof Validator !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
+            
+            if (typeof UsersDB !== 'undefined') {
+                console.log('📊 Available users:', UsersDB.users);
+            }
+        }, 500);
     </script>
 </body>
 </html>

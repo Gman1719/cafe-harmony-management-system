@@ -38,7 +38,7 @@
       "lastLogin": "2024-03-01T10:30:00.000Z",
       "status": "active",
       "address": "Debre Birhan University, Student Dorm",
-      "bio": "Coffee lover and regular customer",
+      "bio": "Coffee lover",
       "preferences": {
         "notifications": true,
         "darkMode": false,
@@ -49,32 +49,6 @@
         "orders": 5,
         "reservations": 2,
         "points": 150,
-        "tier": "bronze"
-      }
-    },
-    {
-      "id": 3,
-      "name": "Sarah Staff",
-      "email": "sarah@markan.com",
-      "password": "Staff@123",
-      "phone": "0923456789",
-      "role": "staff",
-      "avatar": "https://ui-avatars.com/api/?name=Sarah+Staff&background=8B4513&color=fff&size=150",
-      "createdAt": "2024-02-01T00:00:00.000Z",
-      "lastLogin": "2024-03-01T09:15:00.000Z",
-      "status": "active",
-      "address": "Debre Birhan University",
-      "bio": "Cafe staff member",
-      "preferences": {
-        "notifications": true,
-        "darkMode": false,
-        "language": "en",
-        "theme": "light"
-      },
-      "stats": {
-        "orders": 0,
-        "reservations": 0,
-        "points": 0,
         "tier": "bronze"
       }
     }

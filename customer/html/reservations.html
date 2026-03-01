@@ -9,11 +9,163 @@
     <link rel="stylesheet" href="../css/customer-style.css">
     <link rel="stylesheet" href="../css/customer-responsive.css">
     <style>
+        /* Dashboard Layout with Sidebar */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: calc(100vh - 80px);
+            background: #f9f5f0;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .dashboard-sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #4a2c1a 0%, #5d3a1a 100%);
+            color: white;
+            padding: 2rem 0;
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            border-right: 3px solid #c49a6c;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-bottom: 2px solid rgba(196, 154, 108, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-header h3 {
+            color: #c49a6c;
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .sidebar-header p {
+            color: #d4b08c;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.3rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1.5rem;
+            color: #f5e6d3;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(196, 154, 108, 0.15);
+            border-left-color: #c49a6c;
+            color: #c49a6c;
+        }
+
+        .sidebar-menu a i {
+            width: 24px;
+            font-size: 1.2rem;
+            color: #c49a6c;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover i,
+        .sidebar-menu a.active i {
+            color: #c49a6c;
+            transform: scale(1.1);
+        }
+
+        .sidebar-menu .badge {
+            margin-left: auto;
+            background: #c49a6c;
+            color: #4a2c1a;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-top: 2px solid rgba(196, 154, 108, 0.3);
+        }
+
+        .loyalty-card {
+            background: rgba(196, 154, 108, 0.1);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid rgba(196, 154, 108, 0.3);
+        }
+
+        .loyalty-card h4 {
+            color: #c49a6c;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .points {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #c49a6c;
+            margin-bottom: 0.3rem;
+        }
+
+        .tier {
+            display: inline-block;
+            padding: 0.3rem 1rem;
+            background: #c49a6c;
+            color: #4a2c1a;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Main Content Area */
+        .dashboard-content {
+            flex: 1;
+            padding: 2rem;
+            background: #f9f5f0;
+            max-width: calc(100% - 280px);
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        .content-header h1 {
+            color: #4a2c1a;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-header p {
+            color: #736b66;
+        }
+
+        /* Reservations specific styles */
         .reservations-header {
-            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
-            padding: 3rem;
-            border-radius: 0 0 50px 50px;
-            text-align: center;
+            background: linear-gradient(135deg, #4a2c1a, #c49a6c);
+            padding: 2rem;
+            border-radius: 15px;
             color: white;
             margin-bottom: 2rem;
             position: relative;
@@ -23,70 +175,61 @@
         .reservations-header::before {
             content: '📅';
             position: absolute;
-            right: -20px;
-            bottom: -20px;
-            font-size: 120px;
+            right: 20px;
+            bottom: 10px;
+            font-size: 80px;
             opacity: 0.1;
-            transform: rotate(15deg);
-        }
-
-        .reservations-header h1 {
-            color: white;
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
         }
 
         .reservation-cta {
-            background: var(--card-bg);
-            border-radius: var(--border-radius-xl);
+            background: white;
+            border-radius: 15px;
             padding: 3rem;
             text-align: center;
             margin-bottom: 3rem;
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(139,69,19,0.1);
         }
 
         .reservation-cta::before {
             content: '🎉';
             position: absolute;
-            right: -20px;
-            bottom: -20px;
-            font-size: 120px;
+            right: 20px;
+            bottom: 10px;
+            font-size: 80px;
             opacity: 0.1;
-            transform: rotate(-15deg);
         }
 
         .reservation-cta h2 {
-            color: var(--coffee-dark);
+            color: #4a2c1a;
             font-size: 2.2rem;
             margin-bottom: 1rem;
         }
 
         .reservation-cta p {
-            color: var(--text-muted);
+            color: #736b66;
             font-size: 1.1rem;
             max-width: 600px;
             margin: 0 auto 2rem;
         }
 
         .btn-reserve {
-            background: var(--coffee-medium);
+            background: #c49a6c;
             color: white;
             padding: 1rem 3rem;
             font-size: 1.2rem;
             border: none;
-            border-radius: var(--border-radius-full);
+            border-radius: 30px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
         .btn-reserve:hover {
-            background: var(--coffee-dark);
+            background: #4a2c1a;
             transform: translateY(-3px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
         .my-reservations {
@@ -95,17 +238,14 @@
 
         .my-reservations h2 {
             margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--coffee-dark);
+            color: #4a2c1a;
         }
 
         .reservations-tabs {
             display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
-            border-bottom: 2px solid var(--primary-cream);
+            border-bottom: 2px solid #f5e6d3;
             padding-bottom: 0.5rem;
         }
 
@@ -115,18 +255,18 @@
             border: none;
             font-size: 1rem;
             font-weight: 500;
-            color: var(--text-muted);
+            color: #736b66;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
         }
 
         .tab-btn:hover {
-            color: var(--coffee-medium);
+            color: #c49a6c;
         }
 
         .tab-btn.active {
-            color: var(--coffee-dark);
+            color: #4a2c1a;
         }
 
         .tab-btn.active::after {
@@ -136,8 +276,8 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: var(--coffee-medium);
-            border-radius: var(--border-radius-full);
+            background: #c49a6c;
+            border-radius: 3px;
         }
 
         .reservations-grid {
@@ -147,10 +287,10 @@
         }
 
         .reservation-card {
-            background: var(--card-bg);
-            border-radius: var(--border-radius-lg);
+            background: white;
+            border-radius: 15px;
             padding: 1.5rem;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
             border: 1px solid rgba(139,69,19,0.1);
@@ -158,20 +298,20 @@
 
         .reservation-card:hover {
             transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--coffee-medium);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #c49a6c;
         }
 
         .reservation-card.pending {
-            border-left-color: var(--warning-orange);
+            border-left-color: #ffc107;
         }
 
         .reservation-card.confirmed {
-            border-left-color: var(--success-green);
+            border-left-color: #28a745;
         }
 
         .reservation-card.cancelled {
-            border-left-color: var(--danger-red);
+            border-left-color: #dc3545;
             opacity: 0.7;
         }
 
@@ -181,17 +321,17 @@
             align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid var(--primary-cream);
+            border-bottom: 1px solid #f5e6d3;
         }
 
         .reservation-id {
             font-weight: 600;
-            color: var(--coffee-dark);
+            color: #4a2c1a;
         }
 
         .reservation-status {
             padding: 0.3rem 1rem;
-            border-radius: var(--border-radius-full);
+            border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
         }
@@ -220,11 +360,11 @@
             align-items: center;
             gap: 0.5rem;
             margin: 0.5rem 0;
-            color: var(--text-muted);
+            color: #736b66;
         }
 
         .reservation-details i {
-            color: var(--coffee-medium);
+            color: #c49a6c;
             width: 20px;
         }
 
@@ -233,25 +373,24 @@
             gap: 0.5rem;
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid var(--primary-cream);
+            border-top: 1px solid #f5e6d3;
         }
 
         .btn-cancel {
             flex: 1;
             padding: 0.8rem;
             background: none;
-            border: 2px solid var(--danger-red);
-            color: var(--danger-red);
-            border-radius: var(--border-radius-full);
+            border: 2px solid #dc3545;
+            color: #dc3545;
+            border-radius: 30px;
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
         }
 
-        .btn-cancel:hover {
-            background: var(--danger-red);
+        .btn-cancel:hover:not(:disabled) {
+            background: #dc3545;
             color: white;
-            transform: translateY(-2px);
         }
 
         .btn-cancel:disabled {
@@ -262,26 +401,26 @@
         .no-reservations {
             text-align: center;
             padding: 4rem;
-            background: var(--card-bg);
-            border-radius: var(--border-radius-xl);
-            box-shadow: var(--shadow-lg);
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             grid-column: 1 / -1;
         }
 
         .no-reservations i {
             font-size: 5rem;
-            color: var(--coffee-medium);
+            color: #c49a6c;
             margin-bottom: 1rem;
             opacity: 0.5;
         }
 
         .no-reservations h3 {
-            color: var(--coffee-dark);
+            color: #4a2c1a;
             margin-bottom: 0.5rem;
         }
 
         .no-reservations p {
-            color: var(--text-muted);
+            color: #736b66;
             margin-bottom: 2rem;
         }
 
@@ -305,7 +444,7 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
-            color: var(--coffee-dark);
+            color: #4a2c1a;
         }
 
         .form-group input,
@@ -313,24 +452,23 @@
         .form-group textarea {
             width: 100%;
             padding: 0.8rem 1rem;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius-md);
+            border: 2px solid #f5e6d3;
+            border-radius: 10px;
             font-size: 1rem;
             transition: all 0.3s ease;
-            background: var(--bg-warm);
+            background: #f9f5f0;
         }
 
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: var(--coffee-medium);
-            box-shadow: 0 0 0 3px rgba(139,69,19,0.1);
+            border-color: #c49a6c;
         }
 
         .hint {
             font-size: 0.85rem;
-            color: var(--text-muted);
+            color: #736b66;
             margin-top: 0.3rem;
             display: block;
         }
@@ -341,7 +479,56 @@
             margin-top: 1rem;
         }
 
+        /* Responsive */
+        @media (max-width: 992px) {
+            .dashboard-wrapper {
+                flex-direction: column;
+            }
+            
+            .dashboard-sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding: 1rem 0;
+            }
+            
+            .dashboard-content {
+                max-width: 100%;
+            }
+            
+            .sidebar-menu {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .sidebar-menu li {
+                width: auto;
+            }
+            
+            .sidebar-menu a {
+                padding: 0.7rem 1rem;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .sidebar-menu a:hover,
+            .sidebar-menu a.active {
+                border-left-color: transparent;
+                border-bottom-color: #c49a6c;
+            }
+        }
+
         @media (max-width: 768px) {
+            .sidebar-menu {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .sidebar-menu li {
+                width: 100%;
+            }
+            
             .reservations-grid {
                 grid-template-columns: 1fr;
             }
@@ -406,7 +593,7 @@
     })();
     </script>
 
-    <!-- Navigation -->
+    <!-- Main Navigation (Same on ALL pages - Before & After Login) -->
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
@@ -415,19 +602,18 @@
             </div>
             
             <div class="navbar-menu" id="navbarMenu">
-                <a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
-                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
-                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
-                <a href="reservations.html" class="active"><i class="fas fa-calendar-check"></i> Reservations</a>
-                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                <a href="../../index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="../../menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="../../about.html"><i class="fas fa-info-circle"></i> About</a>
+                <a href="../../contact.html"><i class="fas fa-envelope"></i> Contact</a>
+                <a href="../../faq.html"><i class="fas fa-question-circle"></i> FAQ</a>
+                <a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                 
                 <div class="navbar-buttons">
                     <button class="theme-toggle" id="themeToggle" title="Toggle theme">
                         <i class="fas fa-moon"></i>
                     </button>
-                    <span class="user-greeting" id="userGreeting">Hi, <span id="userName">Customer</span></span>
-                    <button class="btn btn-outline" id="logoutBtn">
+                     <button class="btn btn-outline" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
@@ -439,43 +625,87 @@
         </div>
     </nav>
 
-    <!-- Reservations Header -->
-    <div class="reservations-header">
-        <div class="container">
-            <h1><i class="fas fa-calendar-check"></i> My Reservations</h1>
-            <p>Plan your visit and skip the wait</p>
-        </div>
-    </div>
-
-    <!-- Reservation CTA -->
-    <div class="container">
-        <div class="reservation-cta">
-            <h2>Plan Your Visit</h2>
-            <p>Reserve a table in advance and enjoy a seamless dining experience at Markan Cafe.</p>
-            <button class="btn-reserve" id="openReservationModal">
-                <i class="fas fa-calendar-plus"></i> Make a Reservation
-            </button>
-        </div>
-    </div>
-
-    <!-- My Reservations -->
-    <div class="container">
-        <div class="my-reservations">
-            <h2><i class="fas fa-clock"></i> Your Reservations</h2>
+    <!-- Dashboard Wrapper with Sidebar -->
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-header">
+                <h3>Customer Dashboard</h3>
+                <p>Manage your account</p>
+            </div>
             
-            <div class="reservations-tabs">
-                <button class="tab-btn active" data-tab="upcoming">Upcoming</button>
-                <button class="tab-btn" data-tab="past">Past</button>
-                <button class="tab-btn" data-tab="cancelled">Cancelled</button>
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>My Orders</span>
+                        <span class="badge" id="sidebarOrdersBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="cart.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>My Cart</span>
+                        <span class="badge" id="sidebarCartBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="reservations.html" class="active">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Reservations</span>
+                        <span class="badge" id="sidebarReservationBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="profile.html">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Profile Settings</span>
+                    </a>
+                </li>
+            </ul>
+
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <div class="content-header">
+                <h1>My Reservations</h1>
+                <p>Plan your visit and skip the wait</p>
             </div>
 
-            <div class="reservations-grid" id="reservationsGrid">
-                <!-- Loading skeleton will be shown initially -->
-                <div class="loading-skeleton" style="height: 250px;"></div>
-                <div class="loading-skeleton" style="height: 250px;"></div>
-                <div class="loading-skeleton" style="height: 250px;"></div>
+            <!-- Reservation CTA -->
+            <div class="reservation-cta">
+                <h2>Plan Your Visit</h2>
+                <p>Reserve a table in advance and enjoy a seamless dining experience at Markan Cafe.</p>
+                <button class="btn-reserve" id="openReservationModal">
+                    <i class="fas fa-calendar-plus"></i> Make a Reservation
+                </button>
             </div>
-        </div>
+
+            <!-- My Reservations -->
+            <div class="my-reservations">
+                <h2><i class="fas fa-clock"></i> Your Reservations</h2>
+                
+                <div class="reservations-tabs">
+                    <button class="tab-btn active" data-tab="upcoming">Upcoming</button>
+                    <button class="tab-btn" data-tab="past">Past</button>
+                    <button class="tab-btn" data-tab="cancelled">Cancelled</button>
+                </div>
+
+                <div class="reservations-grid" id="reservationsGrid">
+                    <!-- Loading skeleton will be shown initially -->
+                    <div class="loading-skeleton" style="height: 250px;"></div>
+                    <div class="loading-skeleton" style="height: 250px;"></div>
+                    <div class="loading-skeleton" style="height: 250px;"></div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <!-- Reservation Modal -->
@@ -602,6 +832,54 @@
             const firstName = window.currentUser.name.split(' ')[0];
             document.getElementById('userName').textContent = firstName;
             document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+            
+            // Load user data
+            loadUserData();
+        }
+
+        function loadUserData() {
+            // Get points and tier
+            if (window.currentUser.stats) {
+                document.getElementById('userPoints').textContent = window.currentUser.stats.points + ' pts';
+                document.getElementById('userTier').textContent = window.currentUser.stats.tier?.charAt(0).toUpperCase() + 
+                    window.currentUser.stats.tier?.slice(1) || 'Bronze';
+            }
+            
+            // Update sidebar badges
+            updateSidebarBadges();
+        }
+
+        function updateSidebarBadges() {
+            // Update orders badge
+            if (window.OrdersDB) {
+                const pendingOrders = OrdersDB.getByCustomerId(window.currentUser.id)
+                    .filter(o => o.status === 'pending').length;
+                document.getElementById('sidebarOrdersBadge').textContent = pendingOrders;
+                document.getElementById('sidebarOrdersBadge').style.display = pendingOrders > 0 ? 'inline-block' : 'none';
+            }
+            
+            // Update cart badge
+            updateCartCount();
+            
+            // Update reservation badge
+            if (window.ReservationsDB) {
+                const upcomingReservations = ReservationsDB.getByCustomerId(window.currentUser.id)
+                    .filter(r => r.status === 'pending' || r.status === 'confirmed').length;
+                document.getElementById('sidebarReservationBadge').textContent = upcomingReservations;
+                document.getElementById('sidebarReservationBadge').style.display = upcomingReservations > 0 ? 'inline-block' : 'none';
+            }
+        }
+
+        function updateCartCount() {
+            const cartKey = `cart_${window.currentUser.id}`;
+            const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            
+            const cartBadges = document.querySelectorAll('#cartCount, #sidebarCartBadge');
+            cartBadges.forEach(badge => {
+                badge.textContent = totalItems;
+                badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+            });
         }
 
         // Modal functions
@@ -612,6 +890,13 @@
             // Set min date to today
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('resDate').min = today;
+            
+            // Pre-fill user data if available
+            if (window.currentUser) {
+                document.getElementById('resName').value = window.currentUser.name || '';
+                document.getElementById('resEmail').value = window.currentUser.email || '';
+                document.getElementById('resPhone').value = window.currentUser.phone || '';
+            }
         }
 
         function closeReservationModal() {
@@ -639,22 +924,61 @@
             });
         });
 
-        // Update cart count
-        function updateCartCount() {
-            if (window.currentUser) {
-                const cartKey = `cart_${window.currentUser.id}`;
-                const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
-                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-                const cartBadge = document.getElementById('cartCount');
-                if (cartBadge) {
-                    cartBadge.textContent = totalItems;
-                    cartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
-                }
+        // Make reservation function
+        window.makeReservation = function() {
+            // Validate phone
+            const phone = document.getElementById('resPhone').value;
+            const phoneRegex = /^(09|\+2519)\d{8}$/;
+            
+            if (!phoneRegex.test(phone)) {
+                showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
+                return;
             }
-        }
-
-        // Initial cart count
-        updateCartCount();
+            
+            // Get form data
+            const reservationData = {
+                customerId: window.currentUser.id,
+                customerName: document.getElementById('resName').value,
+                customerEmail: document.getElementById('resEmail').value,
+                customerPhone: phone,
+                guests: document.getElementById('resGuests').value,
+                date: document.getElementById('resDate').value,
+                time: document.getElementById('resTime').value,
+                duration: document.getElementById('resDuration').value,
+                specialRequests: document.getElementById('resRequests').value
+            };
+            
+            // Check availability
+            if (window.ReservationsDB) {
+                const availability = ReservationsDB.checkAvailability(
+                    reservationData.date, 
+                    reservationData.time, 
+                    reservationData.guests
+                );
+                
+                if (!availability.available) {
+                    showNotification(`Sorry, this time slot is full. Only ${availability.remaining} spots left.`, 'error');
+                    return;
+                }
+                
+                // Save reservation
+                const newReservation = ReservationsDB.add(reservationData);
+                
+                if (newReservation) {
+                    showNotification('Reservation confirmed!', 'success');
+                    closeReservationModal();
+                    
+                    // Reload reservations
+                    if (typeof window.loadReservations === 'function') {
+                        window.loadReservations('upcoming');
+                    }
+                } else {
+                    showNotification('Error creating reservation. Please try again.', 'error');
+                }
+            } else {
+                showNotification('Reservation system is temporarily unavailable', 'error');
+            }
+        };
     </script>
 </body>
 </html>

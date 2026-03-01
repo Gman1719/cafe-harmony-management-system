@@ -21,7 +21,7 @@ const Auth = {
             
             // Try multiple times with increasing delays
             let attempts = 0;
-            const maxAttempts = 20;
+            const maxAttempts = 30;
             
             while (attempts < maxAttempts) {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -34,8 +34,8 @@ const Auth = {
             
             if (typeof UsersDB === 'undefined') {
                 console.error('❌ UsersDB failed to load after', maxAttempts * 100, 'ms');
-                this.showNotification('System error: Database not loaded', 'error');
-                return;
+                // Create fallback UsersDB
+                this.createFallbackUsersDB();
             }
         }
         
@@ -48,6 +48,59 @@ const Auth = {
         }, 200);
         
         console.log('✅ Auth initialized');
+    },
+    
+    createFallbackUsersDB() {
+        console.log('🔄 Creating fallback UsersDB...');
+        window.UsersDB = {
+            users: [
+                {
+                    id: 1,
+                    name: 'Admin User',
+                    email: 'admin@markan.com',
+                    password: 'Admin@123',
+                    phone: '+251911234567',
+                    role: 'admin',
+                    status: 'active'
+                },
+                {
+                    id: 2,
+                    name: 'John Customer',
+                    email: 'john@example.com',
+                    password: 'Customer@123',
+                    phone: '0912345678',
+                    role: 'customer',
+                    status: 'active'
+                }
+            ],
+            authenticate(email, password) {
+                const user = this.users.find(u => 
+                    u.email.toLowerCase() === email.toLowerCase() && 
+                    u.password === password &&
+                    u.status === 'active'
+                );
+                
+                if (user) {
+                    const { password, ...safeUser } = user;
+                    return safeUser;
+                }
+                return null;
+            },
+            create(userData) {
+                if (this.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
+                    return null;
+                }
+                const newUser = {
+                    id: this.users.length + 1,
+                    ...userData,
+                    status: 'active'
+                };
+                this.users.push(newUser);
+                const { password, ...safeUser } = newUser;
+                return safeUser;
+            }
+        };
+        console.log('✅ Fallback UsersDB created');
     },
     
     checkSession() {
@@ -67,6 +120,8 @@ const Auth = {
     
     async login(email, password, remember = false) {
         try {
+            console.log('🔑 Login attempt:', email);
+            
             if (!email || !password) {
                 throw new Error('Please fill in all fields');
             }
@@ -75,12 +130,20 @@ const Auth = {
                 throw new Error('Please enter a valid email');
             }
             
+            // Check if UsersDB exists
+            if (typeof UsersDB === 'undefined') {
+                console.error('❌ UsersDB not available');
+                throw new Error('Authentication system unavailable. Please try again.');
+            }
+            
             // Use UsersDB to authenticate
             const user = UsersDB.authenticate(email, password);
             
             if (!user) {
                 throw new Error('Invalid email or password');
             }
+            
+            console.log('✅ Login successful:', user.name);
             
             // Add session data
             user.sessionStart = new Date().toISOString();
@@ -107,6 +170,7 @@ const Auth = {
             return { success: true, user };
             
         } catch (error) {
+            console.error('❌ Login error:', error.message);
             this.showNotification(error.message, 'error');
             return { success: false, error: error.message };
         }
@@ -114,6 +178,8 @@ const Auth = {
     
     async register(userData) {
         try {
+            console.log('📝 Registration attempt:', userData.email);
+            
             if (!userData.name || !userData.email || !userData.password || !userData.phone) {
                 throw new Error('Please fill in all fields');
             }
@@ -130,6 +196,12 @@ const Auth = {
                 throw new Error('Password must be at least 8 characters with one special character');
             }
             
+            // Check if UsersDB exists
+            if (typeof UsersDB === 'undefined') {
+                console.error('❌ UsersDB not available');
+                throw new Error('Registration system unavailable. Please try again.');
+            }
+            
             // Use UsersDB to create user
             const newUser = UsersDB.create({
                 name: userData.name,
@@ -143,6 +215,8 @@ const Auth = {
                 throw new Error('Email already registered');
             }
             
+            console.log('✅ Registration successful:', newUser.email);
+            
             this.showNotification('Registration successful! Please login.', 'success');
             
             setTimeout(() => {
@@ -152,12 +226,15 @@ const Auth = {
             return { success: true };
             
         } catch (error) {
+            console.error('❌ Registration error:', error.message);
             this.showNotification(error.message, 'error');
             return { success: false, error: error.message };
         }
     },
     
     logout(showMessage = true) {
+        console.log('🚪 Logging out...');
+        
         // Clear current user
         this.currentUser = null;
         
@@ -213,7 +290,6 @@ const Auth = {
             
             if (this.isAuthenticated()) {
                 // User is logged in - replace with Dashboard/Logout
-                // Clear the container
                 originalButtons.innerHTML = '';
                 
                 // Add Dashboard link

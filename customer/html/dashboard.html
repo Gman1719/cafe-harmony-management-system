@@ -9,12 +9,215 @@
     <link rel="stylesheet" href="../css/customer-style.css">
     <link rel="stylesheet" href="../css/customer-responsive.css">
     <link rel="stylesheet" href="../css/dashboard.css">
+    <style>
+        /* Dashboard Layout with Sidebar */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: calc(100vh - 80px);
+            background: #f9f5f0;
+            position: relative;
+        }
+
+        /* Sidebar Styles */
+        .dashboard-sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #4a2c1a 0%, #5d3a1a 100%);
+            color: white;
+            padding: 2rem 0;
+            position: sticky;
+            top: 80px;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            border-right: 3px solid #c49a6c;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border-bottom: 2px solid rgba(196, 154, 108, 0.3);
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-header h3 {
+            color: #c49a6c;
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .sidebar-header p {
+            color: #d4b08c;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            margin: 0.3rem 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.9rem 1.5rem;
+            color: #f5e6d3;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            font-weight: 500;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(196, 154, 108, 0.15);
+            border-left-color: #c49a6c;
+            color: #c49a6c;
+        }
+
+        .sidebar-menu a i {
+            width: 24px;
+            font-size: 1.2rem;
+            color: #c49a6c;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover i,
+        .sidebar-menu a.active i {
+            color: #c49a6c;
+            transform: scale(1.1);
+        }
+
+        .sidebar-menu .badge {
+            margin-left: auto;
+            background: #c49a6c;
+            color: #4a2c1a;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 1.5rem;
+            margin-top: 2rem;
+            border-top: 2px solid rgba(196, 154, 108, 0.3);
+        }
+
+        .loyalty-card {
+            background: rgba(196, 154, 108, 0.1);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid rgba(196, 154, 108, 0.3);
+        }
+
+        .loyalty-card h4 {
+            color: #c49a6c;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .points {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #c49a6c;
+            margin-bottom: 0.3rem;
+        }
+
+        .tier {
+            display: inline-block;
+            padding: 0.3rem 1rem;
+            background: #c49a6c;
+            color: #4a2c1a;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Main Content Area */
+        .dashboard-content {
+            flex: 1;
+            padding: 2rem;
+            background: #f9f5f0;
+            max-width: calc(100% - 280px);
+        }
+
+        .content-header {
+            margin-bottom: 2rem;
+        }
+
+        .content-header h1 {
+            color: #4a2c1a;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .content-header p {
+            color: #736b66;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .dashboard-wrapper {
+                flex-direction: column;
+            }
+            
+            .dashboard-sidebar {
+                width: 100%;
+                height: auto;
+                position: static;
+                padding: 1rem 0;
+            }
+            
+            .dashboard-content {
+                max-width: 100%;
+            }
+            
+            .sidebar-menu {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .sidebar-menu li {
+                width: auto;
+            }
+            
+            .sidebar-menu a {
+                padding: 0.7rem 1rem;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+            
+            .sidebar-menu a:hover,
+            .sidebar-menu a.active {
+                border-left-color: transparent;
+                border-bottom-color: #c49a6c;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-menu {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .sidebar-menu li {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <script>
     // ===== PROTECTION - MUST BE FIRST =====
     (function() {
-        // Prevent multiple executions
         if (window.__customerProtected) return;
         window.__customerProtected = true;
         
@@ -43,7 +246,7 @@
     })();
     </script>
 
-    <!-- Navigation -->
+    <!-- Main Navigation (Same on ALL pages - Before & After Login) -->
     <nav class="navbar">
         <div class="container">
             <div class="navbar-brand">
@@ -52,18 +255,17 @@
             </div>
             
             <div class="navbar-menu" id="navbarMenu">
-                <a href="dashboard.html" class="active"><i class="fas fa-home"></i> Dashboard</a>
-                <a href="menu.html"><i class="fas fa-utensils"></i> Menu</a>
-                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart <span class="badge" id="cartCount">0</span></a>
-                <a href="orders.html"><i class="fas fa-history"></i> Orders</a>
-                <a href="reservations.html"><i class="fas fa-calendar-check"></i> Reservations</a>
-                <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                <a href="../../index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="../../menu.html"><i class="fas fa-utensils"></i> Menu</a>
+                <a href="../../about.html"><i class="fas fa-info-circle"></i> About</a>
+                <a href="../../contact.html"><i class="fas fa-envelope"></i> Contact</a>
+                <a href="../../faq.html"><i class="fas fa-question-circle"></i> FAQ</a>
+                <a href="dashboard.html" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
                 
                 <div class="navbar-buttons">
                     <button class="theme-toggle" id="themeToggle" title="Toggle theme">
                         <i class="fas fa-moon"></i>
                     </button>
-                
                     <button class="btn btn-outline" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
@@ -76,156 +278,198 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Welcome Section -->
-        <div class="welcome-section">
-            <div class="welcome-content">
+    <!-- Dashboard Wrapper with Sidebar -->
+    <div class="dashboard-wrapper">
+        <!-- Sidebar -->
+        <aside class="dashboard-sidebar">
+            <div class="sidebar-header">
+                <h3>Customer Dashboard</h3>
+                <p>Manage your account</p>
+            </div>
+            
+            <ul class="sidebar-menu">
+                <li>
+                    <a href="dashboard.html" class="active">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="orders.html">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>My Orders</span>
+                        <span class="badge" id="sidebarOrdersBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="cart.html">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>My Cart</span>
+                        <span class="badge" id="sidebarCartBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="reservations.html">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Reservations</span>
+                        <span class="badge" id="sidebarReservationBadge">0</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="profile.html">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Profile Settings</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="loyalty-card">
+                    <h4>Your Rewards</h4>
+                    <div class="points" id="userPoints">0 pts</div>
+                    <div class="tier" id="userTier">Bronze</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="dashboard-content">
+            <div class="content-header">
                 <h1>Welcome back, <span id="welcomeName">Coffee Lover</span>! ☕</h1>
                 <p>Your daily dose of Ethiopian coffee and cuisine awaits</p>
-                <div class="welcome-stats">
-                    <div class="welcome-stat">
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="dashboard-stats">
+                <div class="stat-card" onclick="window.location.href='orders.html'">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalOrders">0</h3>
+                        <p>Total Orders</p>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='orders.html?status=pending'">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="pendingOrders">0</h3>
+                        <p>Pending Orders</p>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='reservations.html'">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="totalReservations">0</h3>
+                        <p>Reservations</p>
+                    </div>
+                </div>
+
+                <div class="stat-card" onclick="window.location.href='reservations.html?status=upcoming'">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3 id="upcomingReservations">0</h3>
+                        <p>Upcoming</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2 class="section-title">Quick Actions</h2>
+                <div class="action-grid">
+                    <a href="menu.html" class="action-card">
                         <i class="fas fa-coffee"></i>
-                        <span>Member since <span id="memberSince">2025</span></span>
+                        <span>Browse Menu</span>
+                        <small>Explore our dishes</small>
+                    </a>
+                    <a href="cart.html" class="action-card">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>View Cart</span>
+                        <small id="cartSummary">0 items</small>
+                    </a>
+                    <a href="reservations.html" class="action-card">
+                        <i class="fas fa-calendar-plus"></i>
+                        <span>Make Reservation</span>
+                        <small>Book a table</small>
+                    </a>
+                    <a href="orders.html" class="action-card">
+                        <i class="fas fa-history"></i>
+                        <span>Order History</span>
+                        <small>Track your orders</small>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h2 class="section-title">Recent Activity</h2>
+                
+                <div class="activity-tabs">
+                    <button class="activity-tab active" data-tab="orders">Recent Orders</button>
+                    <button class="activity-tab" data-tab="reservations">Reservations</button>
+                </div>
+
+                <div id="recentOrdersTab" class="activity-list">
+                    <!-- Will be populated by JS -->
+                    <div class="loading-skeleton"></div>
+                    <div class="loading-skeleton"></div>
+                    <div class="loading-skeleton"></div>
+                </div>
+
+                <div id="recentReservationsTab" class="activity-list" style="display: none;">
+                    <!-- Will be populated by JS -->
+                </div>
+
+                <div class="text-center" style="margin-top: 1rem;">
+                    <a href="orders.html" class="btn-small" id="viewAllBtn">View All</a>
+                </div>
+            </div>
+
+            <!-- Special Offers -->
+            <div class="special-offers">
+                <h2 class="section-title">Special Offers</h2>
+                <div class="offers-slider">
+                    <div class="offer-card">
+                        <h3>Morning Coffee Deal</h3>
+                        <p>Buy any coffee, get a pastry at 50% off</p>
+                        <button class="offer-btn" onclick="window.location.href='menu.html?offer=morning'">
+                            Order Now <i class="fas fa-arrow-right"></i>
+                        </button>
                     </div>
-                    <div class="welcome-stat">
-                        <i class="fas fa-star"></i>
-                        <span id="loyaltyTier">Bronze Tier</span>
+                    <div class="offer-card">
+                        <h3>Family Feast</h3>
+                        <p>Order for 4+ people and get free delivery</p>
+                        <button class="offer-btn" onclick="window.location.href='menu.html?offer=family'">
+                            View Deals <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    <div class="offer-card">
+                        <h3>Loyalty Bonus</h3>
+                        <p>Earn double points on every order this week</p>
+                        <button class="offer-btn" onclick="window.location.href='menu.html'">
+                            Start Earning <i class="fas fa-arrow-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Stats Grid -->
-        <div class="dashboard-stats">
-            <div class="stat-card" onclick="window.location.href='orders.html'">
-                <div class="stat-icon">
-                    <i class="fas fa-shopping-bag"></i>
-                </div>
-                <div class="stat-info">
-                    <h3 id="totalOrders">0</h3>
-                    <p>Total Orders</p>
+            <!-- Quick Reorder Section -->
+            <div class="quick-reorder" id="quickReorder" style="display: none;">
+                <h2 class="section-title">Quick Reorder</h2>
+                <div class="reorder-grid" id="reorderItems">
+                    <!-- Will be populated by JS -->
                 </div>
             </div>
-
-            <div class="stat-card" onclick="window.location.href='orders.html?status=pending'">
-                <div class="stat-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-info">
-                    <h3 id="pendingOrders">0</h3>
-                    <p>Pending Orders</p>
-                </div>
-            </div>
-
-            <div class="stat-card" onclick="window.location.href='reservations.html'">
-                <div class="stat-icon">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="stat-info">
-                    <h3 id="totalReservations">0</h3>
-                    <p>Reservations</p>
-                </div>
-            </div>
-
-            <div class="stat-card" onclick="window.location.href='reservations.html?status=upcoming'">
-                <div class="stat-icon">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="stat-info">
-                    <h3 id="upcomingReservations">0</h3>
-                    <p>Upcoming</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div class="quick-actions">
-            <h2 class="section-title">Quick Actions</h2>
-            <div class="action-grid">
-                <a href="menu.html" class="action-card">
-                    <i class="fas fa-coffee"></i>
-                    <span>Browse Menu</span>
-                    <small>Explore our dishes</small>
-                </a>
-                <a href="cart.html" class="action-card">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span>View Cart</span>
-                    <small id="cartSummary">0 items</small>
-                </a>
-                <a href="reservations.html" class="action-card">
-                    <i class="fas fa-calendar-plus"></i>
-                    <span>Make Reservation</span>
-                    <small>Book a table</small>
-                </a>
-                <a href="orders.html" class="action-card">
-                    <i class="fas fa-history"></i>
-                    <span>Order History</span>
-                    <small>Track your orders</small>
-                </a>
-            </div>
-        </div>
-
-        <!-- Recent Activity -->
-        <div class="recent-activity">
-            <h2 class="section-title">Recent Activity</h2>
-            
-            <div class="activity-tabs">
-                <button class="activity-tab active" data-tab="orders">Recent Orders</button>
-                <button class="activity-tab" data-tab="reservations">Reservations</button>
-            </div>
-
-            <div id="recentOrdersTab" class="activity-list">
-                <!-- Will be populated by JS -->
-                <div class="loading-skeleton"></div>
-                <div class="loading-skeleton"></div>
-                <div class="loading-skeleton"></div>
-            </div>
-
-            <div id="recentReservationsTab" class="activity-list" style="display: none;">
-                <!-- Will be populated by JS -->
-            </div>
-
-            <div class="text-center" style="margin-top: 1rem;">
-                <a href="orders.html" class="btn-small" id="viewAllBtn">View All</a>
-            </div>
-        </div>
-
-        <!-- Special Offers -->
-        <div class="special-offers">
-            <h2 class="section-title">Special Offers</h2>
-            <div class="offers-slider">
-                <div class="offer-card">
-                    <h3>Morning Coffee Deal</h3>
-                    <p>Buy any coffee, get a pastry at 50% off</p>
-                    <button class="offer-btn" onclick="window.location.href='menu.html?offer=morning'">
-                        Order Now <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-                <div class="offer-card">
-                    <h3>Family Feast</h3>
-                    <p>Order for 4+ people and get free delivery</p>
-                    <button class="offer-btn" onclick="window.location.href='menu.html?offer=family'">
-                        View Deals <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-                <div class="offer-card">
-                    <h3>Loyalty Bonus</h3>
-                    <p>Earn double points on every order this week</p>
-                    <button class="offer-btn" onclick="window.location.href='menu.html'">
-                        Start Earning <i class="fas fa-arrow-right"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quick Reorder Section -->
-        <div class="quick-reorder" id="quickReorder" style="display: none;">
-            <h2 class="section-title">Quick Reorder</h2>
-            <div class="reorder-grid" id="reorderItems">
-                <!-- Will be populated by JS -->
-            </div>
-        </div>
+        </main>
     </div>
 
     <!-- Footer -->
@@ -276,6 +520,76 @@
             document.getElementById('userName').textContent = firstName;
             document.getElementById('welcomeName').textContent = firstName;
             document.getElementById('userGreeting').innerHTML = `Hi, ${firstName}`;
+            
+            // Set member since
+            if (window.currentUser.createdAt) {
+                const year = new Date(window.currentUser.createdAt).getFullYear();
+                document.getElementById('memberSince').textContent = year;
+            }
+            
+            // Load user data
+            loadUserData();
+        }
+
+        function loadUserData() {
+            // Get orders count
+            if (window.OrdersDB) {
+                const stats = OrdersDB.getCustomerStats(window.currentUser.id);
+                document.getElementById('totalOrders').textContent = stats?.total || 0;
+                document.getElementById('pendingOrders').textContent = stats?.pending || 0;
+            }
+            
+            // Get reservations count
+            if (window.ReservationsDB) {
+                const stats = ReservationsDB.getCustomerStats(window.currentUser.id);
+                document.getElementById('totalReservations').textContent = stats?.total || 0;
+                document.getElementById('upcomingReservations').textContent = stats?.upcoming || 0;
+            }
+            
+            // Get cart count
+            updateCartCount();
+            
+            // Get points and tier
+            if (window.currentUser.stats) {
+                document.getElementById('userPoints').textContent = window.currentUser.stats.points + ' pts';
+                document.getElementById('userTier').textContent = window.currentUser.stats.tier?.charAt(0).toUpperCase() + 
+                    window.currentUser.stats.tier?.slice(1) || 'Bronze';
+            }
+            
+            // Update sidebar badges
+            updateSidebarBadges();
+        }
+
+        function updateCartCount() {
+            const cartKey = `cart_${window.currentUser.id}`;
+            const cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            
+            const cartBadges = document.querySelectorAll('#cartCount, #sidebarCartBadge');
+            cartBadges.forEach(badge => {
+                badge.textContent = totalItems;
+                badge.style.display = totalItems > 0 ? 'inline-block' : 'none';
+            });
+            
+            document.getElementById('cartSummary').textContent = totalItems + ' items';
+        }
+
+        function updateSidebarBadges() {
+            // Update orders badge
+            if (window.OrdersDB) {
+                const pendingOrders = OrdersDB.getByCustomerId(window.currentUser.id)
+                    .filter(o => o.status === 'pending').length;
+                document.getElementById('sidebarOrdersBadge').textContent = pendingOrders;
+                document.getElementById('sidebarOrdersBadge').style.display = pendingOrders > 0 ? 'inline-block' : 'none';
+            }
+            
+            // Update reservation badge
+            if (window.ReservationsDB) {
+                const upcomingReservations = ReservationsDB.getByCustomerId(window.currentUser.id)
+                    .filter(r => r.status === 'pending' || r.status === 'confirmed').length;
+                document.getElementById('sidebarReservationBadge').textContent = upcomingReservations;
+                document.getElementById('sidebarReservationBadge').style.display = upcomingReservations > 0 ? 'inline-block' : 'none';
+            }
         }
 
         // Activity tabs

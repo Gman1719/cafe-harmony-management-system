@@ -44,57 +44,24 @@ const UsersDB = {
                 return true;
             }
             
-            // Fetch from JSON file
-            const response = await fetch('data/json/users.json');
-            if (!response.ok) {
-                throw new Error('Failed to load users.json');
+            // Try legacy storage
+            const legacy = localStorage.getItem(this.STORAGE_KEYS.USERS);
+            if (legacy) {
+                this.users = JSON.parse(legacy);
+                console.log('✅ Users loaded from legacy storage');
+                this.saveToCache();
+                return true;
             }
             
-            const jsonData = await response.json();
-            this.users = jsonData.users || [];
-            
-            // Save to cache and legacy storage
-            this.saveToCache();
-            this.saveToLegacy();
-            
-            console.log('✅ Users loaded from JSON file');
+            // If no data, create default users
+            this.createDefaultUsers();
             return true;
             
         } catch (error) {
-            console.error('❌ Error loading users from JSON:', error);
-            
-            // Fallback to legacy localStorage
-            const legacy = localStorage.getItem(this.STORAGE_KEYS.USERS);
-            if (legacy) {
-                try {
-                    this.users = JSON.parse(legacy);
-                    console.log('✅ Users loaded from legacy storage');
-                    this.saveToCache();
-                    return true;
-                } catch (e) {
-                    console.error('❌ Failed to parse legacy users');
-                }
-            }
-            
-            // Create default users if nothing works
+            console.error('❌ Error loading users:', error);
             this.createDefaultUsers();
             return false;
         }
-    },
-    
-    saveToJSON() {
-        // In a real app, this would be an API call
-        // For now, we'll save to cache and create a downloadable file
-        this.saveToCache();
-        this.saveToLegacy();
-        
-        // Create downloadable JSON for backup
-        const dataStr = JSON.stringify({ users: this.users }, null, 2);
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        console.log('📁 Users data ready for export:', url);
-        
-        return true;
     },
     
     saveToCache() {
@@ -209,10 +176,12 @@ const UsersDB = {
     },
     
     // ========================================
-    // AUTHENTICATION
+    // AUTHENTICATION - CRITICAL FIX
     // ========================================
     
     authenticate(email, password) {
+        console.log('🔑 Authenticating:', email);
+        
         const user = this.users.find(u => 
             u.email.toLowerCase() === email.toLowerCase() && 
             u.password === password &&
@@ -220,6 +189,8 @@ const UsersDB = {
         );
         
         if (user) {
+            console.log('✅ User found:', user.name);
+            
             // Update last login
             user.lastLogin = new Date().toISOString();
             this.saveToCache();
@@ -228,12 +199,10 @@ const UsersDB = {
             // Return user without password
             const { password: pwd, ...safeUser } = user;
             
-            // Save current session
-            localStorage.setItem(this.STORAGE_KEYS.CURRENT, JSON.stringify(safeUser));
-            
             return safeUser;
         }
         
+        console.log('❌ User not found or invalid password');
         return null;
     },
     
@@ -328,6 +297,8 @@ const UsersDB = {
     
     create(userData) {
         try {
+            console.log('📝 Creating user:', userData.email);
+            
             // Check if email exists
             if (this.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
                 throw new Error('Email already exists');
@@ -361,7 +332,10 @@ const UsersDB = {
             };
             
             this.users.push(newUser);
-            this.saveToJSON();
+            this.saveToCache();
+            this.saveToLegacy();
+            
+            console.log('✅ User created:', newUser.email);
             
             const { password, ...safeUser } = newUser;
             return safeUser;
@@ -385,7 +359,8 @@ const UsersDB = {
             updatedAt: new Date().toISOString()
         };
         
-        this.saveToJSON();
+        this.saveToCache();
+        this.saveToLegacy();
         
         const { password: pwd, ...safeUser } = this.users[index];
         return safeUser;
@@ -396,7 +371,8 @@ const UsersDB = {
         if (index === -1) return false;
         
         this.users[index].password = newPassword;
-        this.saveToJSON();
+        this.saveToCache();
+        this.saveToLegacy();
         return true;
     },
     
@@ -405,7 +381,8 @@ const UsersDB = {
         this.users = this.users.filter(u => u.id != id);
         
         if (this.users.length < initialLength) {
-            this.saveToJSON();
+            this.saveToCache();
+            this.saveToLegacy();
             return true;
         }
         return false;
@@ -536,7 +513,8 @@ const UsersDB = {
             user.stats.tier = 'silver';
         }
         
-        this.saveToJSON();
+        this.saveToCache();
+        this.saveToLegacy();
         return true;
     },
     
