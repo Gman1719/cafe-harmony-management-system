@@ -16,6 +16,16 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    
+    <!-- Add this small style to make the filter work -->
+    <style>
+        .faq-category-content {
+            display: none;
+        }
+        .faq-category-content.active {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
@@ -327,38 +337,64 @@
     <script src="js/main.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // FAQ accordion functionality
-        document.querySelectorAll('.faq-question').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const item = btn.closest('.faq-item');
-                const isOpen = item.classList.contains('open');
-                
-                document.querySelectorAll('.faq-item').forEach(i => {
-                    i.classList.remove('open');
-                    i.querySelector('.faq-toggle').textContent = '+';
-                });
-                
-                if (!isOpen) {
-                    item.classList.add('open');
-                    btn.querySelector('.faq-toggle').textContent = '-';
-                }
-            });
-        });
-        
-        document.querySelectorAll('.category-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const category = btn.dataset.category;
-                
-                document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                document.querySelectorAll('.faq-category-content').forEach(content => {
-                    content.classList.remove('active');
-                    if (content.dataset.category === category) {
-                        content.classList.add('active');
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // FAQ accordion functionality
+            document.querySelectorAll('.faq-question').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const item = btn.closest('.faq-item');
+                    const isOpen = item.classList.contains('open');
+                    
+                    // Close all items in the same category
+                    const categoryContent = item.closest('.faq-category-content');
+                    if (categoryContent) {
+                        categoryContent.querySelectorAll('.faq-item').forEach(i => {
+                            i.classList.remove('open');
+                            const toggle = i.querySelector('.faq-toggle');
+                            if (toggle) toggle.textContent = '+';
+                        });
+                    }
+                    
+                    // Toggle current item
+                    if (!isOpen) {
+                        item.classList.add('open');
+                        const toggle = btn.querySelector('.faq-toggle');
+                        if (toggle) toggle.textContent = '-';
                     }
                 });
             });
+            
+            // Category filter functionality
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const category = btn.dataset.category;
+                    
+                    // Update active button
+                    document.querySelectorAll('.category-btn').forEach(b => {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                    
+                    // Show selected category, hide others
+                    document.querySelectorAll('.faq-category-content').forEach(content => {
+                        if (content.dataset.category === category) {
+                            content.classList.add('active');
+                            
+                            // Close all open items in this category
+                            content.querySelectorAll('.faq-item').forEach(item => {
+                                item.classList.remove('open');
+                                const toggle = item.querySelector('.faq-toggle');
+                                if (toggle) toggle.textContent = '+';
+                            });
+                        } else {
+                            content.classList.remove('active');
+                        }
+                    });
+                });
+            });
+            
+            console.log('FAQ filter is now working!');
         });
     </script>
 </body>
