@@ -11,43 +11,56 @@ const Auth = {
     },
     
     currentUser: null,
+    usersDBReady: false,
     
     async init() {
         console.log('🔐 Auth initializing...');
         
-        // Check if UsersDB is already loaded
-        if (typeof UsersDB === 'undefined') {
-            console.log('⏳ Waiting for UsersDB to load...');
-            
-            // Try multiple times with increasing delays
-            let attempts = 0;
-            const maxAttempts = 30;
-            
-            while (attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                if (typeof UsersDB !== 'undefined') {
-                    console.log('✅ UsersDB loaded after', attempts * 100, 'ms');
-                    break;
-                }
-                attempts++;
-            }
-            
-            if (typeof UsersDB === 'undefined') {
-                console.error('❌ UsersDB failed to load after', maxAttempts * 100, 'ms');
-                // Create fallback UsersDB
-                this.createFallbackUsersDB();
-            }
-        }
-        
+        // Check session FIRST - this is instant
         this.checkSession();
+        
+        // Update navigation immediately based on session
+        this.updateNavigation();
+        
+        // Then load UsersDB in background
+        this.loadUsersDB();
+        
         this.setupEventListeners();
         
-        // Update navigation after DOM is ready
-        setTimeout(() => {
-            this.updateNavigation();
-        }, 200);
-        
         console.log('✅ Auth initialized');
+    },
+    
+    async loadUsersDB() {
+        // Check if UsersDB is already loaded
+        if (typeof UsersDB !== 'undefined') {
+            this.usersDBReady = true;
+            return;
+        }
+        
+        console.log('⏳ Loading UsersDB in background...');
+        
+        // Try multiple times
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (typeof UsersDB !== 'undefined') {
+                console.log('✅ UsersDB loaded after', attempts * 100, 'ms');
+                this.usersDBReady = true;
+                break;
+            }
+            attempts++;
+        }
+        
+        if (!this.usersDBReady) {
+            console.log('Creating fallback UsersDB...');
+            this.createFallbackUsersDB();
+            this.usersDBReady = true;
+        }
+        
+        // No need to update navigation again unless user changed
+        // Navigation already shows correct state from session
     },
     
     createFallbackUsersDB() {
@@ -65,10 +78,10 @@ const Auth = {
                 },
                 {
                     id: 2,
-                    name: 'John Customer',
-                    email: 'john@example.com',
-                    password: 'Customer@123',
-                    phone: '0912345678',
+                    name: 'Gman User',
+                    email: 'gman1@gmail.com',
+                    password: 'Gman@1719#',
+                    phone: '+251906902551',
                     role: 'customer',
                     status: 'active'
                 }
@@ -130,10 +143,9 @@ const Auth = {
                 throw new Error('Please enter a valid email');
             }
             
-            // Check if UsersDB exists
-            if (typeof UsersDB === 'undefined') {
-                console.error('❌ UsersDB not available');
-                throw new Error('Authentication system unavailable. Please try again.');
+            // Ensure UsersDB is ready
+            if (!this.usersDBReady) {
+                await this.loadUsersDB();
             }
             
             // Use UsersDB to authenticate
@@ -152,6 +164,7 @@ const Auth = {
             localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user));
             this.currentUser = user;
             
+            // Update navigation IMMEDIATELY
             this.updateNavigation();
             
             this.showNotification(`Welcome back, ${user.name}!`, 'success');
@@ -196,10 +209,9 @@ const Auth = {
                 throw new Error('Password must be at least 8 characters with one special character');
             }
             
-            // Check if UsersDB exists
-            if (typeof UsersDB === 'undefined') {
-                console.error('❌ UsersDB not available');
-                throw new Error('Registration system unavailable. Please try again.');
+            // Ensure UsersDB is ready
+            if (!this.usersDBReady) {
+                await this.loadUsersDB();
             }
             
             // Use UsersDB to create user
@@ -241,7 +253,7 @@ const Auth = {
         // Remove from storage
         localStorage.removeItem(this.STORAGE_KEY);
         
-        // Update UI immediately
+        // Update UI IMMEDIATELY
         this.updateNavigation();
         
         // Show message
@@ -289,7 +301,7 @@ const Auth = {
             if (!originalButtons) return;
             
             if (this.isAuthenticated()) {
-                // User is logged in - replace with Dashboard/Logout
+                // User is logged in - replace with Dashboard/Logout IMMEDIATELY
                 originalButtons.innerHTML = '';
                 
                 // Add Dashboard link
@@ -323,12 +335,16 @@ const Auth = {
                 originalButtons.appendChild(dashboardLink);
                 originalButtons.appendChild(logoutBtn);
                 
+                console.log('✅ Navigation updated to logged-in state');
+                
             } else {
                 // User is logged out - show Login/Sign Up
                 originalButtons.innerHTML = `
                     <a href="login.html" class="btn btn-outline">Login</a>
                     <a href="register.html" class="btn btn-primary">Sign Up</a>
                 `;
+                
+                console.log('✅ Navigation updated to logged-out state');
             }
         });
     },
