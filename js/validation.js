@@ -10,13 +10,29 @@ const Validator = {
         return null;
     },
     
-    // Email validation
+    // FIXED: Email validation - simpler and more reliable
     email(value, fieldName = 'Email') {
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!regex.test(value)) {
+        // Simple but effective email validation
+        // Must have: text@text.text
+        if (!value || !value.includes('@') || !value.includes('.')) {
             return `${fieldName} must be a valid email address`;
         }
-        return null;
+        
+        // Check if there's text before @, between @ and ., and after .
+        const parts = value.split('@');
+        if (parts.length !== 2) return `${fieldName} must be a valid email address`;
+        
+        const localPart = parts[0];
+        const domainPart = parts[1];
+        
+        if (!localPart || localPart.length === 0) return `${fieldName} must be a valid email address`;
+        if (!domainPart || !domainPart.includes('.')) return `${fieldName} must be a valid email address`;
+        
+        const domainParts = domainPart.split('.');
+        if (domainParts.length < 2) return `${fieldName} must be a valid email address`;
+        if (domainParts.some(part => part.length === 0)) return `${fieldName} must be a valid email address`;
+        
+        return null; // Email is valid
     },
     
     // Ethiopian phone validation
@@ -45,118 +61,6 @@ const Validator = {
         return null;
     },
     
-    // Min length validation
-    minLength(value, min, fieldName = 'Field') {
-        if (value.length < min) {
-            return `${fieldName} must be at least ${min} characters`;
-        }
-        return null;
-    },
-    
-    // Max length validation
-    maxLength(value, max, fieldName = 'Field') {
-        if (value.length > max) {
-            return `${fieldName} must be no more than ${max} characters`;
-        }
-        return null;
-    },
-    
-    // Numeric validation
-    numeric(value, fieldName = 'Field') {
-        if (isNaN(value) || value === '') {
-            return `${fieldName} must be a number`;
-        }
-        return null;
-    },
-    
-    // Min value validation
-    min(value, min, fieldName = 'Field') {
-        const num = parseFloat(value);
-        if (num < min) {
-            return `${fieldName} must be at least ${min}`;
-        }
-        return null;
-    },
-    
-    // Max value validation
-    max(value, max, fieldName = 'Field') {
-        const num = parseFloat(value);
-        if (num > max) {
-            return `${fieldName} must be no more than ${max}`;
-        }
-        return null;
-    },
-    
-    // Date validation
-    date(value, fieldName = 'Date') {
-        const date = new Date(value);
-        if (isNaN(date.getTime())) {
-            return `${fieldName} must be a valid date`;
-        }
-        return null;
-    },
-    
-    // Future date validation
-    futureDate(value, fieldName = 'Date') {
-        const date = new Date(value);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        if (date < today) {
-            return `${fieldName} must be today or in the future`;
-        }
-        return null;
-    },
-    
-    // Time validation
-    time(value, fieldName = 'Time') {
-        const regex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
-        if (!regex.test(value)) {
-            return `${fieldName} must be a valid time (HH:MM)`;
-        }
-        return null;
-    },
-    
-    // Select validation
-    select(value, fieldName = 'Selection') {
-        if (!value || value === '') {
-            return `Please select ${fieldName}`;
-        }
-        return null;
-    },
-    
-    // Validate form with rules
-    validate(formData, rules) {
-        const errors = {};
-        
-        for (const [field, fieldRules] of Object.entries(rules)) {
-            const value = formData[field];
-            
-            for (const rule of fieldRules) {
-                let error = null;
-                
-                if (typeof rule === 'function') {
-                    error = rule(value);
-                } else if (Array.isArray(rule)) {
-                    const [ruleName, ...params] = rule;
-                    if (typeof this[ruleName] === 'function') {
-                        error = this[ruleName](value, ...params);
-                    }
-                }
-                
-                if (error) {
-                    errors[field] = error;
-                    break;
-                }
-            }
-        }
-        
-        return {
-            isValid: Object.keys(errors).length === 0,
-            errors
-        };
-    },
-    
     // Show field error
     showFieldError(fieldId, message) {
         const field = document.getElementById(fieldId);
@@ -170,7 +74,7 @@ const Validator = {
         error.className = 'field-error';
         error.id = `${fieldId}-error`;
         error.textContent = message;
-        error.style.color = 'var(--danger)';
+        error.style.color = '#dc3545';
         error.style.fontSize = '0.85rem';
         error.style.marginTop = '0.25rem';
         
@@ -198,103 +102,290 @@ const Validator = {
 // Make Validator available globally
 window.Validator = Validator;
 
-// Add validation to forms
-document.addEventListener('DOMContentLoaded', () => {
-    // Registration form validation
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            Validator.clearAllErrors();
-            
-            const formData = {
-                name: document.getElementById('name')?.value,
-                email: document.getElementById('email')?.value,
-                phone: document.getElementById('phone')?.value,
-                password: document.getElementById('password')?.value,
-                confirmPassword: document.getElementById('confirmPassword')?.value,
-                role: document.getElementById('role')?.value,
-                terms: document.getElementById('terms')?.checked
-            };
-            
-            const rules = {
-                name: [v => Validator.required(v, 'Full Name')],
-                email: [v => Validator.required(v, 'Email'), v => Validator.email(v)],
-                phone: [v => Validator.required(v, 'Phone'), v => Validator.ethiopianPhone(v)],
-                password: [v => Validator.required(v, 'Password'), v => Validator.password(v)],
-                confirmPassword: [v => Validator.confirmPassword(formData.password, v, 'Confirm Password')],
-                role: [v => Validator.select(v, 'role')]
-            };
-            
-            // Check terms
-            if (!formData.terms) {
-                Validator.showFieldError('terms', 'You must agree to the Terms of Service');
-                showNotification('Please agree to the Terms of Service', 'error');
-                return;
-            }
-            
-            const result = Validator.validate(formData, rules);
-            
-            if (!result.isValid) {
-                Object.entries(result.errors).forEach(([field, message]) => {
-                    const fieldId = {
-                        name: 'name',
-                        email: 'email',
-                        phone: 'phone',
-                        password: 'password',
-                        confirmPassword: 'confirmPassword',
-                        role: 'role'
-                    }[field];
-                    
-                    if (fieldId) {
-                        Validator.showFieldError(fieldId, message);
-                    }
-                });
-                
-                showNotification('Please fix the errors in the form', 'error');
-                return;
-            }
-            
-            // If validation passes, call Auth.register
-            Auth.register(formData);
-        });
-    }
+// ============================================
+// FIXED: FORM HANDLERS
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ Validator initialized');
     
-    // Login form validation
+    // ===== FIXED: LOGIN FORM HANDLER =====
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            Validator.clearAllErrors();
-            
-            const email = document.getElementById('email')?.value;
-            const password = document.getElementById('password')?.value;
-            const remember = document.getElementById('rememberMe')?.checked || false;
-            
-            let hasError = false;
-            
-            if (!Validator.required(email, 'Email')) {
-                Validator.showFieldError('email', 'Email is required');
-                hasError = true;
-            } else if (!Validator.email(email)) {
-                Validator.showFieldError('email', 'Please enter a valid email');
-                hasError = true;
-            }
-            
-            if (!Validator.required(password, 'Password')) {
-                Validator.showFieldError('password', 'Password is required');
-                hasError = true;
-            }
-            
-            if (hasError) {
-                showNotification('Please fix the errors in the form', 'error');
-                return;
-            }
-            
-            // Call Auth.login
-            Auth.login(email, password, remember);
-        });
+        console.log('✅ Login form found, attaching handler...');
+        
+        // Remove any existing handlers to avoid duplicates
+        loginForm.removeEventListener('submit', handleLoginSubmit);
+        
+        // Add new handler
+        loginForm.addEventListener('submit', handleLoginSubmit);
     }
+    
+    // ===== REGISTRATION FORM HANDLER =====
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        console.log('✅ Registration form found');
+        registerForm.addEventListener('submit', handleRegisterSubmit);
+    }
+    
+    // ===== AUTO-REDIRECT IF ALREADY LOGGED IN =====
+    checkExistingSession();
 });
+
+// ===== LOGIN HANDLER FUNCTION =====
+async function handleLoginSubmit(e) {
+    e.preventDefault();
+    console.log('🔑 Login form submitted');
+    
+    Validator.clearAllErrors();
+    
+    // Get values and TRIM them
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const rememberCheck = document.getElementById('rememberMe');
+    
+    if (!emailInput || !passwordInput) {
+        console.error('❌ Form inputs not found');
+        showUserNotification('Form error. Please refresh the page.', 'error');
+        return;
+    }
+    
+    const email = emailInput.value?.trim() || '';
+    const password = passwordInput.value || '';
+    const remember = rememberCheck ? rememberCheck.checked : false;
+    
+    console.log('Login attempt - Email:', `"${email}"`);
+    console.log('Login attempt - Password length:', password.length);
+    
+    // FIXED: Use simpler validation
+    let hasError = false;
+    
+    if (!email) {
+        Validator.showFieldError('email', 'Email is required');
+        hasError = true;
+        console.log('❌ Email is empty');
+    } else {
+        // Simple email check
+        if (!email.includes('@') || !email.includes('.')) {
+            Validator.showFieldError('email', 'Please enter a valid email');
+            hasError = true;
+            console.log('❌ Email format invalid:', email);
+        } else {
+            console.log('✅ Email format valid:', email);
+        }
+    }
+    
+    if (!password) {
+        Validator.showFieldError('password', 'Password is required');
+        hasError = true;
+        console.log('❌ Password is empty');
+    } else {
+        console.log('✅ Password provided, length:', password.length);
+    }
+    
+    if (hasError) {
+        showUserNotification('Please fix the errors in the form', 'error');
+        return;
+    }
+    
+    // Test authentication directly
+    if (typeof UsersDB !== 'undefined') {
+        console.log('Attempting authentication with:', email);
+        const testAuth = UsersDB.authenticate(email, password);
+        console.log('Direct auth test:', testAuth ? '✅ SUCCESS' : '❌ FAILED');
+        
+        if (!testAuth) {
+            showUserNotification('Invalid email or password', 'error');
+            return;
+        }
+    } else {
+        console.error('❌ UsersDB not available');
+        showUserNotification('Authentication system unavailable', 'error');
+        return;
+    }
+    
+    // Call Auth.login
+    if (typeof Auth !== 'undefined') {
+        console.log('Calling Auth.login with:', email);
+        
+        // Show loading state
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+        submitBtn.disabled = true;
+        
+        try {
+            const result = await Auth.login(email, password, remember);
+            console.log('Auth.login result:', result);
+            
+            if (!result || !result.success) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                showUserNotification(result?.error || 'Login failed', 'error');
+            }
+            // Redirect happens in Auth.login
+        } catch (error) {
+            console.error('❌ Auth.login error:', error);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            showUserNotification('Login failed. Please try again.', 'error');
+        }
+    } else {
+        console.error('❌ Auth not available');
+        showUserNotification('Login system unavailable', 'error');
+    }
+}
+
+// ===== REGISTRATION HANDLER FUNCTION =====
+async function handleRegisterSubmit(e) {
+    e.preventDefault();
+    console.log('📝 Registration form submitted');
+    
+    Validator.clearAllErrors();
+    
+    const formData = {
+        name: document.getElementById('name')?.value?.trim() || '',
+        email: document.getElementById('email')?.value?.trim() || '',
+        phone: document.getElementById('phone')?.value?.trim() || '',
+        password: document.getElementById('password')?.value || '',
+        confirmPassword: document.getElementById('confirmPassword')?.value || '',
+        role: document.getElementById('role')?.value || 'customer',
+        terms: document.getElementById('terms')?.checked || false
+    };
+    
+    console.log('Form data:', { ...formData, password: '***' });
+    
+    // Manual validation
+    let hasError = false;
+    
+    if (!formData.name) {
+        Validator.showFieldError('name', 'Full name is required');
+        hasError = true;
+    }
+    
+    if (!formData.email) {
+        Validator.showFieldError('email', 'Email is required');
+        hasError = true;
+    } else if (!formData.email.includes('@') || !formData.email.includes('.')) {
+        Validator.showFieldError('email', 'Please enter a valid email');
+        hasError = true;
+    }
+    
+    if (!formData.phone) {
+        Validator.showFieldError('phone', 'Phone number is required');
+        hasError = true;
+    } else {
+        const phoneRegex = /^(09|\+2519)\d{8}$/;
+        if (!phoneRegex.test(formData.phone)) {
+            Validator.showFieldError('phone', 'Please enter a valid Ethiopian phone number');
+            hasError = true;
+        }
+    }
+    
+    if (!formData.password) {
+        Validator.showFieldError('password', 'Password is required');
+        hasError = true;
+    } else {
+        const passRegex = /^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+        if (!passRegex.test(formData.password)) {
+            Validator.showFieldError('password', 'Password must be at least 8 characters with one special character');
+            hasError = true;
+        }
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+        Validator.showFieldError('confirmPassword', 'Passwords do not match');
+        hasError = true;
+    }
+    
+    if (!formData.terms) {
+        showUserNotification('Please agree to the Terms of Service', 'error');
+        hasError = true;
+    }
+    
+    if (hasError) {
+        showUserNotification('Please fix the errors in the form', 'error');
+        return;
+    }
+    
+    // Call Auth.register
+    if (typeof Auth !== 'undefined') {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
+        submitBtn.disabled = true;
+        
+        try {
+            const result = await Auth.register(formData);
+            if (!result || !result.success) {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                showUserNotification(result?.error || 'Registration failed', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Registration error:', error);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            showUserNotification('Registration failed. Please try again.', 'error');
+        }
+    }
+}
+
+// ===== CHECK EXISTING SESSION =====
+function checkExistingSession() {
+    const userStr = localStorage.getItem('markanUser');
+    if (userStr) {
+        try {
+            const user = JSON.parse(userStr);
+            console.log('✅ Already logged in as:', user.email);
+            
+            setTimeout(() => {
+                if (window.location.pathname.includes('login.html') || 
+                    window.location.pathname.endsWith('login') ||
+                    window.location.pathname === '/login') {
+                    
+                    console.log('Redirecting to dashboard...');
+                    if (user.role === 'admin') {
+                        window.location.href = 'admin/html/dashboard.html';
+                    } else if (user.role === 'customer') {
+                        window.location.href = 'customer/html/dashboard.html';
+                    } else if (user.role === 'staff') {
+                        window.location.href = 'staff/html/dashboard.html';
+                    }
+                }
+            }, 1000);
+        } catch (e) {
+            console.error('Error parsing user data');
+            localStorage.removeItem('markanUser');
+        }
+    }
+}
+
+// ===== NOTIFICATION FUNCTION =====
+function showUserNotification(message, type = 'info') {
+    if (typeof showNotification === 'function') {
+        showNotification(message, type);
+    } else {
+        alert(`${type.toUpperCase()}: ${message}`);
+    }
+}
+
+// Make test function available globally
+window.testLogin = function(email, password) {
+    console.log('Testing login with:', email);
+    if (typeof UsersDB === 'undefined') {
+        console.error('UsersDB not available');
+        return;
+    }
+    const result = UsersDB.authenticate(email, password);
+    console.log('Result:', result ? '✅ SUCCESS' : '❌ FAILED');
+    if (result) {
+        localStorage.setItem('markanUser', JSON.stringify(result));
+        console.log('Logged in, redirecting...');
+        if (result.role === 'admin') {
+            window.location.href = 'admin/html/dashboard.html';
+        } else {
+            window.location.href = 'customer/html/dashboard.html';
+        }
+    }
+    return result;
+};

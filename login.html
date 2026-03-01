@@ -61,6 +61,16 @@
         .demo-credentials strong {
             color: #4a2c1a;
         }
+
+        /* Loading spinner */
+        .fa-spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body class="auth-page">
@@ -101,13 +111,13 @@
                 <p>Login to your Markan Cafe account</p>
             </div>
             
-            <form id="loginForm" class="auth-form">
+            <form id="loginForm" class="auth-form" novalidate>
                 <div class="form-group">
                     <label for="email">
                         <i class="fas fa-envelope"></i>
                         Email
                     </label>
-                    <input type="email" id="email" placeholder="Enter your email" required>
+                    <input type="email" id="email" name="email" placeholder="Enter your email" value="admin@markan.com" required>
                 </div>
                 
                 <div class="form-group">
@@ -115,12 +125,12 @@
                         <i class="fas fa-lock"></i>
                         Password
                     </label>
-                    <input type="password" id="password" placeholder="Enter your password" required>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" value="Admin@123" required>
                 </div>
                 
                 <div class="form-options">
                     <label class="checkbox">
-                        <input type="checkbox" id="rememberMe">
+                        <input type="checkbox" id="rememberMe" checked>
                         <span>Remember me</span>
                     </label>
                     <a href="#" class="forgot-password">Forgot Password?</a>
@@ -130,13 +140,6 @@
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
             </form>
-            
-            <!-- Demo Credentials -->
-            <div class="demo-credentials">
-                <p><strong>Demo Credentials:</strong></p>
-                <p>Admin: admin@markan.com / Admin@123</p>
-                <p>Customer: john@example.com / Customer@123</p>
-            </div>
             
             <div class="auth-footer">
                 <p>Don't have an account? <a href="register.html">Sign up</a></p>
@@ -163,6 +166,7 @@
     <script src="js/auth.js"></script>
     <script src="js/validation.js"></script>
     
+    <!-- Page specific scripts -->
     <script>
         // Navbar toggle
         document.getElementById('navbarToggle').addEventListener('click', function() {
@@ -180,16 +184,50 @@
         });
         
         // Debug: Check loaded modules
-        console.log('🔍 Checking loaded modules:');
+        console.log('🔍 Login page loaded - checking modules:');
         setTimeout(() => {
             console.log('- UsersDB:', typeof UsersDB !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
             console.log('- Auth:', typeof Auth !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
             console.log('- Validator:', typeof Validator !== 'undefined' ? '✅ Loaded' : '❌ Not loaded');
             
             if (typeof UsersDB !== 'undefined') {
-                console.log('📊 Available users:', UsersDB.users);
+                console.log('📊 Available users:', UsersDB.users.map(u => ({
+                    email: u.email,
+                    role: u.role,
+                    status: u.status
+                })));
+            }
+            
+            // Check if already logged in
+            const userStr = localStorage.getItem('markanUser');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    console.log('✅ Already logged in as:', user.email);
+                } catch (e) {
+                    console.log('❌ Invalid session');
+                }
             }
         }, 500);
+
+        // Expose test function globally
+        window.testLogin = function(email, password) {
+            if (typeof UsersDB === 'undefined') {
+                console.error('UsersDB not available');
+                return;
+            }
+            const result = UsersDB.authenticate(email, password);
+            console.log('Test login:', result ? '✅ SUCCESS' : '❌ FAILED');
+            if (result) {
+                console.log('User:', result);
+            }
+            return result;
+        };
+
+        // Quick login buttons (optional - can be used from console)
+        console.log('✅ Test functions available:');
+        console.log('  - testLogin("email", "password")');
+        console.log('  - Auth.login("email", "password")');
     </script>
 </body>
 </html>
