@@ -9,14 +9,39 @@ let currentDateRange = 'month';
 let refreshInterval = null;
 let notifications = [];
 
+// Database references (handle different naming conventions)
+const DB = {
+    orders: typeof OrdersDB !== 'undefined' ? OrdersDB : 
+            typeof window.OrdersDB !== 'undefined' ? window.OrdersDB : 
+            typeof ordersDB !== 'undefined' ? ordersDB : null,
+            
+    reservations: typeof ReservationsDB !== 'undefined' ? ReservationsDB : 
+                  typeof window.ReservationsDB !== 'undefined' ? window.ReservationsDB : 
+                  typeof reservationsDB !== 'undefined' ? reservationsDB : null,
+                  
+    menu: typeof MenuDB !== 'undefined' ? MenuDB : 
+          typeof window.MenuDB !== 'undefined' ? window.MenuDB : 
+          typeof menuDB !== 'undefined' ? menuDB : null,
+          
+    users: typeof UsersDB !== 'undefined' ? UsersDB : 
+           typeof window.UsersDB !== 'undefined' ? window.UsersDB : 
+           typeof usersDB !== 'undefined' ? usersDB : null
+};
+
 // ============================================
 // INITIALIZATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('📊 Admin Dashboard initializing...');
+    console.log('Database status:', {
+        orders: DB.orders ? '✅' : '❌',
+        reservations: DB.reservations ? '✅' : '❌',
+        menu: DB.menu ? '✅' : '❌',
+        users: DB.users ? '✅' : '❌'
+    });
     
     // Set admin name
-    const user = Auth.getCurrentUser();
+    const user = getCurrentUser();
     if (user) {
         document.getElementById('adminName').textContent = user.name;
     }
@@ -30,6 +55,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Start auto-refresh (every 30 seconds)
     startAutoRefresh();
 });
+
+// ===== GET CURRENT USER =====
+function getCurrentUser() {
+    try {
+        const userStr = localStorage.getItem('markanUser');
+        return userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+        console.error('Error getting user:', e);
+        return null;
+    }
+}
 
 // ============================================
 // SETUP EVENT LISTENERS
@@ -75,14 +111,6 @@ async function loadDashboardData() {
     showLoadingStates();
     
     try {
-        // Wait for all databases to be ready
-        await Promise.all([
-            waitForDatabase('UsersDB'),
-            waitForDatabase('OrdersDB'),
-            waitForDatabase('ReservationsDB'),
-            waitForDatabase('MenuDB')
-        ]);
-        
         // Load all dashboard components
         loadStatsCards();
         loadLowStockAlert();
@@ -97,33 +125,6 @@ async function loadDashboardData() {
         console.error('❌ Error loading dashboard data:', error);
         showNotification('Failed to load some dashboard data', 'warning');
     }
-}
-
-// ============================================
-// WAIT FOR DATABASE
-// ============================================
-function waitForDatabase(dbName) {
-    return new Promise((resolve) => {
-        if (typeof window[dbName] !== 'undefined' && window[dbName]) {
-            resolve();
-            return;
-        }
-        
-        let attempts = 0;
-        const maxAttempts = 30;
-        
-        const interval = setInterval(() => {
-            attempts++;
-            if (typeof window[dbName] !== 'undefined' && window[dbName]) {
-                clearInterval(interval);
-                resolve();
-            } else if (attempts >= maxAttempts) {
-                clearInterval(interval);
-                console.warn(`⚠️ ${dbName} not loaded after ${maxAttempts} attempts`);
-                resolve(); // Resolve anyway to not block
-            }
-        }, 100);
-    });
 }
 
 // ============================================
@@ -142,6 +143,78 @@ function showLoadingStates() {
 }
 
 // ============================================
+// GET ORDERS FROM STORAGE
+// ============================================
+function getAllOrders() {
+    // Try multiple data sources
+    if (DB.orders && typeof DB.orders.getAll === 'function') {
+        return DB.orders.getAll() || [];
+    }
+    
+    // Try localStorage directly
+    try {
+        const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
+        return orders;
+    } catch (e) {
+        return [];
+    }
+}
+
+// ============================================
+// GET RESERVATIONS FROM STORAGE
+// ============================================
+function getAllReservations() {
+    // Try multiple data sources
+    if (DB.reservations && typeof DB.reservations.getAll === 'function') {
+        return DB.reservations.getAll() || [];
+    }
+    
+    // Try localStorage directly
+    try {
+        const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
+        return reservations;
+    } catch (e) {
+        return [];
+    }
+}
+
+// ============================================
+// GET MENU ITEMS FROM STORAGE
+// ============================================
+function getAllMenuItems() {
+    // Try multiple data sources
+    if (DB.menu && typeof DB.menu.getAll === 'function') {
+        return DB.menu.getAll() || [];
+    }
+    
+    // Try localStorage directly
+    try {
+        const menu = JSON.parse(localStorage.getItem('markanMenu')) || [];
+        return menu;
+    } catch (e) {
+        return [];
+    }
+}
+
+// ============================================
+// GET USERS FROM STORAGE
+// ============================================
+function getAllUsers() {
+    // Try multiple data sources
+    if (DB.users && typeof DB.users.getAll === 'function') {
+        return DB.users.getAll() || [];
+    }
+    
+    // Try localStorage directly
+    try {
+        const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+        return users;
+    } catch (e) {
+        return [];
+    }
+}
+
+// ============================================
 // LOAD STATS CARDS
 // ============================================
 function loadStatsCards() {
@@ -150,18 +223,15 @@ function loadStatsCards() {
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     
     // Get orders
-    let allOrders = [];
-    if (window.OrdersDB && typeof OrdersDB.getAll === 'function') {
-        allOrders = OrdersDB.getAll() || [];
-    }
+    const allOrders = getAllOrders();
     
     // Calculate order stats
     const pendingOrders = allOrders.filter(o => o && o.status === 'pending').length;
     const completedOrders = allOrders.filter(o => o && o.status === 'completed').length;
     
     // Today's orders
-    const todayOrders = allOrders.filter(o => o && o.date === today);
-    const yesterdayOrders = allOrders.filter(o => o && o.date === yesterday);
+    const todayOrders = allOrders.filter(o => o && o.orderDate?.startsWith(today));
+    const yesterdayOrders = allOrders.filter(o => o && o.orderDate?.startsWith(yesterday));
     
     // Today's revenue
     const todayRevenue = todayOrders
@@ -176,11 +246,11 @@ function loadStatsCards() {
     const revenueTrend = calculateTrend(todayRevenue, yesterdayRevenue);
     const pendingTrend = calculateTrend(
         pendingOrders, 
-        allOrders.filter(o => o && o.date === yesterday && o.status === 'pending').length
+        allOrders.filter(o => o && o.orderDate?.startsWith(yesterday) && o.status === 'pending').length
     );
     const completedTrend = calculateTrend(
         completedOrders,
-        allOrders.filter(o => o && o.date === yesterday && o.status === 'completed').length
+        allOrders.filter(o => o && o.orderDate?.startsWith(yesterday) && o.status === 'completed').length
     );
     
     // Update stats cards
@@ -200,17 +270,13 @@ function loadStatsCards() {
 // LOAD RESERVATION STATS
 // ============================================
 function loadReservationStats(today) {
-    if (window.ReservationsDB && typeof ReservationsDB.getByDate === 'function') {
-        const todayReservations = ReservationsDB.getByDate(today) || [];
-        const confirmed = todayReservations.filter(r => r && r.status === 'confirmed').length;
-        const pending = todayReservations.filter(r => r && r.status === 'pending').length;
-        
-        document.getElementById('todayReservations').textContent = todayReservations.length;
-        document.getElementById('reservationTrend').textContent = `${confirmed} confirmed, ${pending} pending`;
-    } else {
-        document.getElementById('todayReservations').textContent = '0';
-        document.getElementById('reservationTrend').textContent = 'No reservations';
-    }
+    const allReservations = getAllReservations();
+    const todayReservations = allReservations.filter(r => r && r.date === today);
+    const confirmed = todayReservations.filter(r => r && r.status === 'confirmed').length;
+    const pending = todayReservations.filter(r => r && r.status === 'pending').length;
+    
+    document.getElementById('todayReservations').textContent = todayReservations.length;
+    document.getElementById('reservationTrend').textContent = `${confirmed} confirmed, ${pending} pending`;
 }
 
 // ============================================
@@ -229,21 +295,14 @@ function calculateTrend(current, previous) {
 // FORMAT CURRENCY
 // ============================================
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'ETB',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount).replace('ETB', '').trim() + ' ETB';
+    return Math.round(amount).toLocaleString() + ' ETB';
 }
 
 // ============================================
 // LOAD LOW STOCK ALERT
 // ============================================
 function loadLowStockAlert() {
-    if (!window.MenuDB || typeof MenuDB.getAll !== 'function') return;
-    
-    const menuItems = MenuDB.getAll() || [];
+    const menuItems = getAllMenuItems();
     const lowStockItems = menuItems.filter(item => item && item.stock < 5 && item.stock > 0);
     const outOfStock = menuItems.filter(item => item && item.stock === 0);
     
@@ -270,13 +329,8 @@ function loadLowStockAlert() {
 function loadPopularItems() {
     const container = document.getElementById('popularItems');
     
-    if (!window.OrdersDB || !window.MenuDB) {
-        container.innerHTML = '<p class="no-data">Order data not available</p>';
-        return;
-    }
-    
-    const orders = (OrdersDB.getAll() || []).filter(o => o && o.status === 'completed');
-    const menuItems = MenuDB.getAll() || [];
+    const orders = getAllOrders().filter(o => o && o.status === 'completed');
+    const menuItems = getAllMenuItems();
     
     // Count item occurrences
     const itemCounts = {};
@@ -322,17 +376,12 @@ function loadPopularItems() {
 }
 
 // ============================================
-// LOAD RECENT ORDERS
+// LOAD RECENT ORDERS - FIXED (No 404 errors)
 // ============================================
 function loadRecentOrders() {
     const tableBody = document.getElementById('recentOrdersTable');
     
-    if (!window.OrdersDB) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="error-message">Orders database not available</td></tr>';
-        return;
-    }
-    
-    const orders = (OrdersDB.getAll() || [])
+    const orders = getAllOrders()
         .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0))
         .slice(0, 10);
     
@@ -347,7 +396,7 @@ function loadRecentOrders() {
         const status = order.status || 'pending';
         
         return `
-            <tr onclick="window.location.href='order-details.html?id=${order.id}'">
+            <tr onclick="viewOrderDetails('${order.id}')" style="cursor: pointer;">
                 <td><span class="order-id">#${order.id}</span></td>
                 <td>${order.customerName || 'Guest'}</td>
                 <td>${itemCount} items</td>
@@ -360,54 +409,65 @@ function loadRecentOrders() {
 }
 
 // ============================================
-// LOAD ACTIVITY TIMELINE
+// VIEW ORDER DETAILS - Redirect to orders page
+// ============================================
+function viewOrderDetails(orderId) {
+    // Redirect to orders page with the order ID as a parameter
+    window.location.href = `orders.html?order=${orderId}`;
+}
+
+// ============================================
+// VIEW RESERVATION DETAILS - Redirect to reservations page
+// ============================================
+function viewReservationDetails(reservationId) {
+    window.location.href = `reservations.html?reservation=${reservationId}`;
+}
+
+// ============================================
+// LOAD ACTIVITY TIMELINE - FIXED (No 404 errors)
 // ============================================
 function loadActivityTimeline() {
     const timeline = document.getElementById('activityTimeline');
     const activities = [];
     
     // Add recent orders
-    if (window.OrdersDB) {
-        const orders = (OrdersDB.getAll() || [])
-            .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0))
-            .slice(0, 5);
-        
-        orders.forEach(order => {
-            if (order) {
-                activities.push({
-                    type: 'order',
-                    id: order.id,
-                    customer: order.customerName || 'Guest',
-                    action: 'placed an order',
-                    status: order.status,
-                    time: new Date(order.orderDate),
-                    icon: getStatusIcon(order.status),
-                    color: getStatusColor(order.status)
-                });
-            }
-        });
-    }
+    const orders = getAllOrders()
+        .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0))
+        .slice(0, 5);
+    
+    orders.forEach(order => {
+        if (order) {
+            activities.push({
+                type: 'order',
+                id: order.id,
+                customer: order.customerName || 'Guest',
+                action: 'placed an order',
+                status: order.status,
+                time: new Date(order.orderDate),
+                icon: getStatusIcon(order.status),
+                color: getStatusColor(order.status)
+            });
+        }
+    });
     
     // Add recent reservations
-    if (window.ReservationsDB && typeof ReservationsDB.getAll === 'function') {
-        const reservations = (ReservationsDB.getAll() || [])
-            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-            .slice(0, 5);
-        
-        reservations.forEach(res => {
-            if (res) {
-                activities.push({
-                    type: 'reservation',
-                    id: res.id,
-                    customer: res.customerName || 'Guest',
-                    action: `booked for ${res.guests || '?'} guests`,
-                    time: new Date(res.createdAt),
-                    icon: 'fa-calendar-check',
-                    color: '#c49a6c'
-                });
-            }
-        });
-    }
+    const reservations = getAllReservations()
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(0, 5);
+    
+    reservations.forEach(res => {
+        if (res) {
+            activities.push({
+                type: 'reservation',
+                id: res.id,
+                customer: res.customerName || 'Guest',
+                action: `booked for ${res.guests || '?'} guests`,
+                time: new Date(res.createdAt),
+                icon: 'fa-calendar-check',
+                color: '#c49a6c'
+            });
+        }
+    });
     
     // Sort by time (most recent first)
     activities.sort((a, b) => b.time - a.time);
@@ -421,7 +481,9 @@ function loadActivityTimeline() {
         const timeAgo = getTimeAgo(activity.time);
         
         return `
-            <div class="timeline-item" onclick="window.location.href='${activity.type === 'order' ? 'orders.html' : 'reservations.html'}'">
+            <div class="timeline-item" onclick="${activity.type === 'order' ? 
+                `viewOrderDetails('${activity.id}')` : 
+                `viewReservationDetails('${activity.id}')`}" style="cursor: pointer;">
                 <div class="timeline-icon" style="background: ${activity.color}20; color: ${activity.color}">
                     <i class="fas ${activity.icon}"></i>
                 </div>
@@ -501,11 +563,7 @@ function getChartData(range) {
     const labels = [];
     const data = [];
     
-    if (!window.OrdersDB) {
-        return { labels: ['No Data'], data: [0] };
-    }
-    
-    const orders = (OrdersDB.getAll() || []).filter(o => o && o.status === 'completed');
+    const orders = getAllOrders().filter(o => o && o.status === 'completed');
     const today = new Date();
     
     switch(range) {
@@ -593,63 +651,59 @@ function loadNotifications() {
     notifications = [];
     
     // Check for low stock
-    if (window.MenuDB && typeof MenuDB.getAll === 'function') {
-        const menuItems = MenuDB.getAll() || [];
-        const lowStock = menuItems.filter(item => item && item.stock < 5 && item.stock > 0);
-        const outOfStock = menuItems.filter(item => item && item.stock === 0);
-        
-        lowStock.forEach(item => {
-            notifications.push({
-                id: `stock-${item.id}`,
-                type: 'warning',
-                message: `${item.name} is running low (${item.stock} left)`,
-                time: new Date(),
-                link: 'menu-management.html?filter=lowstock',
-                read: false
-            });
+    const menuItems = getAllMenuItems();
+    const lowStock = menuItems.filter(item => item && item.stock < 5 && item.stock > 0);
+    const outOfStock = menuItems.filter(item => item && item.stock === 0);
+    
+    lowStock.forEach(item => {
+        notifications.push({
+            id: `stock-${item.id}`,
+            type: 'warning',
+            message: `${item.name} is running low (${item.stock} left)`,
+            time: new Date(),
+            link: 'menu-management.html?filter=lowstock',
+            read: false
         });
-        
-        outOfStock.forEach(item => {
-            notifications.push({
-                id: `out-${item.id}`,
-                type: 'danger',
-                message: `${item.name} is out of stock`,
-                time: new Date(),
-                link: 'menu-management.html?filter=outofstock',
-                read: false
-            });
+    });
+    
+    outOfStock.forEach(item => {
+        notifications.push({
+            id: `out-${item.id}`,
+            type: 'danger',
+            message: `${item.name} is out of stock`,
+            time: new Date(),
+            link: 'menu-management.html?filter=outofstock',
+            read: false
         });
-    }
+    });
     
     // Check for pending orders
-    if (window.OrdersDB && typeof OrdersDB.getByStatus === 'function') {
-        const pendingOrders = OrdersDB.getByStatus('pending') || [];
-        if (pendingOrders.length > 0) {
-            notifications.push({
-                id: 'pending-orders',
-                type: 'info',
-                message: `${pendingOrders.length} pending order(s) need attention`,
-                time: new Date(),
-                link: 'orders.html?status=pending',
-                read: false
-            });
-        }
+    const orders = getAllOrders();
+    const pendingOrders = orders.filter(o => o && o.status === 'pending');
+    if (pendingOrders.length > 0) {
+        notifications.push({
+            id: 'pending-orders',
+            type: 'info',
+            message: `${pendingOrders.length} pending order(s) need attention`,
+            time: new Date(),
+            link: 'orders.html?status=pending',
+            read: false
+        });
     }
     
     // Check for today's reservations
-    if (window.ReservationsDB && typeof ReservationsDB.getByDate === 'function') {
-        const today = new Date().toISOString().split('T')[0];
-        const todayReservations = ReservationsDB.getByDate(today) || [];
-        if (todayReservations.length > 0) {
-            notifications.push({
-                id: 'today-reservations',
-                type: 'info',
-                message: `${todayReservations.length} reservation(s) for today`,
-                time: new Date(),
-                link: 'reservations.html',
-                read: false
-            });
-        }
+    const today = new Date().toISOString().split('T')[0];
+    const reservations = getAllReservations();
+    const todayReservations = reservations.filter(r => r && r.date === today);
+    if (todayReservations.length > 0) {
+        notifications.push({
+            id: 'today-reservations',
+            type: 'info',
+            message: `${todayReservations.length} reservation(s) for today`,
+            time: new Date(),
+            link: 'reservations.html',
+            read: false
+        });
     }
     
     // Sort by time (newest first)
@@ -724,8 +778,6 @@ function updateNotificationCount() {
 // ============================================
 function performGlobalSearch(term) {
     console.log('Searching for:', term);
-    // This can be expanded to show search results dropdown
-    // For now, just log the search
 }
 
 // ============================================
@@ -813,7 +865,7 @@ function startAutoRefresh() {
             console.log('🔄 Auto-refreshing dashboard...');
             loadDashboardData();
         }
-    }, 30000); // Refresh every 30 seconds
+    }, 30000);
 }
 
 // ============================================
@@ -824,3 +876,5 @@ window.performGlobalSearch = performGlobalSearch;
 window.markNotificationRead = markNotificationRead;
 window.markAllNotificationsRead = markAllNotificationsRead;
 window.showNotification = showNotification;
+window.viewOrderDetails = viewOrderDetails;
+window.viewReservationDetails = viewReservationDetails;
