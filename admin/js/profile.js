@@ -1,22 +1,25 @@
-// admin/js/profile.js
-// Markan Cafe Admin - Profile Management
-// Full profile management with localStorage - NO HARDCODED DATA
+// admin/js/profile.js - Complete Profile Management
+// Markan Cafe Admin - Full functionality with localStorage
+// ALL DATA IS DYNAMIC - NO HARDCODING
 
 // ===== GLOBAL VARIABLES =====
 let currentUser = null;
 let allUsers = [];
 let activityLog = [];
 let notifications = [];
+let userSessions = [];
 let currentAvatarFile = null;
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Check admin access
-    if (!Auth.requireAdmin()) {
-        window.location.href = '../../login.html';
-        return;
-    }
-
+    console.log('👤 Profile Management initializing...');
+    
+    // Check authentication
+    checkAuth();
+    
+    // Initialize all data
+    initializeData();
+    
     // Load profile data
     loadProfileData();
     
@@ -39,29 +42,74 @@ document.addEventListener('DOMContentLoaded', function() {
     updateAdminName();
 });
 
+// ===== CHECK AUTHENTICATION =====
+function checkAuth() {
+    const userStr = localStorage.getItem('markanUser');
+    if (!userStr) {
+        window.location.replace('../../login.html');
+        return;
+    }
+    
+    try {
+        const user = JSON.parse(userStr);
+        if (user.role !== 'admin') {
+            window.location.replace('../../customer/html/dashboard.html');
+            return;
+        }
+        window.currentUser = user;
+    } catch (e) {
+        console.error('Auth error:', e);
+        window.location.replace('../../login.html');
+    }
+}
+
+// ===== INITIALIZE ALL DATA =====
+function initializeData() {
+    // Load current user
+    const userStr = localStorage.getItem('markanUser');
+    currentUser = userStr ? JSON.parse(userStr) : null;
+    
+    // Load all users
+    const usersStr = localStorage.getItem('markanUsers');
+    allUsers = usersStr ? JSON.parse(usersStr) : [];
+    
+    // Initialize activity log if not exists
+    const activityStr = localStorage.getItem('adminActivityLog');
+    activityLog = activityStr ? JSON.parse(activityStr) : [];
+    
+    // Initialize notifications if not exists
+    const notifStr = localStorage.getItem('adminNotifications');
+    notifications = notifStr ? JSON.parse(notifStr) : [];
+    
+    // Initialize sessions if not exists
+    const sessionsStr = localStorage.getItem('adminSessions');
+    userSessions = sessionsStr ? JSON.parse(sessionsStr) : [];
+    
+    console.log('✅ Data initialized:', {
+        users: allUsers.length,
+        activities: activityLog.length,
+        notifications: notifications.length,
+        sessions: userSessions.length
+    });
+}
+
 // ===== LOAD PROFILE DATA =====
 function loadProfileData() {
-    currentUser = Auth.getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.error('No current user found');
+        return;
+    }
 
-    // Load all users for reference
-    allUsers = JSON.parse(localStorage.getItem('markanUsers')) || [];
+    console.log('Loading profile for:', currentUser.email);
     
     // Set profile information
     document.getElementById('profileName').textContent = currentUser.name || 'Admin User';
-    document.getElementById('profileRole').textContent = currentUser.role || 'Administrator';
+    document.getElementById('profileRole').textContent = getRoleDisplay(currentUser.role || 'admin');
     document.getElementById('adminName').textContent = currentUser.name || 'Admin User';
     
     // Set avatar
-    const avatarImg = document.getElementById('profileAvatar');
-    if (currentUser.avatar) {
-        avatarImg.src = currentUser.avatar;
-    } else {
-        // Generate avatar from initials
-        const initials = currentUser.name ? currentUser.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'A';
-        avatarImg.src = `https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=150`;
-    }
-
+    loadUserAvatar();
+    
     // Fill personal form
     document.getElementById('fullName').value = currentUser.name || '';
     document.getElementById('email').value = currentUser.email || '';
@@ -69,48 +117,81 @@ function loadProfileData() {
     document.getElementById('address').value = currentUser.address || '';
     document.getElementById('bio').value = currentUser.bio || '';
 
+    // Set department based on role
+    document.getElementById('department').value = currentUser.department || 'Administration';
+    
+    // Set two-factor status
+    const twoFactorEnabled = currentUser.preferences?.twoFactor || false;
+    document.getElementById('twoFactorStatus').textContent = twoFactorEnabled ? 'Enabled' : 'Disabled';
+    
     // Load user stats
     loadUserStats();
+}
+
+// ===== GET ROLE DISPLAY NAME =====
+function getRoleDisplay(role) {
+    const roles = {
+        'admin': 'Administrator',
+        'customer': 'Customer',
+        'staff': 'Staff Member'
+    };
+    return roles[role] || role;
+}
+
+// ===== LOAD USER AVATAR =====
+function loadUserAvatar() {
+    const avatarImg = document.getElementById('profileAvatar');
+    
+    if (currentUser.avatar) {
+        avatarImg.src = currentUser.avatar;
+    } else {
+        // Generate avatar from initials
+        const name = currentUser.name || 'Admin User';
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        avatarImg.src = `https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=150`;
+    }
 }
 
 // ===== LOAD USER STATISTICS =====
 function loadUserStats() {
     // Get today's actions from activity log
     const today = new Date().toDateString();
-    const actions = JSON.parse(localStorage.getItem('adminActivityLog')) || [];
-    const todayActions = actions.filter(a => new Date(a.timestamp).toDateString() === today).length;
-    document.getElementById('totalActions').textContent = todayActions;
+    const actions = activityLog.filter(a => new Date(a.timestamp).toDateString() === today).length;
+    document.getElementById('totalActions').textContent = actions;
 
     // Get login streak
-    const logins = JSON.parse(localStorage.getItem('adminLogins')) || [];
-    let streak = calculateStreak(logins);
+    const logins = activityLog.filter(a => a.type === 'login').map(a => a.timestamp);
+    const streak = calculateStreak(logins);
     document.getElementById('loginStreak').textContent = streak;
 
     // Get total logins
-    document.getElementById('totalLogins').textContent = logins.length;
+    const totalLogins = activityLog.filter(a => a.type === 'login').length;
+    document.getElementById('totalLogins').textContent = totalLogins;
 }
 
 // ===== CALCULATE LOGIN STREAK =====
 function calculateStreak(logins) {
     if (logins.length === 0) return 0;
     
+    // Sort logins by date
+    const loginDates = logins.map(l => new Date(l).toDateString());
+    const uniqueDates = [...new Set(loginDates)].sort();
+    
     let streak = 1;
     const today = new Date().toDateString();
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toDateString();
-
+    
     // Check if logged in today
-    const loggedInToday = logins.some(l => new Date(l).toDateString() === today);
-    if (!loggedInToday) return 0;
-
+    if (!uniqueDates.includes(today)) return 0;
+    
     // Count consecutive days
-    for (let i = logins.length - 2; i >= 0; i--) {
-        const currentDate = new Date(logins[i]).toDateString();
-        const expectedDate = new Date();
-        expectedDate.setDate(expectedDate.getDate() - streak);
+    for (let i = uniqueDates.length - 1; i > 0; i--) {
+        const current = new Date(uniqueDates[i]);
+        const prev = new Date(uniqueDates[i - 1]);
         
-        if (currentDate === expectedDate.toDateString()) {
+        const diffTime = current - prev;
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+        
+        if (diffDays === 1) {
             streak++;
         } else {
             break;
@@ -133,16 +214,17 @@ window.savePersonalInfo = function() {
         return;
     }
 
-    // Validate phone
+    // Validate phone (Ethiopian format)
     const phoneRegex = /^(09|\+2519)\d{8}$/;
     if (!phoneRegex.test(phone)) {
-        showNotification('Please enter a valid Ethiopian phone number', 'error');
+        showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
         return;
     }
 
     // Update user in allUsers array
     const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
     if (userIndex !== -1) {
+        // Update data
         allUsers[userIndex].name = name;
         allUsers[userIndex].phone = phone;
         allUsers[userIndex].address = address;
@@ -170,7 +252,11 @@ window.savePersonalInfo = function() {
 
 // ===== RESET PERSONAL FORM =====
 window.resetPersonalForm = function() {
-    loadProfileData();
+    document.getElementById('fullName').value = currentUser.name || '';
+    document.getElementById('phone').value = currentUser.phone || '';
+    document.getElementById('address').value = currentUser.address || '';
+    document.getElementById('bio').value = currentUser.bio || '';
+    
     showNotification('Changes discarded', 'info');
 };
 
@@ -194,7 +280,7 @@ window.changePassword = function() {
     // Validate password strength
     const passwordRegex = /^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
-        showNotification('Password must be at least 8 characters with one special character', 'error');
+        showNotification('Password must be at least 8 characters with one special character (!@#$%^&*)', 'error');
         return;
     }
 
@@ -217,8 +303,10 @@ window.changePassword = function() {
         showNotification('Password changed successfully', 'success');
         
         // Clear form
-        document.getElementById('passwordForm').reset();
-        document.getElementById('passwordStrength').innerHTML = '<div class="strength-bar"></div>';
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.querySelector('#passwordStrength .strength-bar').style.width = '0';
     }
 };
 
@@ -242,10 +330,13 @@ document.getElementById('newPassword')?.addEventListener('input', function(e) {
     if (/[!@#$%^&*]/.test(password)) strength++;
 
     if (strength <= 2) {
+        strengthBar.style.width = '33.33%';
         strengthBar.className = 'strength-bar weak';
     } else if (strength === 3) {
+        strengthBar.style.width = '66.66%';
         strengthBar.className = 'strength-bar medium';
     } else {
+        strengthBar.style.width = '100%';
         strengthBar.className = 'strength-bar strong';
     }
 });
@@ -254,11 +345,11 @@ document.getElementById('newPassword')?.addEventListener('input', function(e) {
 window.toggleTwoFactor = function() {
     const statusSpan = document.getElementById('twoFactorStatus');
     const currentStatus = statusSpan.textContent;
+    const newStatus = currentStatus === 'Disabled' ? 'Enabled' : 'Disabled';
     
-    if (currentStatus === 'Disabled') {
+    if (newStatus === 'Enabled') {
         if (confirm('Enable two-factor authentication? This will add extra security to your account.')) {
             statusSpan.textContent = 'Enabled';
-            // Save 2FA status to user preferences
             saveTwoFactorStatus(true);
             showNotification('Two-factor authentication enabled', 'success');
             logActivity('2fa_enabled', 'Enabled two-factor authentication');
@@ -284,7 +375,7 @@ function saveTwoFactorStatus(enabled) {
         localStorage.setItem('markanUsers', JSON.stringify(allUsers));
         
         // Update current user
-        currentUser.preferences = currentUser.preferences || {};
+        if (!currentUser.preferences) currentUser.preferences = {};
         currentUser.preferences.twoFactor = enabled;
         localStorage.setItem('markanUser', JSON.stringify(currentUser));
     }
@@ -293,22 +384,34 @@ function saveTwoFactorStatus(enabled) {
 // ===== LOAD SESSIONS =====
 function loadSessions() {
     // Get saved sessions from localStorage
-    const sessions = JSON.parse(localStorage.getItem('adminSessions')) || [];
+    let sessions = JSON.parse(localStorage.getItem('adminSessions')) || [];
     
     // Add current session if not exists
-    const currentSessionExists = sessions.some(s => s.current);
+    const currentSessionExists = sessions.some(s => s.current === true);
+    
     if (!currentSessionExists) {
-        sessions.unshift({
+        const newSession = {
+            id: generateSessionId(),
             device: getDeviceInfo(),
+            browser: getBrowserInfo(),
+            os: getOSInfo(),
             location: 'Debre Birhan, Ethiopia',
-            ip: '192.168.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 255),
+            ip: getIPAddress(),
             current: true,
             lastActive: new Date().toISOString()
-        });
+        };
+        
+        sessions.unshift(newSession);
         localStorage.setItem('adminSessions', JSON.stringify(sessions));
     }
     
+    userSessions = sessions;
     displaySessions(sessions);
+}
+
+// ===== GENERATE SESSION ID =====
+function generateSessionId() {
+    return 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 // ===== GET DEVICE INFO =====
@@ -318,18 +421,51 @@ function getDeviceInfo() {
     
     if (ua.includes('Windows')) device = 'Windows PC';
     else if (ua.includes('Mac')) device = 'Mac';
-    else if (ua.includes('Linux')) device = 'Linux';
+    else if (ua.includes('Linux') && !ua.includes('Android')) device = 'Linux PC';
     else if (ua.includes('Android')) device = 'Android Device';
     else if (ua.includes('iPhone')) device = 'iPhone';
     else if (ua.includes('iPad')) device = 'iPad';
+    else if (ua.includes('iPod')) device = 'iPod';
     
-    let browser = 'Unknown Browser';
-    if (ua.includes('Chrome')) browser = 'Chrome';
-    else if (ua.includes('Firefox')) browser = 'Firefox';
-    else if (ua.includes('Safari')) browser = 'Safari';
+    return device;
+}
+
+// ===== GET BROWSER INFO =====
+function getBrowserInfo() {
+    const ua = navigator.userAgent;
+    let browser = 'Unknown';
+    
+    if (ua.includes('Firefox')) browser = 'Firefox';
+    else if (ua.includes('Chrome')) browser = 'Chrome';
+    else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
     else if (ua.includes('Edge')) browser = 'Edge';
+    else if (ua.includes('Opera') || ua.includes('OPR')) browser = 'Opera';
     
-    return `${browser} on ${device}`;
+    return browser;
+}
+
+// ===== GET OS INFO =====
+function getOSInfo() {
+    const ua = navigator.userAgent;
+    let os = 'Unknown';
+    
+    if (ua.includes('Windows NT 10.0')) os = 'Windows 10';
+    else if (ua.includes('Windows NT 6.3')) os = 'Windows 8.1';
+    else if (ua.includes('Windows NT 6.2')) os = 'Windows 8';
+    else if (ua.includes('Windows NT 6.1')) os = 'Windows 7';
+    else if (ua.includes('Mac OS X')) os = 'macOS';
+    else if (ua.includes('Android')) os = 'Android';
+    else if (ua.includes('Linux')) os = 'Linux';
+    else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+    
+    return os;
+}
+
+// ===== GET IP ADDRESS (SIMULATED) =====
+function getIPAddress() {
+    // In a real app, this would come from the server
+    // For demo, generate a realistic-looking local IP
+    return '192.168.' + Math.floor(Math.random() * 255) + '.' + Math.floor(Math.random() * 255);
 }
 
 // ===== DISPLAY SESSIONS =====
@@ -342,33 +478,41 @@ function displaySessions(sessions) {
         return;
     }
     
-    container.innerHTML = sessions.map(session => `
-        <div class="session-item">
-            <div class="session-info">
-                <i class="fas fa-${session.device.includes('iPhone') || session.device.includes('Android') ? 'mobile-alt' : 'desktop'}"></i>
-                <div class="session-details">
-                    <p>${session.device}</p>
-                    <p>${session.location} · ${session.ip}</p>
-                    <p>Last active: ${timeAgo(session.lastActive)}</p>
+    container.innerHTML = sessions.map(session => {
+        const isCurrent = session.current === true;
+        const timeAgoStr = timeAgo(session.lastActive);
+        
+        return `
+            <div class="session-item ${isCurrent ? 'current' : ''}">
+                <div class="session-device">
+                    <i class="fas fa-${session.device.includes('iPhone') || session.device.includes('Android') ? 'mobile-alt' : 'desktop'}"></i>
+                    <div>
+                        <p class="device-name">${session.device} - ${session.browser}</p>
+                        <p class="device-location">${session.location} · ${session.ip} · ${session.os}</p>
+                        <p class="session-time">Last active: ${timeAgoStr}</p>
+                    </div>
                 </div>
+                ${isCurrent ? 
+                    '<span class="session-badge current-badge">Current Session</span>' : 
+                    `<button class="btn btn-outline btn-small" onclick="revokeSession('${session.id}')">Revoke</button>`
+                }
             </div>
-            ${session.current ? 
-                '<span class="session-badge">Current Session</span>' : 
-                `<button class="btn btn-outline btn-small" onclick="revokeSession('${session.ip}')">Revoke</button>`
-            }
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ===== REVOKE SESSION =====
-window.revokeSession = function(ip) {
-    if (confirm('Are you sure you want to revoke this session? The user will be logged out.')) {
+window.revokeSession = function(sessionId) {
+    if (confirm('Are you sure you want to revoke this session? The user will be logged out from that device.')) {
         const sessions = JSON.parse(localStorage.getItem('adminSessions')) || [];
-        const updatedSessions = sessions.filter(s => s.ip !== ip);
+        const updatedSessions = sessions.filter(s => s.id !== sessionId);
         localStorage.setItem('adminSessions', JSON.stringify(updatedSessions));
-        loadSessions();
-        showNotification('Session revoked', 'success');
-        logActivity('session_revoke', `Revoked session from ${ip}`);
+        
+        userSessions = updatedSessions;
+        displaySessions(updatedSessions);
+        
+        showNotification('Session revoked successfully', 'success');
+        logActivity('session_revoke', `Revoked session from ${sessionId}`);
     }
 };
 
@@ -376,13 +520,16 @@ window.revokeSession = function(ip) {
 window.setTheme = function(theme) {
     // Apply theme
     if (theme === 'light') {
-        document.documentElement.style.setProperty('--bg-dark', '#f5f5f5');
-        document.documentElement.style.setProperty('--bg-card', '#ffffff');
-        document.documentElement.style.setProperty('--text-primary', '#333333');
+        document.body.classList.remove('dark-theme');
     } else if (theme === 'dark') {
-        document.documentElement.style.setProperty('--bg-dark', '#1a1a1a');
-        document.documentElement.style.setProperty('--bg-card', '#2d2d2d');
-        document.documentElement.style.setProperty('--text-primary', '#ffffff');
+        document.body.classList.add('dark-theme');
+    } else if (theme === 'system') {
+        // Check system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.body.classList.add('dark-theme');
+        } else {
+            document.body.classList.remove('dark-theme');
+        }
     }
     
     // Save preference
@@ -395,7 +542,7 @@ window.setTheme = function(theme) {
         localStorage.setItem('markanUsers', JSON.stringify(allUsers));
         
         // Update current user
-        currentUser.preferences = currentUser.preferences || {};
+        if (!currentUser.preferences) currentUser.preferences = {};
         currentUser.preferences.theme = theme;
         localStorage.setItem('markanUser', JSON.stringify(currentUser));
     }
@@ -426,6 +573,7 @@ window.savePreferences = function() {
         localStorage.setItem('markanUsers', JSON.stringify(allUsers));
         
         // Update current user
+        if (!currentUser.preferences) currentUser.preferences = {};
         currentUser.preferences = { ...currentUser.preferences, ...preferences };
         localStorage.setItem('markanUser', JSON.stringify(currentUser));
     }
@@ -440,31 +588,54 @@ function loadPreferences() {
     
     const prefs = currentUser.preferences;
     
-    document.getElementById('language').value = prefs.language || 'en';
-    document.getElementById('timezone').value = prefs.timezone || 'Africa/Addis_Ababa';
-    document.getElementById('dateFormat').value = prefs.dateFormat || 'MM/DD/YYYY';
-    document.getElementById('showStats').checked = prefs.showStats !== false;
-    document.getElementById('showCharts').checked = prefs.showCharts !== false;
-    document.getElementById('showRecentOrders').checked = prefs.showRecentOrders !== false;
-    document.getElementById('compactView').checked = prefs.compactView || false;
+    // Set form values
+    if (document.getElementById('language')) 
+        document.getElementById('language').value = prefs.language || 'en';
+    
+    if (document.getElementById('timezone')) 
+        document.getElementById('timezone').value = prefs.timezone || 'Africa/Addis_Ababa';
+    
+    if (document.getElementById('dateFormat')) 
+        document.getElementById('dateFormat').value = prefs.dateFormat || 'MM/DD/YYYY';
+    
+    if (document.getElementById('showStats')) 
+        document.getElementById('showStats').checked = prefs.showStats !== false;
+    
+    if (document.getElementById('showCharts')) 
+        document.getElementById('showCharts').checked = prefs.showCharts !== false;
+    
+    if (document.getElementById('showRecentOrders')) 
+        document.getElementById('showRecentOrders').checked = prefs.showRecentOrders !== false;
+    
+    if (document.getElementById('compactView')) 
+        document.getElementById('compactView').checked = prefs.compactView || false;
+    
+    // Apply theme
+    if (prefs.theme) {
+        setTheme(prefs.theme);
+    }
 }
 
 // ===== LOAD ACTIVITY LOG =====
 function loadActivityLog() {
-    activityLog = JSON.parse(localStorage.getItem('adminActivityLog')) || [];
-    
-    // If no activity log exists, create some sample activities
+    // If no activity log exists, create initial entry
     if (activityLog.length === 0) {
         activityLog = [
             {
+                id: 1,
                 type: 'login',
                 description: 'Logged in successfully',
-                timestamp: new Date(Date.now() - 3600000).toISOString()
+                timestamp: new Date(Date.now() - 3600000).toISOString(),
+                ip: '192.168.1.100',
+                device: getDeviceInfo()
             },
             {
+                id: 2,
                 type: 'profile_update',
                 description: 'Updated profile information',
-                timestamp: new Date(Date.now() - 86400000).toISOString()
+                timestamp: new Date(Date.now() - 86400000).toISOString(),
+                ip: '192.168.1.100',
+                device: getDeviceInfo()
             }
         ];
         localStorage.setItem('adminActivityLog', JSON.stringify(activityLog));
@@ -496,6 +667,7 @@ function displayActivityLog(activities) {
             <div class="timeline-content">
                 <p>${activity.description}</p>
                 <small>${formatDateTime(activity.timestamp)} (${timeAgo(activity.timestamp)})</small>
+                <small class="device-info">${activity.device || 'Unknown device'}</small>
             </div>
         </div>
     `).join('');
@@ -515,7 +687,8 @@ function getActivityIcon(type) {
         '2fa_disabled': 'shield-alt',
         'theme_change': 'palette',
         'preferences_save': 'sliders-h',
-        'session_revoke': 'ban'
+        'session_revoke': 'ban',
+        'avatar_update': 'camera'
     };
     return icons[type] || 'history';
 }
@@ -523,9 +696,12 @@ function getActivityIcon(type) {
 // ===== LOG ACTIVITY =====
 function logActivity(type, description) {
     const activity = {
+        id: Date.now() + Math.floor(Math.random() * 1000),
         type,
         description,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ip: getIPAddress(),
+        device: getDeviceInfo()
     };
     
     activityLog.unshift(activity);
@@ -538,7 +714,8 @@ function logActivity(type, description) {
     localStorage.setItem('adminActivityLog', JSON.stringify(activityLog));
     
     // Update display if activity section is active
-    if (document.getElementById('activity').classList.contains('active')) {
+    const activitySection = document.getElementById('activity');
+    if (activitySection && activitySection.classList.contains('active')) {
         displayActivityLog(activityLog.slice(0, 10));
     }
 }
@@ -579,20 +756,21 @@ window.loadMoreActivity = function() {
             <div class="timeline-content">
                 <p>${activity.description}</p>
                 <small>${formatDateTime(activity.timestamp)} (${timeAgo(activity.timestamp)})</small>
+                <small class="device-info">${activity.device || 'Unknown device'}</small>
             </div>
         `;
         timeline.appendChild(div);
     });
     
-    if (currentCount + 10 >= activityLog.length) {
-        document.querySelector('#activity .load-more button').disabled = true;
+    const loadMoreBtn = document.querySelector('#activity .load-more button');
+    if (loadMoreBtn && currentCount + 10 >= activityLog.length) {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.textContent = 'No More Activities';
     }
 };
 
 // ===== LOAD NOTIFICATIONS =====
 function loadNotifications() {
-    notifications = JSON.parse(localStorage.getItem('adminNotifications')) || [];
-    
     // If no notifications exist, create some
     if (notifications.length === 0) {
         notifications = [
@@ -604,6 +782,24 @@ function loadNotifications() {
                 time: new Date().toISOString(),
                 read: false,
                 icon: 'info-circle'
+            },
+            {
+                id: 2,
+                type: 'order',
+                title: 'New Order',
+                message: 'You have a new pending order.',
+                time: new Date(Date.now() - 1800000).toISOString(),
+                read: false,
+                icon: 'shopping-cart'
+            },
+            {
+                id: 3,
+                type: 'alert',
+                title: 'Low Stock Alert',
+                message: 'Some items are running low on stock.',
+                time: new Date(Date.now() - 3600000).toISOString(),
+                read: true,
+                icon: 'exclamation-triangle'
             }
         ];
         localStorage.setItem('adminNotifications', JSON.stringify(notifications));
@@ -628,20 +824,25 @@ function displayRecentNotifications() {
         return;
     }
 
-    list.innerHTML = notifications.slice(0, 5).map(notification => `
-        <div class="notification-item ${notification.read ? '' : 'unread'}" 
-             onclick="markNotificationRead(${notification.id})">
-            <div class="notification-icon">
-                <i class="fas fa-${notification.icon || 'bell'}"></i>
+    list.innerHTML = notifications.slice(0, 5).map(notification => {
+        const timeAgoStr = timeAgo(notification.time);
+        const isUnread = !notification.read;
+        
+        return `
+            <div class="notification-item ${isUnread ? 'unread' : ''}" 
+                 onclick="markNotificationRead(${notification.id})">
+                <div class="notification-icon ${notification.type}">
+                    <i class="fas fa-${notification.icon || 'bell'}"></i>
+                </div>
+                <div class="notification-content">
+                    <p><strong>${notification.title}</strong></p>
+                    <p>${notification.message}</p>
+                    <small>${timeAgoStr}</small>
+                </div>
+                ${isUnread ? '<span class="unread-dot"></span>' : ''}
             </div>
-            <div class="notification-content">
-                <p><strong>${notification.title}</strong></p>
-                <p>${notification.message}</p>
-                <small>${timeAgo(notification.time)}</small>
-            </div>
-            ${!notification.read ? '<span class="unread-dot"></span>' : ''}
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // ===== MARK NOTIFICATION AS READ =====
@@ -680,65 +881,115 @@ window.showSection = function(sectionId) {
     document.querySelectorAll('.profile-menu-item').forEach(item => {
         item.classList.remove('active');
     });
-    document.querySelector(`[onclick="showSection('${sectionId}')"]`).classList.add('active');
+    
+    const activeLink = document.querySelector(`[onclick="showSection('${sectionId}')"]`);
+    if (activeLink) activeLink.classList.add('active');
 
     // Show section
     document.querySelectorAll('.profile-section').forEach(section => {
         section.classList.remove('active');
     });
-    document.getElementById(sectionId).classList.add('active');
+    
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) targetSection.classList.add('active');
 
     // Load section-specific data
     if (sectionId === 'activity') {
         displayActivityLog(activityLog.slice(0, 10));
+        
+        // Show/hide load more button
+        const loadMoreBtn = document.querySelector('#activity .load-more button');
+        if (loadMoreBtn) {
+            loadMoreBtn.disabled = activityLog.length <= 10;
+            loadMoreBtn.textContent = activityLog.length <= 10 ? 'No More Activities' : 'Load More';
+        }
     }
+    
     if (sectionId === 'notifications') {
         displayRecentNotifications();
+    }
+    
+    if (sectionId === 'security') {
+        loadSessions();
     }
 };
 
 // ===== AVATAR UPLOAD =====
 document.getElementById('avatarInput')?.addEventListener('change', function(e) {
     const file = e.target.files[0];
-    if (file) {
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showNotification('Please select an image file', 'error');
-            this.value = '';
-            return;
-        }
-        
-        // Validate file size (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            showNotification('Image size should be less than 2MB', 'error');
-            this.value = '';
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const avatarUrl = e.target.result;
-            
-            // Update avatar display
-            document.getElementById('profileAvatar').src = avatarUrl;
-            
-            // Save to user profile
-            const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
-            if (userIndex !== -1) {
-                allUsers[userIndex].avatar = avatarUrl;
-                localStorage.setItem('markanUsers', JSON.stringify(allUsers));
-                
-                // Update current user
-                currentUser.avatar = avatarUrl;
-                localStorage.setItem('markanUser', JSON.stringify(currentUser));
-                
-                showNotification('Profile picture updated', 'success');
-                logActivity('avatar_update', 'Updated profile picture');
-            }
-        };
-        reader.readAsDataURL(file);
+    if (!file) return;
+    
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+        showNotification('Please select an image file', 'error');
+        this.value = '';
+        return;
     }
+    
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        showNotification('Image size should be less than 2MB', 'error');
+        this.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const avatarUrl = e.target.result;
+        
+        // Update avatar display
+        document.getElementById('profileAvatar').src = avatarUrl;
+        
+        // Save to user profile
+        const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+        if (userIndex !== -1) {
+            allUsers[userIndex].avatar = avatarUrl;
+            localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+            
+            // Update current user
+            currentUser.avatar = avatarUrl;
+            localStorage.setItem('markanUser', JSON.stringify(currentUser));
+            
+            showNotification('Profile picture updated successfully', 'success');
+            logActivity('avatar_update', 'Updated profile picture');
+        }
+    };
+    reader.readAsDataURL(file);
 });
+
+// ===== SAVE NOTIFICATION SETTINGS =====
+function saveNotificationSettings() {
+    const settings = {
+        emailNewOrder: document.getElementById('emailNewOrder')?.checked || false,
+        emailNewReservation: document.getElementById('emailNewReservation')?.checked || false,
+        emailLowStock: document.getElementById('emailLowStock')?.checked || false,
+        emailNewUser: document.getElementById('emailNewUser')?.checked || false,
+        pushNewOrder: document.getElementById('pushNewOrder')?.checked || false,
+        pushNewReservation: document.getElementById('pushNewReservation')?.checked || false,
+        pushLowStock: document.getElementById('pushLowStock')?.checked || false
+    };
+
+    // Save to user preferences
+    const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+        if (!allUsers[userIndex].preferences) {
+            allUsers[userIndex].preferences = {};
+        }
+        if (!allUsers[userIndex].preferences.notifications) {
+            allUsers[userIndex].preferences.notifications = {};
+        }
+        allUsers[userIndex].preferences.notifications = settings;
+        localStorage.setItem('markanUsers', JSON.stringify(allUsers));
+        
+        // Update current user
+        if (!currentUser.preferences) currentUser.preferences = {};
+        if (!currentUser.preferences.notifications) currentUser.preferences.notifications = {};
+        currentUser.preferences.notifications = settings;
+        localStorage.setItem('markanUser', JSON.stringify(currentUser));
+        
+        showNotification('Notification settings saved', 'success');
+    }
+}
 
 // ===== SETUP EVENT LISTENERS =====
 function setupEventListeners() {
@@ -750,13 +1001,29 @@ function setupEventListeners() {
     // Storage events (cross-tab updates)
     window.addEventListener('storage', function(e) {
         if (e.key === 'markanUsers' || e.key === 'markanUser') {
+            // Reload data
+            initializeData();
             loadProfileData();
+            updateAdminName();
         }
         if (e.key === 'adminActivityLog') {
-            loadActivityLog();
+            activityLog = JSON.parse(e.newValue || '[]');
+            if (document.getElementById('activity').classList.contains('active')) {
+                displayActivityLog(activityLog.slice(0, 10));
+            }
         }
         if (e.key === 'adminNotifications') {
-            loadNotifications();
+            notifications = JSON.parse(e.newValue || '[]');
+            updateNotificationBadge();
+            if (document.getElementById('notifications').classList.contains('active')) {
+                displayRecentNotifications();
+            }
+        }
+        if (e.key === 'adminSessions') {
+            userSessions = JSON.parse(e.newValue || '[]');
+            if (document.getElementById('security').classList.contains('active')) {
+                displaySessions(userSessions);
+            }
         }
     });
     
@@ -767,42 +1034,13 @@ function setupEventListeners() {
     });
 }
 
-// ===== SAVE NOTIFICATION SETTINGS =====
-function saveNotificationSettings() {
-    const settings = {
-        emailNewOrder: document.getElementById('emailNewOrder').checked,
-        emailNewReservation: document.getElementById('emailNewReservation').checked,
-        emailLowStock: document.getElementById('emailLowStock').checked,
-        emailNewUser: document.getElementById('emailNewUser').checked,
-        pushNewOrder: document.getElementById('pushNewOrder').checked,
-        pushNewReservation: document.getElementById('pushNewReservation').checked,
-        pushLowStock: document.getElementById('pushLowStock').checked
-    };
-
-    // Save to user preferences
-    const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        if (!allUsers[userIndex].preferences) {
-            allUsers[userIndex].preferences = {};
-        }
-        allUsers[userIndex].preferences.notifications = settings;
-        localStorage.setItem('markanUsers', JSON.stringify(allUsers));
-        
-        // Update current user
-        currentUser.preferences = currentUser.preferences || {};
-        currentUser.preferences.notifications = settings;
-        localStorage.setItem('markanUser', JSON.stringify(currentUser));
-    }
-
-    showNotification('Notification settings saved', 'success');
-}
-
 // ===== UPDATE ADMIN NAME =====
 function updateAdminName() {
-    const user = Auth.getCurrentUser();
-    if (user) {
-        document.getElementById('adminName').textContent = user.name;
-    }
+    const userName = currentUser?.name || 'Admin User';
+    const nameElements = document.querySelectorAll('#adminName, .profile-info h4');
+    nameElements.forEach(el => {
+        if (el) el.textContent = userName;
+    });
 }
 
 // ===== HELPER: FORMAT DATE TIME =====
@@ -814,7 +1052,8 @@ function formatDateTime(dateString) {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
     });
 }
 
@@ -827,7 +1066,8 @@ function timeAgo(timestamp) {
     if (seconds < 60) return 'just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    return `${Math.floor(seconds / 86400)} days ago`;
+    if (seconds < 604800) return `${Math.floor(seconds / 86400)} days ago`;
+    return formatDateTime(timestamp);
 }
 
 // ===== SHOW NOTIFICATION =====
@@ -837,10 +1077,16 @@ function showNotification(message, type = 'info') {
 
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: 'check-circle',
+        error: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle'
+    };
+    
     notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                            type === 'error' ? 'exclamation-circle' : 
-                            type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        <i class="fas fa-${icons[type]}"></i>
         <span>${message}</span>
         <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     `;

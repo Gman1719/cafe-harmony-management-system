@@ -1,356 +1,836 @@
-// admin/js/users.js
-// Markan Cafe Admin - Users Management
-// Full CRUD operations with localStorage - NO HARDCODED DATA
+// admin/js/users.js - Users Management
+// Markan Cafe Admin - Complete user management with localStorage
+// ALL DATA IS DYNAMIC - NO HARDCODING
 
 // ===== GLOBAL VARIABLES =====
 let allUsers = [];
 let filteredUsers = [];
 let currentPage = 1;
-let itemsPerPage = 12;
-let currentUserId = null;
-let userToDelete = null;
-let currentFilter = {
-    role: 'all',
-    status: 'all',
-    date: 'all'
-};
+let itemsPerPage = 12; // Grid view shows 12 users per page
+let currentRoleFilter = 'all';
+let currentStatusFilter = 'all';
+let currentDateFilter = 'all';
+let currentSearchTerm = '';
+let selectedUserId = null;
+let deleteUserId = null;
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Check admin access
-    if (!Auth.requireAdmin()) {
-        window.location.href = '../../login.html';
-        return;
+    console.log('👥 Users Management initializing...');
+    
+    // Check authentication
+    checkAuth();
+    
+    // Set admin name
+    const user = Auth.getCurrentUser();
+    if (user) {
+        document.getElementById('adminName').textContent = user.name;
     }
-
+    
+    // Initialize users database
+    initializeUsersDB();
+    
     // Load users
     loadUsers();
     
     // Setup event listeners
     setupEventListeners();
     
-    // Update admin name
-    updateAdminName();
+    // Load notification count
+    loadNotificationCount();
 });
+
+// ===== CHECK AUTHENTICATION =====
+function checkAuth() {
+    const userStr = localStorage.getItem('markanUser');
+    if (!userStr) {
+        window.location.replace('../../login.html');
+        return;
+    }
+    
+    try {
+        const user = JSON.parse(userStr);
+        if (user.role !== 'admin') {
+            window.location.replace('../../customer/html/dashboard.html');
+            return;
+        }
+    } catch (e) {
+        console.error('Auth error:', e);
+        window.location.replace('../../login.html');
+    }
+}
+
+// ===== INITIALIZE USERS DATABASE =====
+function initializeUsersDB() {
+    // Check if UsersDB exists
+    if (typeof UsersDB === 'undefined') {
+        console.log('Creating UsersDB...');
+        
+        // Create UsersDB if it doesn't exist
+        window.UsersDB = {
+            users: [],
+            
+            getAll() {
+                return this.users;
+            },
+            
+            getById(id) {
+                return this.users.find(user => user.id == id);
+            },
+            
+            getByEmail(email) {
+                return this.users.find(user => user.email.toLowerCase() === email.toLowerCase());
+            },
+            
+            getByRole(role) {
+                if (role === 'all') return this.users;
+                return this.users.filter(user => user.role === role);
+            },
+            
+            getByStatus(status) {
+                if (status === 'all') return this.users;
+                return this.users.filter(user => user.status === status);
+            },
+            
+            getActive() {
+                return this.users.filter(user => user.status === 'active');
+            },
+            
+            getInactive() {
+                return this.users.filter(user => user.status === 'inactive');
+            },
+            
+            getAdmins() {
+                return this.users.filter(user => user.role === 'admin');
+            },
+            
+            getCustomers() {
+                return this.users.filter(user => user.role === 'customer');
+            },
+            
+            getNewThisMonth() {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                
+                return this.users.filter(user => {
+                    const created = new Date(user.createdAt);
+                    return created >= startOfMonth;
+                });
+            },
+            
+            authenticate(email, password) {
+                const user = this.users.find(u => 
+                    u.email.toLowerCase() === email.toLowerCase() && 
+                    u.password === password &&
+                    u.status === 'active'
+                );
+                
+                if (user) {
+                    const { password, ...safeUser } = user;
+                    return safeUser;
+                }
+                return null;
+            },
+            
+            add(userData) {
+                // Check if email exists
+                if (this.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
+                    throw new Error('Email already exists');
+                }
+                
+                const newUser = {
+                    id: this.generateId(),
+                    ...userData,
+                    avatar: userData.avatar || this.generateAvatar(userData.name),
+                    createdAt: new Date().toISOString(),
+                    lastLogin: null,
+                    updatedAt: new Date().toISOString(),
+                    preferences: userData.preferences || {
+                        notifications: true,
+                        darkMode: false,
+                        language: 'en',
+                        theme: 'light'
+                    },
+                    stats: userData.stats || {
+                        orders: 0,
+                        reservations: 0,
+                        points: userData.rewardPoints || 0,
+                        tier: this.calculateTier(userData.rewardPoints || 0)
+                    }
+                };
+                
+                this.users.push(newUser);
+                this.saveToStorage();
+                
+                const { password, ...safeUser } = newUser;
+                return safeUser;
+            },
+            
+            update(id, updates) {
+                const index = this.users.findIndex(u => u.id == id);
+                if (index === -1) return null;
+                
+                // Don't allow password update through this method
+                const { password, ...safeUpdates } = updates;
+                
+                // Update stats tier if points changed
+                if (safeUpdates.stats?.points !== undefined) {
+                    safeUpdates.stats.tier = this.calculateTier(safeUpdates.stats.points);
+                }
+                
+                this.users[index] = {
+                    ...this.users[index],
+                    ...safeUpdates,
+                    updatedAt: new Date().toISOString()
+                };
+                
+                this.saveToStorage();
+                
+                const { password: pwd, ...safeUser } = this.users[index];
+                return safeUser;
+            },
+            
+            updatePassword(id, newPassword) {
+                const index = this.users.findIndex(u => u.id == id);
+                if (index === -1) return false;
+                
+                this.users[index].password = newPassword;
+                this.users[index].updatedAt = new Date().toISOString();
+                this.saveToStorage();
+                return true;
+            },
+            
+            updateStatus(id, status) {
+                return this.update(id, { status });
+            },
+            
+            delete(id) {
+                const index = this.users.findIndex(u => u.id == id);
+                if (index === -1) return false;
+                
+                this.users.splice(index, 1);
+                this.saveToStorage();
+                return true;
+            },
+            
+            generateId() {
+                return this.users.length > 0 
+                    ? Math.max(...this.users.map(u => u.id)) + 1 
+                    : 1;
+            },
+            
+            generateAvatar(name) {
+                const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                return `https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=150`;
+            },
+            
+            calculateTier(points) {
+                if (points >= 1000) return 'gold';
+                if (points >= 500) return 'silver';
+                return 'bronze';
+            },
+            
+            search(query) {
+                const searchTerm = query.toLowerCase();
+                return this.users.filter(user => 
+                    user.name?.toLowerCase().includes(searchTerm) ||
+                    user.email?.toLowerCase().includes(searchTerm) ||
+                    user.phone?.includes(searchTerm)
+                );
+            },
+            
+            getStats() {
+                return {
+                    total: this.users.length,
+                    active: this.users.filter(u => u.status === 'active').length,
+                    inactive: this.users.filter(u => u.status === 'inactive').length,
+                    admins: this.users.filter(u => u.role === 'admin').length,
+                    customers: this.users.filter(u => u.role === 'customer').length,
+                    newThisMonth: this.getNewThisMonth().length
+                };
+            },
+            
+            saveToStorage() {
+                localStorage.setItem('markanUsers', JSON.stringify(this.users));
+                console.log('💾 Users saved to localStorage');
+            },
+            
+            loadFromStorage() {
+                const saved = localStorage.getItem('markanUsers');
+                if (saved) {
+                    try {
+                        this.users = JSON.parse(saved);
+                        console.log('✅ Users loaded from localStorage:', this.users.length, 'users');
+                    } catch (e) {
+                        console.error('Error loading users:', e);
+                        this.users = [];
+                    }
+                } else {
+                    // Create default users if no data exists
+                    this.createDefaultUsers();
+                }
+            },
+            
+            createDefaultUsers() {
+                const now = new Date();
+                const lastWeek = new Date(now);
+                lastWeek.setDate(lastWeek.getDate() - 7);
+                
+                this.users = [
+                    {
+                        id: 1,
+                        name: 'Admin User',
+                        email: 'admin@markan.com',
+                        password: 'Admin@123',
+                        phone: '+251911234567',
+                        role: 'admin',
+                        avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=8B4513&color=fff&size=150',
+                        address: 'Debre Birhan University, Staff Quarters',
+                        bio: 'Cafe administrator',
+                        createdAt: now.toISOString(),
+                        lastLogin: now.toISOString(),
+                        status: 'active',
+                        preferences: {
+                            notifications: true,
+                            darkMode: false,
+                            language: 'en',
+                            theme: 'light'
+                        },
+                        stats: {
+                            orders: 0,
+                            reservations: 0,
+                            points: 0,
+                            tier: 'bronze'
+                        }
+                    },
+                    {
+                        id: 2,
+                        name: 'John Doe',
+                        email: 'john@example.com',
+                        password: 'Customer@123',
+                        phone: '0912345678',
+                        role: 'customer',
+                        avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=8B4513&color=fff&size=150',
+                        address: 'Debre Birhan University, Student Dorm',
+                        bio: 'Coffee lover',
+                        createdAt: lastWeek.toISOString(),
+                        lastLogin: lastWeek.toISOString(),
+                        status: 'active',
+                        preferences: {
+                            notifications: true,
+                            darkMode: false,
+                            language: 'en',
+                            theme: 'light'
+                        },
+                        stats: {
+                            orders: 5,
+                            reservations: 2,
+                            points: 150,
+                            tier: 'bronze'
+                        }
+                    },
+                    {
+                        id: 3,
+                        name: 'Sarah Smith',
+                        email: 'sarah@example.com',
+                        password: 'Customer@123',
+                        phone: '0923456789',
+                        role: 'customer',
+                        avatar: 'https://ui-avatars.com/api/?name=Sarah+Smith&background=8B4513&color=fff&size=150',
+                        address: 'Debre Birhan University, Faculty Housing',
+                        bio: 'Professor and coffee enthusiast',
+                        createdAt: lastWeek.toISOString(),
+                        lastLogin: null,
+                        status: 'active',
+                        preferences: {
+                            notifications: true,
+                            darkMode: false,
+                            language: 'en',
+                            theme: 'light'
+                        },
+                        stats: {
+                            orders: 3,
+                            reservations: 1,
+                            points: 75,
+                            tier: 'bronze'
+                        }
+                    },
+                    {
+                        id: 4,
+                        name: 'Mike Johnson',
+                        email: 'mike@example.com',
+                        password: 'Customer@123',
+                        phone: '0934567890',
+                        role: 'customer',
+                        avatar: 'https://ui-avatars.com/api/?name=Mike+Johnson&background=8B4513&color=fff&size=150',
+                        address: 'Debre Birhan University, Student Dorm',
+                        bio: '',
+                        createdAt: lastWeek.toISOString(),
+                        lastLogin: null,
+                        status: 'inactive',
+                        preferences: {
+                            notifications: true,
+                            darkMode: false,
+                            language: 'en',
+                            theme: 'light'
+                        },
+                        stats: {
+                            orders: 1,
+                            reservations: 0,
+                            points: 10,
+                            tier: 'bronze'
+                        }
+                    }
+                ];
+                this.saveToStorage();
+                console.log('✅ Default users created');
+            }
+        };
+        
+        // Load data from localStorage
+        UsersDB.loadFromStorage();
+    }
+}
+
+// ===== SETUP EVENT LISTENERS =====
+function setupEventListeners() {
+    // Search input
+    document.getElementById('searchUsers')?.addEventListener('input', function(e) {
+        currentSearchTerm = e.target.value.toLowerCase();
+        currentPage = 1;
+        filterUsers();
+    });
+    
+    // Role filter
+    document.getElementById('roleFilter')?.addEventListener('change', function(e) {
+        currentRoleFilter = e.target.value;
+        currentPage = 1;
+        filterUsers();
+    });
+    
+    // Status filter
+    document.getElementById('statusFilter')?.addEventListener('change', function(e) {
+        currentStatusFilter = e.target.value;
+        currentPage = 1;
+        filterUsers();
+    });
+    
+    // Date filter
+    document.getElementById('dateFilter')?.addEventListener('change', function(e) {
+        currentDateFilter = e.target.value;
+        currentPage = 1;
+        filterUsers();
+    });
+    
+    // Logout button
+    document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        Auth.logout();
+    });
+    
+    // Pagination buttons
+    document.getElementById('prevPage')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            displayUsers();
+        }
+    });
+    
+    document.getElementById('nextPage')?.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            displayUsers();
+        }
+    });
+}
 
 // ===== LOAD USERS =====
 function loadUsers() {
-    try {
-        // Get users from localStorage
-        const stored = localStorage.getItem('markanUsers');
-        allUsers = stored ? JSON.parse(stored) : [];
-        
-        // Sort by creation date (newest first)
-        allUsers.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        // Apply filters
-        applyFilters();
-        
-    } catch (error) {
-        console.error('Error loading users:', error);
-        showNotification('Failed to load users', 'error');
+    if (typeof UsersDB !== 'undefined') {
+        allUsers = UsersDB.getAll() || [];
+        console.log('📊 Loaded', allUsers.length, 'users');
+    } else {
         allUsers = [];
-        filteredUsers = [];
-        displayUsers([]);
     }
+    
+    updateStats();
+    filterUsers();
 }
 
-// ===== SAVE USERS =====
-function saveUsers() {
-    try {
-        localStorage.setItem('markanUsers', JSON.stringify(allUsers));
-        
-        // Dispatch storage event for cross-tab updates
-        window.dispatchEvent(new StorageEvent('storage', {
-            key: 'markanUsers',
-            newValue: JSON.stringify(allUsers)
-        }));
-        
-    } catch (error) {
-        console.error('Error saving users:', error);
-        showNotification('Failed to save users', 'error');
-    }
+// ===== UPDATE STATS CARDS =====
+function updateStats() {
+    const stats = {
+        total: allUsers.length,
+        admins: allUsers.filter(u => u.role === 'admin').length,
+        customers: allUsers.filter(u => u.role === 'customer').length,
+        active: allUsers.filter(u => u.status === 'active').length,
+        inactive: allUsers.filter(u => u.status === 'inactive').length
+    };
+    
+    document.getElementById('totalUsers').textContent = stats.total;
+    document.getElementById('adminUsers').textContent = stats.admins;
+    document.getElementById('customerUsers').textContent = stats.customers;
+    document.getElementById('activeUsers').textContent = stats.active;
+    document.getElementById('inactiveUsers').textContent = stats.inactive;
 }
 
-// ===== APPLY FILTERS =====
-function applyFilters() {
-    filteredUsers = [...allUsers];
-    
-    // Apply role filter
-    if (currentFilter.role !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.role === currentFilter.role);
-    }
-    
-    // Apply status filter
-    if (currentFilter.status !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.status === currentFilter.status);
-    }
-    
-    // Apply date filter
-    if (currentFilter.date !== 'all') {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        
-        const weekAgo = new Date(today);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        
-        const monthAgo = new Date(today);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        
-        switch(currentFilter.date) {
-            case 'today':
-                filteredUsers = filteredUsers.filter(user => {
-                    const joinDate = new Date(user.createdAt);
-                    joinDate.setHours(0, 0, 0, 0);
-                    return joinDate.getTime() === today.getTime();
-                });
-                break;
-                
-            case 'week':
-                filteredUsers = filteredUsers.filter(user => {
-                    const joinDate = new Date(user.createdAt);
-                    return joinDate >= weekAgo;
-                });
-                break;
-                
-            case 'month':
-                filteredUsers = filteredUsers.filter(user => {
-                    const joinDate = new Date(user.createdAt);
-                    return joinDate >= monthAgo;
-                });
-                break;
+// ===== FILTER USERS =====
+function filterUsers(filterType, filterValue) {
+    if (filterType && filterValue !== undefined) {
+        // Handle stat card clicks
+        if (filterType === 'admin' || filterType === 'customer') {
+            currentRoleFilter = filterType;
+            document.getElementById('roleFilter').value = filterType;
+        } else if (filterType === 'active' || filterType === 'inactive') {
+            currentStatusFilter = filterType;
+            document.getElementById('statusFilter').value = filterType;
         }
     }
     
-    // Reset to first page
-    currentPage = 1;
+    let filtered = [...allUsers];
     
-    // Update UI
-    updateStats();
+    // Apply role filter
+    if (currentRoleFilter !== 'all') {
+        filtered = filtered.filter(u => u.role === currentRoleFilter);
+    }
+    
+    // Apply status filter
+    if (currentStatusFilter !== 'all') {
+        filtered = filtered.filter(u => u.status === currentStatusFilter);
+    }
+    
+    // Apply date filter
+    if (currentDateFilter !== 'all') {
+        const now = new Date();
+        const today = now.toDateString();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay());
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        filtered = filtered.filter(u => {
+            const created = new Date(u.createdAt);
+            
+            switch(currentDateFilter) {
+                case 'today':
+                    return created.toDateString() === today;
+                case 'week':
+                    return created >= startOfWeek;
+                case 'month':
+                    return created >= startOfMonth;
+                default:
+                    return true;
+            }
+        });
+    }
+    
+    // Apply search
+    if (currentSearchTerm) {
+        filtered = filtered.filter(u => 
+            u.name?.toLowerCase().includes(currentSearchTerm) ||
+            u.email?.toLowerCase().includes(currentSearchTerm) ||
+            u.phone?.includes(currentSearchTerm)
+        );
+    }
+    
+    filteredUsers = filtered;
+    currentPage = 1;
     displayUsers();
+    updatePagination();
 }
 
-// ===== UPDATE STATISTICS =====
-function updateStats() {
-    document.getElementById('totalUsers').textContent = allUsers.length;
-    document.getElementById('adminUsers').textContent = allUsers.filter(u => u.role === 'admin').length;
-    document.getElementById('customerUsers').textContent = allUsers.filter(u => u.role === 'customer').length;
-    document.getElementById('activeUsers').textContent = allUsers.filter(u => u.status === 'active').length;
-    document.getElementById('inactiveUsers').textContent = allUsers.filter(u => u.status === 'inactive').length;
-}
-
-// ===== DISPLAY USERS =====
+// ===== DISPLAY USERS IN GRID =====
 function displayUsers() {
     const grid = document.getElementById('usersGrid');
-    if (!grid) return;
-
+    
+    if (filteredUsers.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>No Users Found</h3>
+                <p>${allUsers.length === 0 ? 'No users have been created yet' : 'No users match your filters'}</p>
+                ${allUsers.length === 0 ? `
+                    <button class="btn btn-primary" onclick="openAddUserModal()">
+                        <i class="fas fa-user-plus"></i> Add First User
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        return;
+    }
+    
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageUsers = filteredUsers.slice(start, end);
-
-    if (pageUsers.length === 0) {
-        grid.innerHTML = `
-            <div class="no-data">
-                <i class="fas fa-users-slash"></i>
-                <h3>No Users Found</h3>
-                <p>Try adjusting your filters or add a new user.</p>
-                <button class="btn btn-primary" onclick="openAddUserModal()">
-                    <i class="fas fa-user-plus"></i> Add User
-                </button>
-            </div>
-        `;
-        updatePagination();
-        return;
-    }
-
+    
     grid.innerHTML = pageUsers.map(user => {
-        const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
-        const avatarUrl = user.avatar || `https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=80`;
+        const avatar = user.avatar || UsersDB.generateAvatar(user.name);
+        const tierClass = user.stats?.tier || 'bronze';
+        const joinedDate = new Date(user.createdAt).toLocaleDateString();
         
         return `
-            <div class="user-card ${user.status === 'inactive' ? 'inactive' : ''}" 
-                 onclick="viewUserDetails(${user.id})">
-                <img src="${avatarUrl}" 
-                     alt="${user.name}" 
-                     class="user-avatar"
-                     onerror="this.src='https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=80'">
-                <div class="user-info">
-                    <h3>${user.name || 'N/A'}</h3>
-                    <p class="user-email"><i class="fas fa-envelope"></i> ${user.email}</p>
-                    <div class="user-meta">
-                        <span><i class="fas fa-phone"></i> ${user.phone || 'N/A'}</span>
-                        <span><i class="fas fa-calendar"></i> ${formatJoinDate(user.createdAt)}</span>
+            <div class="user-card" onclick="openUserModal(${user.id})">
+                <div class="user-card-header">
+                    <img src="${avatar}" alt="${user.name}" class="user-avatar">
+                    <div class="user-basic-info">
+                        <h3>${user.name}</h3>
+                        <p><i class="fas fa-envelope"></i> ${user.email}</p>
+                        <p><i class="fas fa-phone"></i> ${user.phone || 'N/A'}</p>
                     </div>
-                    <div class="user-badges">
-                        <span class="role-badge ${user.role}">${user.role || 'customer'}</span>
-                        <span class="status-badge ${user.status || 'active'}">${user.status || 'active'}</span>
-                    </div>
+                    <span class="user-role-badge role-${user.role}">${user.role}</span>
                 </div>
-                <div class="user-card-actions" onclick="event.stopPropagation()">
-                    <button class="action-btn edit" onclick="editUser(${user.id})" title="Edit User">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteUser(${user.id})" title="Delete User">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                <div class="user-card-body">
+                    <div class="user-contact-info">
+                        <p><i class="fas fa-map-marker-alt"></i> ${user.address || 'No address'}</p>
+                    </div>
+                    <div class="user-stats-preview">
+                        <div class="preview-stat">
+                            <span class="stat-value">${user.stats?.orders || 0}</span>
+                            <span class="stat-label">Orders</span>
+                        </div>
+                        <div class="preview-stat">
+                            <span class="stat-value">${user.stats?.reservations || 0}</span>
+                            <span class="stat-label">Reservations</span>
+                        </div>
+                        <div class="preview-stat">
+                            <span class="stat-value">${user.stats?.points || 0}</span>
+                            <span class="stat-label">Points</span>
+                        </div>
+                    </div>
+                    <div class="user-card-footer">
+                        <span class="user-status status-${user.status}">
+                            <i class="fas fa-circle"></i> ${user.status}
+                        </span>
+                        <span class="user-tier tier-${tierClass}">
+                            <i class="fas fa-star"></i> ${tierClass}
+                        </span>
+                        <small>Joined ${joinedDate}</small>
+                    </div>
                 </div>
             </div>
         `;
     }).join('');
+}
 
+// ===== UPDATE PAGINATION =====
+function updatePagination() {
+    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+    
+    prevBtn.disabled = currentPage === 1;
+    nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+    
+    if (totalPages === 0) {
+        pageNumbers.innerHTML = '';
+        return;
+    }
+    
+    // Generate page numbers
+    let pageHtml = '';
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        pageHtml += `<span class="page-number ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</span>`;
+    }
+    
+    pageNumbers.innerHTML = pageHtml;
+}
+
+// ===== GO TO SPECIFIC PAGE =====
+function goToPage(page) {
+    currentPage = page;
+    displayUsers();
     updatePagination();
 }
 
-// ===== VIEW USER DETAILS =====
-window.viewUserDetails = function(userId) {
+// ===== OPEN USER DETAILS MODAL =====
+function openUserModal(userId) {
     const user = allUsers.find(u => u.id == userId);
     if (!user) return;
-
-    currentUserId = userId;
-
-    // Set avatar
-    const initials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
-    document.getElementById('userAvatar').src = user.avatar || `https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=150`;
-
+    
+    selectedUserId = userId;
+    
     // Set user details
-    document.getElementById('userFullName').textContent = user.name || 'N/A';
-    document.getElementById('userRole').textContent = user.role || 'customer';
-    document.getElementById('userRole').className = `user-role-badge ${user.role}`;
-    document.getElementById('userEmail').textContent = user.email || 'N/A';
+    document.getElementById('userFullName').textContent = user.name;
+    document.getElementById('userRole').textContent = user.role;
+    document.getElementById('userRole').className = `user-role-badge role-${user.role}`;
+    document.getElementById('userEmail').textContent = user.email;
     document.getElementById('userPhone').textContent = user.phone || 'N/A';
     document.getElementById('userAddress').textContent = user.address || 'No address provided';
-    document.getElementById('userStatus').textContent = user.status || 'active';
-    document.getElementById('userStatus').className = `status-badge ${user.status || 'active'}`;
-    document.getElementById('userJoined').textContent = formatDate(user.createdAt);
-    document.getElementById('userLastLogin').textContent = user.lastLogin ? formatDateTime(user.lastLogin) : 'Never';
-
-    // Load user statistics
-    loadUserStats(user.id);
-
+    
+    // Set avatar
+    const avatarImg = document.getElementById('userAvatar');
+    avatarImg.src = user.avatar || UsersDB.generateAvatar(user.name);
+    
+    // Set status
+    const statusSpan = document.getElementById('userStatus');
+    statusSpan.textContent = user.status;
+    statusSpan.className = `status-badge status-${user.status}`;
+    
+    // Set dates
+    document.getElementById('userJoined').textContent = new Date(user.createdAt).toLocaleDateString();
+    document.getElementById('userLastLogin').textContent = user.lastLogin 
+        ? new Date(user.lastLogin).toLocaleString() 
+        : 'Never';
+    
+    // Set statistics
+    document.getElementById('userTotalOrders').textContent = user.stats?.orders || 0;
+    document.getElementById('userTotalSpent').textContent = formatCurrency(user.stats?.totalSpent || 0);
+    document.getElementById('userTotalReservations').textContent = user.stats?.reservations || 0;
+    document.getElementById('userRewardPoints').textContent = user.stats?.points || 0;
+    
+    // Set status toggle text
+    const toggleText = document.getElementById('statusToggleText');
+    toggleText.textContent = user.status === 'active' ? 'Deactivate' : 'Activate';
+    
     // Load recent activity
-    loadUserActivity(user.id);
-
-    // Set status toggle button
-    const toggleBtn = document.getElementById('statusToggleText');
-    toggleBtn.textContent = user.status === 'active' ? 'Deactivate' : 'Activate';
-
+    loadUserRecentActivity(user);
+    
     document.getElementById('userModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== LOAD USER STATISTICS =====
-function loadUserStats(userId) {
-    const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
-    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
-    
-    const userOrders = orders.filter(o => o.customerId == userId);
-    const userReservations = reservations.filter(r => r.customerId == userId);
-    
-    const totalSpent = userOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-    
-    document.getElementById('userTotalOrders').textContent = userOrders.length;
-    document.getElementById('userTotalSpent').textContent = formatETB(totalSpent);
-    document.getElementById('userTotalReservations').textContent = userReservations.length;
-    
-    // Get user reward points from user object
-    const user = allUsers.find(u => u.id == userId);
-    document.getElementById('userRewardPoints').textContent = user?.rewards?.points || 0;
+function closeUserModal() {
+    document.getElementById('userModal').classList.remove('active');
 }
 
-// ===== LOAD USER ACTIVITY =====
-function loadUserActivity(userId) {
-    const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
-    const reservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
-    
-    const activities = [
-        ...orders.filter(o => o.customerId == userId).map(o => ({
-            type: 'order',
-            description: `Order placed: ${o.id} - ${formatETB(o.total || 0)}`,
-            time: o.orderDate
-        })),
-        ...reservations.filter(r => r.customerId == userId).map(r => ({
-            type: 'reservation',
-            description: `Reservation: ${r.id} for ${r.guests} guests on ${formatDate(r.date)}`,
-            time: r.createdAt
-        }))
-    ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
-
+// ===== LOAD USER RECENT ACTIVITY =====
+function loadUserRecentActivity(user) {
     const activityList = document.getElementById('userRecentActivity');
     
+    const activities = [];
+    
+    // Get orders
+    if (typeof OrdersDB !== 'undefined') {
+        const orders = OrdersDB.getByCustomerId(user.id) || [];
+        orders.slice(0, 3).forEach(order => {
+            activities.push({
+                type: 'order',
+                description: `Order #${order.id} - ${order.status}`,
+                time: order.orderDate,
+                icon: 'shopping-cart'
+            });
+        });
+    }
+    
+    // Get reservations
+    if (typeof ReservationsDB !== 'undefined') {
+        const reservations = ReservationsDB.getByCustomerId(user.id) || [];
+        reservations.slice(0, 3).forEach(res => {
+            activities.push({
+                type: 'reservation',
+                description: `Reservation for ${res.date} at ${res.time}`,
+                time: res.createdAt,
+                icon: 'calendar-check'
+            });
+        });
+    }
+    
+    // Sort by time
+    activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+    
     if (activities.length === 0) {
-        activityList.innerHTML = '<p class="no-activity">No recent activity</p>';
+        activityList.innerHTML = '<p class="no-data">No recent activity</p>';
         return;
     }
-
+    
     activityList.innerHTML = activities.map(activity => `
         <div class="activity-item">
             <div class="activity-icon ${activity.type}">
-                <i class="fas fa-${activity.type === 'order' ? 'shopping-cart' : 'calendar-check'}"></i>
+                <i class="fas fa-${activity.icon}"></i>
             </div>
             <div class="activity-content">
                 <p>${activity.description}</p>
-                <span class="activity-time">${timeAgo(activity.time)}</span>
+                <span class="activity-time">${getTimeAgo(new Date(activity.time))}</span>
             </div>
         </div>
     `).join('');
 }
 
-// ===== CLOSE USER MODAL =====
-window.closeUserModal = function() {
-    document.getElementById('userModal').classList.remove('active');
-    document.body.style.overflow = '';
+// ===== EDIT USER =====
+function editUser(userId) {
+    closeUserModal();
+    openEditUserModal(userId);
+}
+
+// ===== TOGGLE USER STATUS =====
+function toggleUserStatus(userId) {
+    const user = allUsers.find(u => u.id == userId);
+    if (!user) return;
+    
+    const newStatus = user.status === 'active' ? 'inactive' : 'active';
+    const action = newStatus === 'active' ? 'activate' : 'deactivate';
+    
+    if (confirm(`Are you sure you want to ${action} this user?`)) {
+        const updated = UsersDB.updateStatus(userId, newStatus);
+        if (updated) {
+            showNotification(`User ${action}d successfully`, 'success');
+            
+            // Reload users
+            allUsers = UsersDB.getAll();
+            updateStats();
+            filterUsers();
+            
+            // Update modal if open
+            if (selectedUserId == userId) {
+                openUserModal(userId);
+            }
+        } else {
+            showNotification('Failed to update user status', 'error');
+        }
+    }
 }
 
 // ===== OPEN ADD USER MODAL =====
-window.openAddUserModal = function() {
-    currentUserId = null;
+function openAddUserModal() {
     document.getElementById('addUserModalTitle').textContent = 'Add New User';
     document.getElementById('userForm').reset();
     document.getElementById('userId').value = '';
-    document.getElementById('passwordFields').style.display = 'block';
     document.getElementById('userPassword').required = true;
     document.getElementById('userConfirmPassword').required = true;
     document.getElementById('userStatus').checked = true;
     document.getElementById('userRewardPoints').value = 0;
     
     document.getElementById('addUserModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== EDIT USER =====
-window.editUser = function(userId) {
+// ===== OPEN EDIT USER MODAL =====
+function openEditUserModal(userId) {
     const user = allUsers.find(u => u.id == userId);
     if (!user) return;
-
-    currentUserId = userId;
+    
     document.getElementById('addUserModalTitle').textContent = 'Edit User';
-    document.getElementById('userName').value = user.name || '';
-    document.getElementById('userEmail').value = user.email || '';
+    document.getElementById('userId').value = user.id;
+    document.getElementById('userName').value = user.name;
+    document.getElementById('userEmail').value = user.email;
     document.getElementById('userPhone').value = user.phone || '';
-    document.getElementById('userRole').value = user.role || 'customer';
+    document.getElementById('userRole').value = user.role;
     document.getElementById('userAddress').value = user.address || '';
     document.getElementById('userStatus').checked = user.status === 'active';
-    document.getElementById('userRewardPoints').value = user.rewards?.points || 0;
-    document.getElementById('userId').value = user.id;
+    document.getElementById('userRewardPoints').value = user.stats?.points || 0;
     
-    // Hide password fields for edit
-    document.getElementById('passwordFields').style.display = 'none';
+    // Password fields are optional in edit mode
     document.getElementById('userPassword').required = false;
     document.getElementById('userConfirmPassword').required = false;
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userConfirmPassword').value = '';
     
     document.getElementById('addUserModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== CLOSE ADD USER MODAL =====
-window.closeAddUserModal = function() {
+function closeAddUserModal() {
     document.getElementById('addUserModal').classList.remove('active');
-    document.getElementById('userForm').reset();
-    document.body.style.overflow = '';
 }
 
-// ===== SAVE USER =====
-window.saveUser = function() {
+// ===== SAVE USER (CREATE/UPDATE) =====
+function saveUser() {
     // Get form values
     const name = document.getElementById('userName').value.trim();
     const email = document.getElementById('userEmail').value.trim();
@@ -358,446 +838,181 @@ window.saveUser = function() {
     const role = document.getElementById('userRole').value;
     const address = document.getElementById('userAddress').value.trim();
     const isActive = document.getElementById('userStatus').checked;
-    const rewardPoints = parseInt(document.getElementById('userRewardPoints').value) || 0;
+    const points = parseInt(document.getElementById('userRewardPoints').value) || 0;
     const password = document.getElementById('userPassword').value;
     const confirmPassword = document.getElementById('userConfirmPassword').value;
-
-    // Validate
-    if (!name || !email || !phone) {
+    const id = document.getElementById('userId').value;
+    
+    // Validation
+    if (!name || !email || !phone || !role) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
-
+    
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        showNotification('Please enter a valid email', 'error');
+        showNotification('Please enter a valid email address', 'error');
         return;
     }
-
-    // Validate phone
+    
+    // Validate phone (Ethiopian format)
     const phoneRegex = /^(09|\+2519)\d{8}$/;
     if (!phoneRegex.test(phone)) {
-        showNotification('Please enter a valid Ethiopian phone number', 'error');
+        showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
         return;
     }
-
+    
     const userData = {
-        name: name,
-        email: email,
-        phone: phone,
-        role: role,
-        address: address,
+        name,
+        email,
+        phone,
+        role,
+        address,
         status: isActive ? 'active' : 'inactive',
-        rewards: {
-            points: rewardPoints,
-            tier: getTier(rewardPoints)
-        },
-        updatedAt: new Date().toISOString()
+        stats: {
+            points: points,
+            tier: UsersDB.calculateTier(points)
+        }
     };
-
-    if (currentUserId) {
+    
+    if (id) {
         // Update existing user
-        const index = allUsers.findIndex(u => u.id == currentUserId);
-        if (index !== -1) {
-            // Update password if provided
-            if (password) {
-                if (password !== confirmPassword) {
-                    showNotification('Passwords do not match', 'error');
-                    return;
-                }
-                if (!validatePassword(password)) {
-                    showNotification('Password must be at least 8 characters with one special character', 'error');
-                    return;
-                }
-                allUsers[index].password = password;
+        if (password) {
+            // Validate password if provided
+            if (password !== confirmPassword) {
+                showNotification('Passwords do not match', 'error');
+                return;
             }
-
-            // Preserve existing data
-            allUsers[index] = {
-                ...allUsers[index],
-                ...userData,
-                id: allUsers[index].id,
-                createdAt: allUsers[index].createdAt,
-                avatar: allUsers[index].avatar
-            };
             
+            const passwordRegex = /^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+            if (!passwordRegex.test(password)) {
+                showNotification('Password must be at least 8 characters with one special character', 'error');
+                return;
+            }
+            
+            // Update password separately
+            UsersDB.updatePassword(id, password);
+        }
+        
+        const updated = UsersDB.update(id, userData);
+        if (updated) {
             showNotification('User updated successfully', 'success');
         }
     } else {
-        // Add new user
-        if (!password) {
+        // Validate password for new user
+        if (!password || !confirmPassword) {
             showNotification('Password is required for new users', 'error');
             return;
         }
-
+        
         if (password !== confirmPassword) {
             showNotification('Passwords do not match', 'error');
             return;
         }
-
-        if (!validatePassword(password)) {
+        
+        const passwordRegex = /^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
+        if (!passwordRegex.test(password)) {
             showNotification('Password must be at least 8 characters with one special character', 'error');
             return;
         }
-
-        // Check if email already exists
-        if (allUsers.some(u => u.email.toLowerCase() === email.toLowerCase())) {
-            showNotification('Email already exists', 'error');
+        
+        // Add password to userData
+        userData.password = password;
+        
+        try {
+            const newUser = UsersDB.add(userData);
+            if (newUser) {
+                showNotification('User created successfully', 'success');
+            }
+        } catch (error) {
+            showNotification(error.message, 'error');
             return;
         }
-
-        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase();
-        const newUser = {
-            id: generateUserId(),
-            ...userData,
-            password: password,
-            avatar: `https://ui-avatars.com/api/?name=${initials}&background=8B4513&color=fff&size=150`,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            lastLogin: null,
-            preferences: {
-                notifications: true,
-                darkMode: false,
-                language: 'en'
-            }
-        };
-        
-        allUsers.push(newUser);
-        showNotification('User added successfully', 'success');
     }
-
-    // Save to localStorage
-    saveUsers();
     
-    // Reload data
-    loadUsers();
-    
-    // Close modal
+    // Reload users
+    allUsers = UsersDB.getAll();
+    updateStats();
+    filterUsers();
     closeAddUserModal();
 }
 
-// ===== GET TIER BASED ON POINTS =====
-function getTier(points) {
-    if (points >= 1000) return 'gold';
-    if (points >= 500) return 'silver';
-    return 'bronze';
-}
-
-// ===== VALIDATE PASSWORD =====
-function validatePassword(password) {
-    return /^(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/.test(password);
-}
-
-// ===== GENERATE USER ID =====
-function generateUserId() {
-    return allUsers.length > 0 ? Math.max(...allUsers.map(u => u.id)) + 1 : 1;
-}
-
-// ===== TOGGLE USER STATUS =====
-window.toggleUserStatus = function(userId) {
-    const user = allUsers.find(u => u.id == userId);
-    if (!user) return;
-
-    const newStatus = user.status === 'active' ? 'inactive' : 'active';
-    const action = newStatus === 'active' ? 'activate' : 'deactivate';
-    
-    if (confirm(`Are you sure you want to ${action} this user?`)) {
-        user.status = newStatus;
-        user.updatedAt = new Date().toISOString();
-        saveUsers();
-        loadUsers();
-        closeUserModal();
-        showNotification(`User ${action}d successfully`, 'success');
-    }
-}
-
-// ===== DELETE USER =====
-window.deleteUser = function(userId) {
-    userToDelete = userId;
+// ===== OPEN DELETE MODAL =====
+function openDeleteModal(userId) {
+    deleteUserId = userId;
     document.getElementById('deleteModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== CLOSE DELETE MODAL =====
-window.closeDeleteModal = function() {
+function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('active');
-    document.body.style.overflow = '';
-    userToDelete = null;
+    deleteUserId = null;
 }
 
 // ===== CONFIRM DELETE =====
-window.confirmDelete = function() {
-    if (userToDelete) {
-        // Don't allow deleting yourself
-        const currentUser = Auth.getCurrentUser();
-        if (currentUser && currentUser.id == userToDelete) {
-            showNotification('You cannot delete your own account', 'error');
-            closeDeleteModal();
-            return;
-        }
-        
-        allUsers = allUsers.filter(u => u.id != userToDelete);
-        saveUsers();
-        loadUsers();
+function confirmDelete() {
+    if (!deleteUserId) return;
+    
+    // Don't allow deleting yourself
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser.id == deleteUserId) {
+        showNotification('You cannot delete your own account', 'error');
         closeDeleteModal();
-        closeUserModal();
-        showNotification('User deleted successfully', 'success');
-        userToDelete = null;
-    }
-}
-
-// ===== FILTER USERS =====
-window.filterUsers = function(filterType) {
-    // This function can be called from stat cards
-    switch(filterType) {
-        case 'admin':
-            currentFilter.role = 'admin';
-            document.getElementById('roleFilter').value = 'admin';
-            break;
-        case 'customer':
-            currentFilter.role = 'customer';
-            document.getElementById('roleFilter').value = 'customer';
-            break;
-        case 'active':
-            currentFilter.status = 'active';
-            document.getElementById('statusFilter').value = 'active';
-            break;
-        case 'inactive':
-            currentFilter.status = 'inactive';
-            document.getElementById('statusFilter').value = 'inactive';
-            break;
-        default:
-            currentFilter.role = 'all';
-            currentFilter.status = 'all';
-            document.getElementById('roleFilter').value = 'all';
-            document.getElementById('statusFilter').value = 'all';
-    }
-    
-    applyFilters();
-}
-
-// ===== SEARCH USERS =====
-function searchUsers(query) {
-    const searchTerm = query.toLowerCase();
-    
-    filteredUsers = allUsers.filter(user => 
-        user.name?.toLowerCase().includes(searchTerm) ||
-        user.email?.toLowerCase().includes(searchTerm) ||
-        user.phone?.includes(searchTerm)
-    );
-    
-    // Re-apply role and status filters
-    if (currentFilter.role !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.role === currentFilter.role);
-    }
-    
-    if (currentFilter.status !== 'all') {
-        filteredUsers = filteredUsers.filter(user => user.status === currentFilter.status);
-    }
-    
-    currentPage = 1;
-    displayUsers();
-}
-
-// ===== UPDATE PAGINATION =====
-function updatePagination() {
-    const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-    const pageNumbers = document.getElementById('pageNumbers');
-    const prevBtn = document.getElementById('prevPage');
-    const nextBtn = document.getElementById('nextPage');
-
-    if (prevBtn) prevBtn.disabled = currentPage === 1 || totalPages === 0;
-    if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-    if (!pageNumbers) return;
-
-    if (totalPages === 0) {
-        pageNumbers.innerHTML = '<span class="page-number active">1</span>';
         return;
     }
-
-    let pagesHtml = '';
-    for (let i = 1; i <= totalPages; i++) {
-        pagesHtml += `
-            <span class="page-number ${i === currentPage ? 'active' : ''}" 
-                  onclick="goToPage(${i})">${i}</span>
-        `;
-    }
-    pageNumbers.innerHTML = pagesHtml;
-}
-
-// ===== GO TO PAGE =====
-window.goToPage = function(page) {
-    currentPage = page;
-    displayUsers();
-}
-
-// ===== SETUP EVENT LISTENERS =====
-function setupEventListeners() {
-    // Search
-    document.getElementById('searchUsers')?.addEventListener('input', debounce(function(e) {
-        searchUsers(e.target.value);
-    }, 500));
     
-    // Role filter
-    document.getElementById('roleFilter')?.addEventListener('change', function(e) {
-        currentFilter.role = e.target.value;
-        applyFilters();
-    });
-    
-    // Status filter
-    document.getElementById('statusFilter')?.addEventListener('change', function(e) {
-        currentFilter.status = e.target.value;
-        applyFilters();
-    });
-    
-    // Date filter
-    document.getElementById('dateFilter')?.addEventListener('change', function(e) {
-        currentFilter.date = e.target.value;
-        applyFilters();
-    });
-    
-    // Pagination
-    document.getElementById('prevPage')?.addEventListener('click', function() {
-        if (currentPage > 1) {
-            currentPage--;
-            displayUsers();
-        }
-    });
-
-    document.getElementById('nextPage')?.addEventListener('click', function() {
-        const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayUsers();
-        }
-    });
-    
-    // Storage events (cross-tab updates)
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'markanUsers') {
-            loadUsers();
-        }
-    });
-    
-    // Close modals on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if (document.getElementById('userModal').classList.contains('active')) {
-                closeUserModal();
-            }
-            if (document.getElementById('addUserModal').classList.contains('active')) {
-                closeAddUserModal();
-            }
-            if (document.getElementById('deleteModal').classList.contains('active')) {
-                closeDeleteModal();
-            }
-        }
-    });
-    
-    // Click outside modal to close
-    window.addEventListener('click', function(e) {
-        const userModal = document.getElementById('userModal');
-        const addModal = document.getElementById('addUserModal');
-        const deleteModal = document.getElementById('deleteModal');
+    const deleted = UsersDB.delete(deleteUserId);
+    if (deleted) {
+        showNotification('User deleted successfully', 'success');
         
-        if (e.target === userModal) {
+        // Reload users
+        allUsers = UsersDB.getAll();
+        updateStats();
+        filterUsers();
+        
+        // Close user modal if open
+        if (selectedUserId == deleteUserId) {
             closeUserModal();
         }
-        if (e.target === addModal) {
-            closeAddUserModal();
-        }
-        if (e.target === deleteModal) {
-            closeDeleteModal();
-        }
-    });
+    } else {
+        showNotification('Failed to delete user', 'error');
+    }
     
-    // Logout
-    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        Auth.logout();
-    });
+    closeDeleteModal();
 }
 
-// ===== UPDATE ADMIN NAME =====
-function updateAdminName() {
-    const user = Auth.getCurrentUser();
-    if (user) {
-        document.getElementById('adminName').textContent = user.name;
+// ===== LOAD NOTIFICATION COUNT =====
+function loadNotificationCount() {
+    const inactiveCount = allUsers.filter(u => u.status === 'inactive').length;
+    const badge = document.getElementById('notificationCount');
+    if (badge) {
+        badge.textContent = inactiveCount;
+        badge.style.display = inactiveCount > 0 ? 'block' : 'none';
     }
 }
 
-// ===== HELPER: FORMAT JOIN DATE =====
-function formatJoinDate(dateString) {
-    if (!dateString) return 'New';
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 30) return `${diffDays} days ago`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
-    return `${Math.floor(diffDays / 365)} years ago`;
-}
-
-// ===== HELPER: FORMAT DATE =====
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-// ===== HELPER: FORMAT DATE TIME =====
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-// ===== HELPER: FORMAT ETB =====
-function formatETB(amount) {
-    return new Intl.NumberFormat('en-ET', {
+// ===== UTILITY FUNCTIONS =====
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'ETB',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
-    }).format(amount).replace('ETB', '') + ' ETB';
+    }).format(amount).replace('ETB', '').trim() + ' ETB';
 }
 
-// ===== HELPER: TIME AGO =====
-function timeAgo(timestamp) {
-    const date = new Date(timestamp);
+function getTimeAgo(date) {
     const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    return `${Math.floor(seconds / 86400)} days ago`;
-}
-
-// ===== HELPER: DEBOUNCE =====
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
 }
 
 // ===== SHOW NOTIFICATION =====
@@ -807,10 +1022,16 @@ function showNotification(message, type = 'info') {
 
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
     notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                            type === 'error' ? 'exclamation-circle' : 
-                            type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        <i class="fas ${icons[type]}"></i>
         <span>${message}</span>
         <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     `;
@@ -823,15 +1044,17 @@ function showNotification(message, type = 'info') {
 }
 
 // ===== MAKE FUNCTIONS GLOBAL =====
-window.viewUserDetails = viewUserDetails;
+window.filterUsers = filterUsers;
+window.openUserModal = openUserModal;
 window.closeUserModal = closeUserModal;
 window.openAddUserModal = openAddUserModal;
-window.editUser = editUser;
+window.openEditUserModal = openEditUserModal;
 window.closeAddUserModal = closeAddUserModal;
 window.saveUser = saveUser;
+window.editUser = editUser;
 window.toggleUserStatus = toggleUserStatus;
-window.deleteUser = deleteUser;
+window.openDeleteModal = openDeleteModal;
 window.closeDeleteModal = closeDeleteModal;
 window.confirmDelete = confirmDelete;
-window.filterUsers = filterUsers;
 window.goToPage = goToPage;
+window.showNotification = showNotification;

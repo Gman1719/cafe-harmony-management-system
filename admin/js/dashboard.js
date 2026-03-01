@@ -1,9 +1,70 @@
-// admin/js/dashboard.js - Dynamic Admin Dashboard
+// admin/js/dashboard.js - Admin Dashboard
 // Markan Cafe - Debre Birhan University
 
-// Global variables
+// ============================================
+// GLOBAL VARIABLES
+// ============================================
 let revenueChart = null;
 let currentDateRange = 'month';
+let refreshInterval = null;
+let notifications = [];
+
+// ============================================
+// INITIALIZATION
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📊 Admin Dashboard initializing...');
+    
+    // Set admin name
+    const user = Auth.getCurrentUser();
+    if (user) {
+        document.getElementById('adminName').textContent = user.name;
+    }
+    
+    // Load all dashboard data
+    loadDashboardData();
+    
+    // Setup event listeners
+    setupEventListeners();
+    
+    // Start auto-refresh (every 30 seconds)
+    startAutoRefresh();
+});
+
+// ============================================
+// SETUP EVENT LISTENERS
+// ============================================
+function setupEventListeners() {
+    // Date range change
+    document.getElementById('dateRange')?.addEventListener('change', function(e) {
+        currentDateRange = e.target.value;
+        loadRevenueChart();
+    });
+    
+    // Mark all notifications as read
+    document.getElementById('markAllRead')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        markAllNotificationsRead();
+    });
+    
+    // Close notifications dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const bell = document.getElementById('notificationBell');
+        const dropdown = document.getElementById('notificationsDropdown');
+        if (bell && dropdown && !bell.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+    
+    // Show notifications dropdown on bell click
+    document.getElementById('notificationBell')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropdown = document.getElementById('notificationsDropdown');
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+}
 
 // ============================================
 // MAIN DASHBOARD DATA LOADER
@@ -11,7 +72,6 @@ let currentDateRange = 'month';
 async function loadDashboardData() {
     console.log('📊 Loading dashboard data...');
     
-    // Show loading states
     showLoadingStates();
     
     try {
@@ -35,7 +95,7 @@ async function loadDashboardData() {
         console.log('✅ Dashboard data loaded successfully');
     } catch (error) {
         console.error('❌ Error loading dashboard data:', error);
-        showErrorMessage('Failed to load dashboard data. Please refresh the page.');
+        showNotification('Failed to load some dashboard data', 'warning');
     }
 }
 
@@ -44,7 +104,7 @@ async function loadDashboardData() {
 // ============================================
 function waitForDatabase(dbName) {
     return new Promise((resolve) => {
-        if (typeof window[dbName] !== 'undefined') {
+        if (typeof window[dbName] !== 'undefined' && window[dbName]) {
             resolve();
             return;
         }
@@ -54,7 +114,7 @@ function waitForDatabase(dbName) {
         
         const interval = setInterval(() => {
             attempts++;
-            if (typeof window[dbName] !== 'undefined') {
+            if (typeof window[dbName] !== 'undefined' && window[dbName]) {
                 clearInterval(interval);
                 resolve();
             } else if (attempts >= maxAttempts) {
@@ -70,13 +130,11 @@ function waitForDatabase(dbName) {
 // SHOW LOADING STATES
 // ============================================
 function showLoadingStates() {
-    // Stats cards
     document.getElementById('pendingOrders').textContent = '...';
     document.getElementById('completedOrders').textContent = '...';
     document.getElementById('todayReservations').textContent = '...';
     document.getElementById('todayRevenue').textContent = '... ETB';
     
-    // Trends
     document.getElementById('pendingTrend').textContent = 'Loading...';
     document.getElementById('completedTrend').textContent = 'Loading...';
     document.getElementById('reservationTrend').textContent = 'Loading...';
@@ -87,62 +145,65 @@ function showLoadingStates() {
 // LOAD STATS CARDS
 // ============================================
 function loadStatsCards() {
-    // Get today's date range
+    // Get today's date
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
     
-    // Get all orders
+    // Get orders
     let allOrders = [];
-    if (window.OrdersDB) {
-        allOrders = OrdersDB.getAll();
+    if (window.OrdersDB && typeof OrdersDB.getAll === 'function') {
+        allOrders = OrdersDB.getAll() || [];
     }
     
-    // Calculate stats
-    const pendingOrders = allOrders.filter(o => o.status === 'pending').length;
-    const completedOrders = allOrders.filter(o => o.status === 'completed').length;
+    // Calculate order stats
+    const pendingOrders = allOrders.filter(o => o && o.status === 'pending').length;
+    const completedOrders = allOrders.filter(o => o && o.status === 'completed').length;
     
     // Today's orders
-    const todayOrders = allOrders.filter(o => o.date === today);
-    const yesterdayOrders = allOrders.filter(o => o.date === yesterday);
+    const todayOrders = allOrders.filter(o => o && o.date === today);
+    const yesterdayOrders = allOrders.filter(o => o && o.date === yesterday);
     
     // Today's revenue
     const todayRevenue = todayOrders
-        .filter(o => o.status === 'completed')
-        .reduce((sum, o) => sum + (o.total || 0), 0);
+        .filter(o => o && o.status === 'completed')
+        .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
     
-    // Yesterday's revenue for trend
     const yesterdayRevenue = yesterdayOrders
-        .filter(o => o.status === 'completed')
-        .reduce((sum, o) => sum + (o.total || 0), 0);
+        .filter(o => o && o.status === 'completed')
+        .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
     
     // Calculate trends
     const revenueTrend = calculateTrend(todayRevenue, yesterdayRevenue);
-    const orderTrend = calculateTrend(pendingOrders, allOrders.filter(o => o.date === yesterday && o.status === 'pending').length);
+    const pendingTrend = calculateTrend(
+        pendingOrders, 
+        allOrders.filter(o => o && o.date === yesterday && o.status === 'pending').length
+    );
+    const completedTrend = calculateTrend(
+        completedOrders,
+        allOrders.filter(o => o && o.date === yesterday && o.status === 'completed').length
+    );
     
     // Update stats cards
     document.getElementById('pendingOrders').textContent = pendingOrders;
     document.getElementById('completedOrders').textContent = completedOrders;
     document.getElementById('todayRevenue').textContent = formatCurrency(todayRevenue);
     
-    // Update trends
-    document.getElementById('pendingTrend').textContent = `${orderTrend} from yesterday`;
-    document.getElementById('completedTrend').textContent = `${calculateTrend(completedOrders, yesterdayOrders.filter(o => o.status === 'completed').length)} from yesterday`;
+    document.getElementById('pendingTrend').textContent = `${pendingTrend} from yesterday`;
+    document.getElementById('completedTrend').textContent = `${completedTrend} from yesterday`;
     document.getElementById('revenueTrend').textContent = revenueTrend;
     
     // Load reservations
-    loadReservationStats();
+    loadReservationStats(today);
 }
 
 // ============================================
 // LOAD RESERVATION STATS
 // ============================================
-function loadReservationStats() {
-    const today = new Date().toISOString().split('T')[0];
-    
-    if (window.ReservationsDB) {
-        const todayReservations = ReservationsDB.getByDate(today);
-        const confirmed = todayReservations.filter(r => r.status === 'confirmed').length;
-        const pending = todayReservations.filter(r => r.status === 'pending').length;
+function loadReservationStats(today) {
+    if (window.ReservationsDB && typeof ReservationsDB.getByDate === 'function') {
+        const todayReservations = ReservationsDB.getByDate(today) || [];
+        const confirmed = todayReservations.filter(r => r && r.status === 'confirmed').length;
+        const pending = todayReservations.filter(r => r && r.status === 'pending').length;
         
         document.getElementById('todayReservations').textContent = todayReservations.length;
         document.getElementById('reservationTrend').textContent = `${confirmed} confirmed, ${pending} pending`;
@@ -159,21 +220,32 @@ function calculateTrend(current, previous) {
     if (previous === 0) {
         return current > 0 ? '+100%' : '0%';
     }
-    
     const change = ((current - previous) / previous) * 100;
     const sign = change >= 0 ? '+' : '';
     return `${sign}${change.toFixed(1)}%`;
 }
 
 // ============================================
+// FORMAT CURRENCY
+// ============================================
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'ETB',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }).format(amount).replace('ETB', '').trim() + ' ETB';
+}
+
+// ============================================
 // LOAD LOW STOCK ALERT
 // ============================================
 function loadLowStockAlert() {
-    if (!window.MenuDB) return;
+    if (!window.MenuDB || typeof MenuDB.getAll !== 'function') return;
     
-    const menuItems = MenuDB.getAll();
-    const lowStockItems = menuItems.filter(item => item.stock < 5 && item.stock > 0);
-    const outOfStock = menuItems.filter(item => item.stock === 0);
+    const menuItems = MenuDB.getAll() || [];
+    const lowStockItems = menuItems.filter(item => item && item.stock < 5 && item.stock > 0);
+    const outOfStock = menuItems.filter(item => item && item.stock === 0);
     
     if (lowStockItems.length > 0 || outOfStock.length > 0) {
         const alertDiv = document.getElementById('lowStockAlert');
@@ -181,10 +253,10 @@ function loadLowStockAlert() {
         
         let message = '';
         if (outOfStock.length > 0) {
-            message += `${outOfStock.length} items out of stock. `;
+            message += `${outOfStock.length} item(s) out of stock. `;
         }
         if (lowStockItems.length > 0) {
-            message += `${lowStockItems.length} items running low.`;
+            message += `${lowStockItems.length} item(s) running low.`;
         }
         
         messageEl.textContent = message;
@@ -203,31 +275,32 @@ function loadPopularItems() {
         return;
     }
     
-    // Get all completed orders
-    const orders = OrdersDB.getAll().filter(o => o.status === 'completed');
+    const orders = (OrdersDB.getAll() || []).filter(o => o && o.status === 'completed');
+    const menuItems = MenuDB.getAll() || [];
     
     // Count item occurrences
     const itemCounts = {};
     orders.forEach(order => {
-        order.items?.forEach(item => {
-            const key = item.id || item.name;
-            itemCounts[key] = (itemCounts[key] || 0) + (item.quantity || 1);
-        });
+        if (order.items && Array.isArray(order.items)) {
+            order.items.forEach(item => {
+                if (item && item.id) {
+                    const key = item.id;
+                    itemCounts[key] = (itemCounts[key] || 0) + (parseInt(item.quantity) || 1);
+                }
+            });
+        }
     });
-    
-    // Get menu items for names
-    const menuItems = MenuDB.getAll();
     
     // Sort and get top 5
     const popular = Object.entries(itemCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([id, count]) => {
-            const menuItem = menuItems.find(m => m.id == id || m.name === id);
+            const menuItem = menuItems.find(m => m && m.id == id);
             return {
-                name: menuItem?.name || id,
+                name: menuItem?.name || 'Unknown Item',
                 count: count,
-                price: menuItem?.price || 0
+                price: parseFloat(menuItem?.price) || 0
             };
         });
     
@@ -236,7 +309,6 @@ function loadPopularItems() {
         return;
     }
     
-    // Render popular items
     container.innerHTML = popular.map((item, index) => `
         <div class="popular-item">
             <div class="popular-rank">#${index + 1}</div>
@@ -260,8 +332,8 @@ function loadRecentOrders() {
         return;
     }
     
-    const orders = OrdersDB.getAll()
-        .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+    const orders = (OrdersDB.getAll() || [])
+        .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0))
         .slice(0, 10);
     
     if (orders.length === 0) {
@@ -270,16 +342,17 @@ function loadRecentOrders() {
     }
     
     tableBody.innerHTML = orders.map(order => {
-        const itemCount = order.items?.reduce((sum, i) => sum + (i.quantity || 1), 0) || 0;
+        const itemCount = order.items?.reduce((sum, i) => sum + (parseInt(i.quantity) || 1), 0) || 0;
         const timeAgo = getTimeAgo(new Date(order.orderDate));
+        const status = order.status || 'pending';
         
         return `
             <tr onclick="window.location.href='order-details.html?id=${order.id}'">
                 <td><span class="order-id">#${order.id}</span></td>
                 <td>${order.customerName || 'Guest'}</td>
                 <td>${itemCount} items</td>
-                <td>${formatCurrency(order.total || 0)}</td>
-                <td><span class="status-badge status-${order.status}">${order.status}</span></td>
+                <td>${formatCurrency(parseFloat(order.total) || 0)}</td>
+                <td><span class="status-badge status-${status}">${status}</span></td>
                 <td><span class="time-ago">${timeAgo}</span></td>
             </tr>
         `;
@@ -291,45 +364,48 @@ function loadRecentOrders() {
 // ============================================
 function loadActivityTimeline() {
     const timeline = document.getElementById('activityTimeline');
-    
-    // Collect recent activities from all sources
     const activities = [];
     
-    // Add orders
+    // Add recent orders
     if (window.OrdersDB) {
-        const orders = OrdersDB.getAll()
-            .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+        const orders = (OrdersDB.getAll() || [])
+            .sort((a, b) => new Date(b.orderDate || 0) - new Date(a.orderDate || 0))
             .slice(0, 5);
         
         orders.forEach(order => {
-            activities.push({
-                type: 'order',
-                id: order.id,
-                customer: order.customerName,
-                status: order.status,
-                time: new Date(order.orderDate),
-                icon: getStatusIcon(order.status),
-                color: getStatusColor(order.status)
-            });
+            if (order) {
+                activities.push({
+                    type: 'order',
+                    id: order.id,
+                    customer: order.customerName || 'Guest',
+                    action: 'placed an order',
+                    status: order.status,
+                    time: new Date(order.orderDate),
+                    icon: getStatusIcon(order.status),
+                    color: getStatusColor(order.status)
+                });
+            }
         });
     }
     
-    // Add reservations
-    if (window.ReservationsDB) {
-        const reservations = ReservationsDB.getAll()
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    // Add recent reservations
+    if (window.ReservationsDB && typeof ReservationsDB.getAll === 'function') {
+        const reservations = (ReservationsDB.getAll() || [])
+            .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
             .slice(0, 5);
         
         reservations.forEach(res => {
-            activities.push({
-                type: 'reservation',
-                id: res.id,
-                customer: res.customerName,
-                guests: res.guests,
-                time: new Date(res.createdAt),
-                icon: 'fa-calendar-check',
-                color: '#c49a6c'
-            });
+            if (res) {
+                activities.push({
+                    type: 'reservation',
+                    id: res.id,
+                    customer: res.customerName || 'Guest',
+                    action: `booked for ${res.guests || '?'} guests`,
+                    time: new Date(res.createdAt),
+                    icon: 'fa-calendar-check',
+                    color: '#c49a6c'
+                });
+            }
         });
     }
     
@@ -341,38 +417,22 @@ function loadActivityTimeline() {
         return;
     }
     
-    // Render activities
     timeline.innerHTML = activities.slice(0, 10).map(activity => {
         const timeAgo = getTimeAgo(activity.time);
         
-        if (activity.type === 'order') {
-            return `
-                <div class="timeline-item" onclick="window.location.href='order-details.html?id=${activity.id}'">
-                    <div class="timeline-icon" style="background: ${activity.color}20; color: ${activity.color}">
-                        <i class="fas ${activity.icon}"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <h4>New Order #${activity.id}</h4>
-                        <p>${activity.customer} placed an order</p>
-                        <span class="time-ago">${timeAgo}</span>
-                    </div>
-                    <span class="status-badge status-${activity.status}">${activity.status}</span>
+        return `
+            <div class="timeline-item" onclick="window.location.href='${activity.type === 'order' ? 'orders.html' : 'reservations.html'}'">
+                <div class="timeline-icon" style="background: ${activity.color}20; color: ${activity.color}">
+                    <i class="fas ${activity.icon}"></i>
                 </div>
-            `;
-        } else {
-            return `
-                <div class="timeline-item" onclick="window.location.href='reservation-details.html?id=${activity.id}'">
-                    <div class="timeline-icon" style="background: ${activity.color}20; color: ${activity.color}">
-                        <i class="fas ${activity.icon}"></i>
-                    </div>
-                    <div class="timeline-content">
-                        <h4>New Reservation</h4>
-                        <p>${activity.customer} booked for ${activity.guests} guests</p>
-                        <span class="time-ago">${timeAgo}</span>
-                    </div>
+                <div class="timeline-content">
+                    <h4>${activity.customer} ${activity.action}</h4>
+                    <p>${activity.type === 'order' ? `Order #${activity.id}` : `Reservation #${activity.id}`}</p>
+                    <span class="time-ago">${timeAgo}</span>
                 </div>
-            `;
-        }
+                ${activity.status ? `<span class="status-badge status-${activity.status}">${activity.status}</span>` : ''}
+            </div>
+        `;
     }).join('');
 }
 
@@ -380,16 +440,13 @@ function loadActivityTimeline() {
 // LOAD REVENUE CHART
 // ============================================
 function loadRevenueChart() {
-    const ctx = document.getElementById('revenueChart').getContext('2d');
+    const ctx = document.getElementById('revenueChart')?.getContext('2d');
+    if (!ctx) return;
     
-    // Get date range from selector
-    const range = document.getElementById('dateRange').value;
-    currentDateRange = range;
-    
-    // Generate labels and data based on range
+    const range = document.getElementById('dateRange')?.value || 'month';
     const { labels, data } = getChartData(range);
     
-    // Destroy existing chart if it exists
+    // Destroy existing chart
     if (revenueChart) {
         revenueChart.destroy();
     }
@@ -418,14 +475,10 @@ function loadRevenueChart() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        label: function(context) {
-                            return `Revenue: ${formatCurrency(context.raw)}`;
-                        }
+                        label: (context) => `Revenue: ${formatCurrency(context.raw)}`
                     }
                 }
             },
@@ -433,23 +486,16 @@ function loadRevenueChart() {
                 y: {
                     beginAtZero: true,
                     ticks: {
-                        callback: function(value) {
-                            return formatCurrency(value);
-                        }
+                        callback: (value) => formatCurrency(value)
                     }
                 }
             }
         }
     });
-    
-    // Add event listener for date range change
-    document.getElementById('dateRange').addEventListener('change', function(e) {
-        loadRevenueChart();
-    });
 }
 
 // ============================================
-// GET CHART DATA BASED ON RANGE
+// GET CHART DATA
 // ============================================
 function getChartData(range) {
     const labels = [];
@@ -459,12 +505,11 @@ function getChartData(range) {
         return { labels: ['No Data'], data: [0] };
     }
     
-    const orders = OrdersDB.getAll().filter(o => o.status === 'completed');
+    const orders = (OrdersDB.getAll() || []).filter(o => o && o.status === 'completed');
     const today = new Date();
     
     switch(range) {
         case 'today':
-            // Hourly data for today
             for (let i = 0; i < 24; i++) {
                 const hour = i.toString().padStart(2, '0') + ':00';
                 labels.push(hour);
@@ -475,33 +520,31 @@ function getChartData(range) {
                         return orderDate.getHours() === i && 
                                orderDate.toDateString() === today.toDateString();
                     })
-                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                    .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
                 
                 data.push(revenue);
             }
             break;
             
         case 'week':
-            // Daily data for this week
             const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            for (let i = 0; i < 7; i++) {
+            for (let i = 6; i >= 0; i--) {
                 const date = new Date(today);
                 date.setDate(today.getDate() - i);
-                labels.unshift(weekDays[date.getDay()]);
+                labels.push(weekDays[date.getDay()]);
                 
                 const revenue = orders
                     .filter(o => {
                         const orderDate = new Date(o.orderDate);
                         return orderDate.toDateString() === date.toDateString();
                     })
-                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                    .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
                 
-                data.unshift(revenue);
+                data.push(revenue);
             }
             break;
             
         case 'month':
-            // Daily data for this month
             const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
             for (let i = 1; i <= daysInMonth; i++) {
                 labels.push(i.toString());
@@ -513,14 +556,13 @@ function getChartData(range) {
                                orderDate.getMonth() === today.getMonth() &&
                                orderDate.getFullYear() === today.getFullYear();
                     })
-                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                    .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
                 
                 data.push(revenue);
             }
             break;
             
         case 'year':
-            // Monthly data for this year
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             for (let i = 0; i < 12; i++) {
                 labels.push(months[i]);
@@ -531,7 +573,7 @@ function getChartData(range) {
                         return orderDate.getMonth() === i &&
                                orderDate.getFullYear() === today.getFullYear();
                     })
-                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                    .reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
                 
                 data.push(revenue);
             }
@@ -548,51 +590,75 @@ function loadNotifications() {
     const notificationsList = document.getElementById('notificationsList');
     const notificationCount = document.getElementById('notificationCount');
     
-    const notifications = [];
+    notifications = [];
     
     // Check for low stock
-    if (window.MenuDB) {
-        const lowStock = MenuDB.getLowStock?.() || [];
+    if (window.MenuDB && typeof MenuDB.getAll === 'function') {
+        const menuItems = MenuDB.getAll() || [];
+        const lowStock = menuItems.filter(item => item && item.stock < 5 && item.stock > 0);
+        const outOfStock = menuItems.filter(item => item && item.stock === 0);
+        
         lowStock.forEach(item => {
             notifications.push({
+                id: `stock-${item.id}`,
                 type: 'warning',
                 message: `${item.name} is running low (${item.stock} left)`,
                 time: new Date(),
-                link: 'menu-management.html?filter=lowstock'
+                link: 'menu-management.html?filter=lowstock',
+                read: false
+            });
+        });
+        
+        outOfStock.forEach(item => {
+            notifications.push({
+                id: `out-${item.id}`,
+                type: 'danger',
+                message: `${item.name} is out of stock`,
+                time: new Date(),
+                link: 'menu-management.html?filter=outofstock',
+                read: false
             });
         });
     }
     
     // Check for pending orders
-    if (window.OrdersDB) {
-        const pendingOrders = OrdersDB.getByStatus?.('pending') || [];
+    if (window.OrdersDB && typeof OrdersDB.getByStatus === 'function') {
+        const pendingOrders = OrdersDB.getByStatus('pending') || [];
         if (pendingOrders.length > 0) {
             notifications.push({
+                id: 'pending-orders',
                 type: 'info',
-                message: `${pendingOrders.length} pending orders need attention`,
+                message: `${pendingOrders.length} pending order(s) need attention`,
                 time: new Date(),
-                link: 'orders.html?status=pending'
+                link: 'orders.html?status=pending',
+                read: false
             });
         }
     }
     
     // Check for today's reservations
-    if (window.ReservationsDB) {
+    if (window.ReservationsDB && typeof ReservationsDB.getByDate === 'function') {
         const today = new Date().toISOString().split('T')[0];
-        const todayReservations = ReservationsDB.getByDate?.(today) || [];
+        const todayReservations = ReservationsDB.getByDate(today) || [];
         if (todayReservations.length > 0) {
             notifications.push({
+                id: 'today-reservations',
                 type: 'info',
-                message: `${todayReservations.length} reservations for today`,
+                message: `${todayReservations.length} reservation(s) for today`,
                 time: new Date(),
-                link: 'reservations.html'
+                link: 'reservations.html',
+                read: false
             });
         }
     }
     
+    // Sort by time (newest first)
+    notifications.sort((a, b) => b.time - a.time);
+    
     // Update notification count
-    notificationCount.textContent = notifications.length;
-    notificationCount.style.display = notifications.length > 0 ? 'block' : 'none';
+    const unreadCount = notifications.filter(n => !n.read).length;
+    notificationCount.textContent = unreadCount;
+    notificationCount.style.display = unreadCount > 0 ? 'block' : 'none';
     
     // Render notifications
     if (notifications.length === 0) {
@@ -600,91 +666,71 @@ function loadNotifications() {
         return;
     }
     
-    notificationsList.innerHTML = notifications
-        .sort((a, b) => b.time - a.time)
-        .map(notif => `
-            <div class="notification-item ${notif.type}" onclick="window.location.href='${notif.link}'">
-                <i class="fas ${notif.type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+    notificationsList.innerHTML = notifications.map(notif => {
+        const timeAgo = getTimeAgo(notif.time);
+        const notifClass = notif.read ? 'notification-item' : 'notification-item unread';
+        
+        return `
+            <div class="${notifClass} ${notif.type}" onclick="window.location.href='${notif.link}'; markNotificationRead('${notif.id}')">
+                <i class="fas ${notif.type === 'warning' ? 'fa-exclamation-triangle' : 
+                                 notif.type === 'danger' ? 'fa-times-circle' : 
+                                 'fa-info-circle'}"></i>
                 <div class="notification-content">
                     <p>${notif.message}</p>
-                    <span class="time-ago">${getTimeAgo(notif.time)}</span>
+                    <span class="time-ago">${timeAgo}</span>
                 </div>
             </div>
-        `).join('');
+        `;
+    }).join('');
+}
+
+// ============================================
+// MARK NOTIFICATION AS READ
+// ============================================
+function markNotificationRead(id) {
+    const notif = notifications.find(n => n.id === id);
+    if (notif) {
+        notif.read = true;
+        updateNotificationCount();
+    }
+}
+
+// ============================================
+// MARK ALL NOTIFICATIONS AS READ
+// ============================================
+function markAllNotificationsRead() {
+    notifications.forEach(n => n.read = true);
+    updateNotificationCount();
+    loadNotifications(); // Reload to update UI
+    
+    // Close dropdown
+    document.getElementById('notificationsDropdown').style.display = 'none';
+    
+    showNotification('All notifications marked as read', 'success');
+}
+
+// ============================================
+// UPDATE NOTIFICATION COUNT
+// ============================================
+function updateNotificationCount() {
+    const unreadCount = notifications.filter(n => !n.read).length;
+    const badge = document.getElementById('notificationCount');
+    badge.textContent = unreadCount;
+    badge.style.display = unreadCount > 0 ? 'block' : 'none';
 }
 
 // ============================================
 // PERFORM GLOBAL SEARCH
 // ============================================
 function performGlobalSearch(term) {
-    const results = [];
-    
-    // Search orders
-    if (window.OrdersDB) {
-        const orders = OrdersDB.getAll();
-        orders.forEach(order => {
-            if (order.id?.toLowerCase().includes(term) ||
-                order.customerName?.toLowerCase().includes(term)) {
-                results.push({
-                    type: 'order',
-                    id: order.id,
-                    name: `Order #${order.id}`,
-                    customer: order.customerName,
-                    link: `order-details.html?id=${order.id}`
-                });
-            }
-        });
-    }
-    
-    // Search users
-    if (window.UsersDB) {
-        const users = UsersDB.getAll();
-        users.forEach(user => {
-            if (user.name?.toLowerCase().includes(term) ||
-                user.email?.toLowerCase().includes(term)) {
-                results.push({
-                    type: 'user',
-                    id: user.id,
-                    name: user.name,
-                    email: user.email,
-                    link: `user-details.html?id=${user.id}`
-                });
-            }
-        });
-    }
-    
-    // Search menu items
-    if (window.MenuDB) {
-        const items = MenuDB.getAll();
-        items.forEach(item => {
-            if (item.name?.toLowerCase().includes(term)) {
-                results.push({
-                    type: 'menu',
-                    id: item.id,
-                    name: item.name,
-                    link: `menu-management.html?edit=${item.id}`
-                });
-            }
-        });
-    }
-    
-    // Display results (you can implement a dropdown here)
-    console.log('Search results:', results);
+    console.log('Searching for:', term);
+    // This can be expanded to show search results dropdown
+    // For now, just log the search
 }
 
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
-
-function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'ETB',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount).replace('ETB', '') + ' ETB';
-}
-
 function getTimeAgo(date) {
     const now = new Date();
     const diffMs = now - date;
@@ -695,7 +741,8 @@ function getTimeAgo(date) {
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
 }
 
 function getStatusIcon(status) {
@@ -714,30 +761,66 @@ function getStatusColor(status) {
         'pending': '#ed6c02',
         'preparing': '#0288d1',
         'ready': '#2e7d32',
-        'completed': '#2e7d32',
+        'completed': '#7b1fa2',
         'cancelled': '#d32f2f'
     };
     return colors[status] || '#757575';
 }
 
-function showErrorMessage(message) {
+function showNotification(message, type = 'info') {
     const container = document.getElementById('notificationContainer');
-    if (container && typeof showNotification === 'function') {
-        showNotification(message, 'error');
-    } else {
-        alert(message);
-    }
+    if (!container) return;
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    notification.innerHTML = `
+        <i class="fas ${icons[type]}"></i>
+        <div class="notification-content">
+            <p>${message}</p>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 // ============================================
-// AUTO-REFRESH (every 30 seconds)
+// AUTO-REFRESH
 // ============================================
-setInterval(() => {
-    if (document.visibilityState === 'visible') {
-        console.log('🔄 Auto-refreshing dashboard data...');
-        loadDashboardData();
+function startAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
     }
-}, 30000);
+    
+    refreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            console.log('🔄 Auto-refreshing dashboard...');
+            loadDashboardData();
+        }
+    }, 30000); // Refresh every 30 seconds
+}
 
-// Make functions globally available
+// ============================================
+// MAKE FUNCTIONS GLOBALLY AVAILABLE
+// ============================================
 window.loadDashboardData = loadDashboardData;
+window.performGlobalSearch = performGlobalSearch;
+window.markNotificationRead = markNotificationRead;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.showNotification = showNotification;

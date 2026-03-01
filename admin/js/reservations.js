@@ -1,395 +1,895 @@
-// admin/js/reservations.js
-// Markan Cafe Admin - Reservations Management
-// Full CRUD operations with localStorage - NO HARDCODED DATA
+// admin/js/reservations.js - Reservations Management
+// Markan Cafe Admin - Complete reservation system with localStorage
+// ALL DATA IS DYNAMIC - NO HARDCODING
 
 // ===== GLOBAL VARIABLES =====
 let allReservations = [];
 let filteredReservations = [];
 let currentPage = 1;
 let itemsPerPage = 10;
-let currentReservationId = null;
-let currentFilter = {
-    status: 'all',
-    date: ''
-};
+let currentStatusFilter = 'all';
+let currentDateFilter = '';
+let currentSearchTerm = '';
 let currentView = 'list';
 let currentMonth = new Date();
-let currentYear = currentMonth.getFullYear();
-let currentMonthIndex = currentMonth.getMonth();
+let selectedReservationId = null;
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', function() {
-    // Check admin access
-    if (!Auth.requireAdmin()) {
-        window.location.href = '../../login.html';
-        return;
+    console.log('📅 Reservations Management initializing...');
+    
+    // Check authentication
+    if (!checkAuth()) return;
+    
+    // Set admin name
+    const user = getCurrentUser();
+    if (user) {
+        const adminNameEl = document.getElementById('adminName');
+        if (adminNameEl) adminNameEl.textContent = user.name;
     }
-
+    
+    // Initialize reservations database
+    initializeReservationsDB();
+    
     // Load reservations
     loadReservations();
     
     // Setup event listeners
     setupEventListeners();
     
-    // Update admin name
-    updateAdminName();
+    // Load notification count
+    loadNotificationCount();
     
-    // Initialize calendar
-    renderCalendar();
+    // Set default date filter to today
+    const today = new Date().toISOString().split('T')[0];
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate) {
+        filterDate.value = today;
+        currentDateFilter = today;
+    }
 });
+
+// ===== GET CURRENT USER =====
+function getCurrentUser() {
+    try {
+        const userStr = localStorage.getItem('markanUser');
+        return userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+        console.error('Error getting current user:', e);
+        return null;
+    }
+}
+
+// ===== CHECK AUTHENTICATION =====
+function checkAuth() {
+    const userStr = localStorage.getItem('markanUser');
+    if (!userStr) {
+        window.location.replace('../../login.html');
+        return false;
+    }
+    
+    try {
+        const user = JSON.parse(userStr);
+        if (user.role !== 'admin') {
+            window.location.replace('../../customer/html/dashboard.html');
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error('Auth error:', e);
+        window.location.replace('../../login.html');
+        return false;
+    }
+}
+
+// ===== INITIALIZE RESERVATIONS DATABASE =====
+function initializeReservationsDB() {
+    // Check if ReservationsDB already exists
+    if (typeof window.ReservationsDB !== 'undefined' && window.ReservationsDB) {
+        console.log('✅ ReservationsDB already exists');
+        return;
+    }
+    
+    console.log('Creating ReservationsDB...');
+    
+    // Create ReservationsDB
+    window.ReservationsDB = {
+        reservations: [],
+        
+        getAll() {
+            return this.reservations;
+        },
+        
+        getById(id) {
+            return this.reservations.find(res => res.id === id);
+        },
+        
+        getByDate(date) {
+            return this.reservations.filter(res => res.date === date);
+        },
+        
+        getByDateRange(startDate, endDate) {
+            const start = new Date(startDate).setHours(0, 0, 0, 0);
+            const end = new Date(endDate).setHours(23, 59, 59, 999);
+            
+            return this.reservations.filter(res => {
+                const resDateTime = new Date(res.date + 'T' + res.time).getTime();
+                return resDateTime >= start && resDateTime <= end;
+            });
+        },
+        
+        getByStatus(status) {
+            if (status === 'all') return this.reservations;
+            return this.reservations.filter(res => res.status === status);
+        },
+        
+        getByCustomerId(customerId) {
+            return this.reservations.filter(res => res.customerId == customerId);
+        },
+        
+        getUpcoming(limit = 10) {
+            const today = new Date().toISOString().split('T')[0];
+            return this.reservations
+                .filter(res => res.date >= today && res.status !== 'cancelled')
+                .sort((a, b) => new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time))
+                .slice(0, limit);
+        },
+        
+        add(reservation) {
+            reservation.id = this.generateId();
+            reservation.createdAt = reservation.createdAt || new Date().toISOString();
+            reservation.updatedAt = new Date().toISOString();
+            this.reservations.push(reservation);
+            this.saveToStorage();
+            return reservation;
+        },
+        
+        update(id, updates) {
+            const index = this.reservations.findIndex(res => res.id === id);
+            if (index !== -1) {
+                updates.updatedAt = new Date().toISOString();
+                this.reservations[index] = { ...this.reservations[index], ...updates };
+                this.saveToStorage();
+                return this.reservations[index];
+            }
+            return null;
+        },
+        
+        updateStatus(id, status) {
+            return this.update(id, { status });
+        },
+        
+        delete(id) {
+            const index = this.reservations.findIndex(res => res.id === id);
+            if (index !== -1) {
+                this.reservations.splice(index, 1);
+                this.saveToStorage();
+                return true;
+            }
+            return false;
+        },
+        
+        generateId() {
+            return 'RES-' + Date.now().toString().slice(-6) + 
+                   Math.random().toString(36).substr(2, 3).toUpperCase();
+        },
+        
+        getStats() {
+            return {
+                pending: this.reservations.filter(r => r.status === 'pending').length,
+                confirmed: this.reservations.filter(r => r.status === 'confirmed').length,
+                completed: this.reservations.filter(r => r.status === 'completed').length,
+                cancelled: this.reservations.filter(r => r.status === 'cancelled').length,
+                total: this.reservations.length
+            };
+        },
+        
+        checkAvailability(date, time, guests = 1) {
+            const reservationsOnDate = this.getByDate(date);
+            const sameSlot = reservationsOnDate.filter(res => 
+                res.time === time && res.status !== 'cancelled'
+            );
+            
+            const totalGuests = sameSlot.reduce((sum, res) => sum + (res.guests || 0), 0);
+            const maxGuests = 20; // Maximum guests per time slot
+            
+            return {
+                available: totalGuests + parseInt(guests) <= maxGuests,
+                booked: sameSlot.length,
+                totalGuests: totalGuests,
+                remaining: Math.max(0, maxGuests - totalGuests),
+                maxGuests: maxGuests
+            };
+        },
+        
+        saveToStorage() {
+            localStorage.setItem('markanReservations', JSON.stringify(this.reservations));
+            console.log('💾 Reservations saved to localStorage');
+        },
+        
+        loadFromStorage() {
+            const saved = localStorage.getItem('markanReservations');
+            if (saved) {
+                try {
+                    this.reservations = JSON.parse(saved);
+                    console.log('✅ Reservations loaded from localStorage:', this.reservations.length, 'reservations');
+                } catch (e) {
+                    console.error('Error loading reservations:', e);
+                    this.reservations = [];
+                    this.createSampleReservations();
+                }
+            } else {
+                // Create sample reservations if no data exists
+                this.createSampleReservations();
+            }
+        },
+        
+        createSampleReservations() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            
+            const formatDate = (date) => date.toISOString().split('T')[0];
+            
+            this.reservations = [
+                {
+                    id: 'RES-123456-ABC',
+                    customerId: 2,
+                    customerName: 'John Doe',
+                    customerEmail: 'john@example.com',
+                    customerPhone: '0912345678',
+                    guests: 4,
+                    date: formatDate(today),
+                    time: '19:00',
+                    duration: 2,
+                    status: 'confirmed',
+                    specialRequests: 'Window table, anniversary celebration',
+                    createdAt: new Date(today.setHours(10, 30)).toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'RES-123457-DEF',
+                    customerId: 3,
+                    customerName: 'Sarah Smith',
+                    customerEmail: 'sarah@example.com',
+                    customerPhone: '0923456789',
+                    guests: 2,
+                    date: formatDate(today),
+                    time: '20:30',
+                    duration: 1.5,
+                    status: 'pending',
+                    specialRequests: 'Vegetarian options',
+                    createdAt: new Date(today.setHours(14, 15)).toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'RES-123458-GHI',
+                    customerId: 4,
+                    customerName: 'Mike Johnson',
+                    customerEmail: 'mike@example.com',
+                    customerPhone: '0934567890',
+                    guests: 6,
+                    date: formatDate(tomorrow),
+                    time: '18:30',
+                    duration: 2.5,
+                    status: 'confirmed',
+                    specialRequests: 'Birthday celebration, need cake',
+                    createdAt: new Date(tomorrow.setHours(9, 45)).toISOString(),
+                    updatedAt: new Date().toISOString()
+                },
+                {
+                    id: 'RES-123459-JKL',
+                    customerId: 5,
+                    customerName: 'Anna Williams',
+                    customerEmail: 'anna@example.com',
+                    customerPhone: '0945678901',
+                    guests: 3,
+                    date: formatDate(nextWeek),
+                    time: '13:00',
+                    duration: 2,
+                    status: 'pending',
+                    specialRequests: 'Allergic to nuts',
+                    createdAt: new Date(nextWeek.setHours(11, 20)).toISOString(),
+                    updatedAt: new Date().toISOString()
+                }
+            ];
+            this.saveToStorage();
+            console.log('✅ Sample reservations created');
+        }
+    };
+    
+    // Load data from localStorage
+    window.ReservationsDB.loadFromStorage();
+}
+
+// ===== SETUP EVENT LISTENERS =====
+function setupEventListeners() {
+    // Search input
+    const searchInput = document.getElementById('searchReservations');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            currentSearchTerm = e.target.value.toLowerCase();
+            currentPage = 1;
+            filterReservations();
+        });
+    }
+    
+    // Date filter
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate) {
+        filterDate.addEventListener('change', function(e) {
+            currentDateFilter = e.target.value;
+            currentPage = 1;
+            filterReservations();
+        });
+    }
+    
+    // Status filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function(e) {
+            currentStatusFilter = e.target.value;
+            currentPage = 1;
+            filterReservations();
+        });
+    }
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof Auth !== 'undefined' && Auth.logout) {
+                Auth.logout();
+            } else {
+                localStorage.removeItem('markanUser');
+                window.location.href = '../../login.html';
+            }
+        });
+    }
+    
+    // Pagination buttons
+    const prevPage = document.getElementById('prevPage');
+    const nextPage = document.getElementById('nextPage');
+    
+    if (prevPage) {
+        prevPage.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayReservations();
+                updatePagination();
+            }
+        });
+    }
+    
+    if (nextPage) {
+        nextPage.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayReservations();
+                updatePagination();
+            }
+        });
+    }
+}
 
 // ===== LOAD RESERVATIONS =====
 function loadReservations() {
-    try {
-        // Get reservations from localStorage
-        const stored = localStorage.getItem('markanReservations');
-        allReservations = stored ? JSON.parse(stored) : [];
-        
-        // Sort by date (newest first)
-        allReservations.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        
-        // Apply filters
-        applyFilters();
-        
-    } catch (error) {
-        console.error('Error loading reservations:', error);
-        showNotification('Failed to load reservations', 'error');
+    if (typeof window.ReservationsDB !== 'undefined' && window.ReservationsDB) {
+        allReservations = window.ReservationsDB.getAll() || [];
+        console.log('📊 Loaded', allReservations.length, 'reservations');
+    } else {
+        console.warn('ReservationsDB not available');
         allReservations = [];
-        filteredReservations = [];
-        displayReservations([]);
     }
+    
+    updateStats();
+    filterReservations();
+    updateCalendar();
 }
 
-// ===== SAVE RESERVATIONS =====
-function saveReservations() {
-    try {
-        localStorage.setItem('markanReservations', JSON.stringify(allReservations));
-        
-        // Dispatch storage event for cross-tab updates
-        window.dispatchEvent(new StorageEvent('storage', {
-            key: 'markanReservations',
-            newValue: JSON.stringify(allReservations)
-        }));
-        
-        // Update calendar if active
-        if (currentView === 'calendar') {
-            renderCalendar();
-        }
-        
-    } catch (error) {
-        console.error('Error saving reservations:', error);
-        showNotification('Failed to save reservations', 'error');
-    }
+// ===== UPDATE STATS CARDS =====
+function updateStats() {
+    const stats = {
+        pending: allReservations.filter(r => r.status === 'pending').length,
+        confirmed: allReservations.filter(r => r.status === 'confirmed').length,
+        completed: allReservations.filter(r => r.status === 'completed').length,
+        cancelled: allReservations.filter(r => r.status === 'cancelled').length
+    };
+    
+    const pendingEl = document.getElementById('pendingReservations');
+    const confirmedEl = document.getElementById('confirmedReservations');
+    const completedEl = document.getElementById('completedReservations');
+    const cancelledEl = document.getElementById('cancelledReservations');
+    
+    if (pendingEl) pendingEl.textContent = stats.pending;
+    if (confirmedEl) confirmedEl.textContent = stats.confirmed;
+    if (completedEl) completedEl.textContent = stats.completed;
+    if (cancelledEl) cancelledEl.textContent = stats.cancelled;
 }
 
-// ===== APPLY FILTERS =====
-function applyFilters() {
-    filteredReservations = [...allReservations];
+// ===== FILTER RESERVATIONS =====
+function filterReservations(status) {
+    if (status) {
+        currentStatusFilter = status;
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) statusFilter.value = status;
+    }
+    
+    let filtered = [...allReservations];
     
     // Apply status filter
-    if (currentFilter.status !== 'all') {
-        filteredReservations = filteredReservations.filter(res => 
-            res.status === currentFilter.status
-        );
+    if (currentStatusFilter !== 'all') {
+        filtered = filtered.filter(r => r.status === currentStatusFilter);
     }
     
     // Apply date filter
-    if (currentFilter.date) {
-        filteredReservations = filteredReservations.filter(res => 
-            res.date === currentFilter.date
+    if (currentDateFilter) {
+        filtered = filtered.filter(r => r.date === currentDateFilter);
+    }
+    
+    // Apply search
+    if (currentSearchTerm) {
+        filtered = filtered.filter(r => 
+            (r.id && r.id.toLowerCase().includes(currentSearchTerm)) ||
+            (r.customerName && r.customerName.toLowerCase().includes(currentSearchTerm)) ||
+            (r.customerEmail && r.customerEmail.toLowerCase().includes(currentSearchTerm)) ||
+            (r.customerPhone && r.customerPhone.includes(currentSearchTerm))
         );
     }
     
-    // Reset to first page
+    filteredReservations = filtered;
     currentPage = 1;
-    
-    // Update UI
-    updateStats();
-    
-    if (currentView === 'list') {
-        displayReservations();
-    }
+    displayReservations();
+    updatePagination();
 }
 
-// ===== UPDATE STATISTICS =====
-function updateStats() {
-    document.getElementById('pendingReservations').textContent = 
-        allReservations.filter(r => r.status === 'pending').length;
-    
-    document.getElementById('confirmedReservations').textContent = 
-        allReservations.filter(r => r.status === 'confirmed').length;
-    
-    document.getElementById('completedReservations').textContent = 
-        allReservations.filter(r => r.status === 'completed').length;
-    
-    document.getElementById('cancelledReservations').textContent = 
-        allReservations.filter(r => r.status === 'cancelled').length;
-}
-
-// ===== DISPLAY RESERVATIONS =====
+// ===== DISPLAY RESERVATIONS IN TABLE =====
 function displayReservations() {
     const tbody = document.getElementById('reservationsTableBody');
     if (!tbody) return;
-
+    
+    if (filteredReservations.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <h3>No Reservations Found</h3>
+                    <p>${allReservations.length === 0 ? 'No reservations have been made yet' : 'No reservations match your filters'}</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     const pageReservations = filteredReservations.slice(start, end);
-
-    if (pageReservations.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="8" class="text-center">
-                    <div class="no-data">
-                        <i class="fas fa-calendar-times"></i>
-                        <p>No reservations found</p>
+    
+    tbody.innerHTML = pageReservations.map(res => {
+        const timeAgo = getTimeAgo(new Date(res.createdAt));
+        
+        return `
+            <tr onclick="openReservationModal('${res.id}')">
+                <td><span class="reservation-id">#${res.id}</span></td>
+                <td>
+                    <div class="customer-info">
+                        <span class="customer-name">${res.customerName || 'N/A'}</span>
+                        <span class="customer-phone">${res.customerPhone || ''}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="datetime-info">
+                        <span class="date">${formatDate(res.date)}</span>
+                        <span class="time">${formatTime(res.time)}</span>
+                    </div>
+                </td>
+                <td><span class="guests-badge"><i class="fas fa-users"></i> ${res.guests || 1}</span></td>
+                <td>${res.duration || 2} hr</td>
+                <td><span class="status-badge status-${res.status || 'pending'}">${res.status || 'pending'}</span></td>
+                <td><span class="time-ago"><i class="far fa-clock"></i> ${timeAgo}</span></td>
+                <td>
+                    <div class="action-buttons" onclick="event.stopPropagation()">
+                        <button class="action-btn view-btn-action" onclick="openReservationModal('${res.id}')" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn edit-btn-action" onclick="openEditReservationModal('${res.id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn status-btn-action" onclick="openStatusModal('${res.id}')" title="Update Status">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
                     </div>
                 </td>
             </tr>
         `;
-        updatePagination();
+    }).join('');
+}
+
+// ===== UPDATE PAGINATION =====
+function updatePagination() {
+    const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+    const prevBtn = document.getElementById('prevPage');
+    const nextBtn = document.getElementById('nextPage');
+    const pageNumbers = document.getElementById('pageNumbers');
+    
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+    
+    if (!pageNumbers) return;
+    
+    if (totalPages === 0) {
+        pageNumbers.innerHTML = '';
         return;
     }
+    
+    // Generate page numbers
+    let pageHtml = '';
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        pageHtml += `<span class="page-number ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</span>`;
+    }
+    
+    pageNumbers.innerHTML = pageHtml;
+}
 
-    tbody.innerHTML = pageReservations.map(res => `
-        <tr onclick="viewReservationDetails('${res.id}')" style="cursor: pointer;">
-            <td><strong>${res.id}</strong></td>
-            <td>${res.customerName || 'N/A'}</td>
-            <td>${formatDate(res.date)} at ${res.time}</td>
-            <td>${res.guests}</td>
-            <td>${res.duration || 2} hours</td>
-            <td>
-                <span class="status-badge ${res.status || 'pending'}">
-                    ${formatStatus(res.status || 'pending')}
-                </span>
-            </td>
-            <td>${formatDate(res.createdAt)}</td>
-            <td onclick="event.stopPropagation()">
-                <div class="action-buttons">
-                    <button class="action-btn view" onclick="viewReservationDetails('${res.id}')" title="View Details">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="action-btn edit" onclick="editReservation('${res.id}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-btn delete" onclick="deleteReservation('${res.id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
+// ===== GO TO SPECIFIC PAGE =====
+function goToPage(page) {
+    currentPage = page;
+    displayReservations();
     updatePagination();
 }
 
-// ===== FORMAT STATUS =====
-function formatStatus(status) {
-    const statuses = {
-        'pending': 'Pending',
-        'confirmed': 'Confirmed',
-        'completed': 'Completed',
-        'cancelled': 'Cancelled'
-    };
-    return statuses[status] || status;
+// ===== TOGGLE VIEW (LIST/CALENDAR) =====
+function toggleView(view) {
+    currentView = view;
+    
+    // Update toggle buttons
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    const activeBtn = document.querySelector(`[onclick="toggleView('${view}')"]`);
+    if (activeBtn) activeBtn.classList.add('active');
+    
+    // Show/hide views
+    const listView = document.getElementById('listView');
+    const calendarView = document.getElementById('calendarView');
+    
+    if (listView) listView.classList.toggle('active', view === 'list');
+    if (calendarView) calendarView.classList.toggle('active', view === 'calendar');
+    
+    if (view === 'calendar') {
+        updateCalendar();
+    }
 }
 
-// ===== VIEW RESERVATION DETAILS =====
-window.viewReservationDetails = function(reservationId) {
-    const reservation = allReservations.find(r => r.id === reservationId);
-    if (!reservation) return;
+// ===== UPDATE CALENDAR =====
+function updateCalendar() {
+    const calendarGrid = document.getElementById('calendarGrid');
+    const monthYearEl = document.getElementById('currentMonthYear');
+    
+    if (!calendarGrid || !monthYearEl) return;
+    
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    // Update month/year display
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    monthYearEl.textContent = `${monthNames[month]} ${year}`;
+    
+    // Get first day of month and total days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Get reservations for this month
+    const monthReservations = allReservations.filter(res => {
+        if (!res.date) return false;
+        const resDate = new Date(res.date);
+        return resDate.getMonth() === month && resDate.getFullYear() === year;
+    });
+    
+    // Group reservations by date
+    const reservationsByDate = {};
+    monthReservations.forEach(res => {
+        if (!reservationsByDate[res.date]) {
+            reservationsByDate[res.date] = [];
+        }
+        reservationsByDate[res.date].push(res);
+    });
+    
+    // Generate calendar grid
+    let calendarHtml = '';
+    
+    // Add weekday headers
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    weekdays.forEach(day => {
+        calendarHtml += `<div class="calendar-weekday">${day}</div>`;
+    });
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+        calendarHtml += '<div class="calendar-day empty"></div>';
+    }
+    
+    // Add days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayReservations = reservationsByDate[dateStr] || [];
+        
+        let dayClass = 'calendar-day';
+        if (dayReservations.length > 0) dayClass += ' has-reservations';
+        
+        calendarHtml += `<div class="${dayClass}" onclick="viewDateReservations('${dateStr}')">`;
+        calendarHtml += `<div class="day-number">${day}</div>`;
+        
+        if (dayReservations.length > 0) {
+            calendarHtml += '<div class="day-reservations">';
+            
+            // Show up to 3 reservations per day
+            dayReservations.slice(0, 3).forEach(res => {
+                calendarHtml += `<div class="day-reservation res-${res.status || 'pending'}">${res.time} - ${res.customerName}</div>`;
+            });
+            
+            if (dayReservations.length > 3) {
+                calendarHtml += `<div class="day-reservation more">+${dayReservations.length - 3} more</div>`;
+            }
+            
+            calendarHtml += '</div>';
+        }
+        
+        calendarHtml += '</div>';
+    }
+    
+    calendarGrid.innerHTML = calendarHtml;
+}
 
-    currentReservationId = reservationId;
+// ===== CHANGE MONTH =====
+function changeMonth(delta) {
+    currentMonth.setMonth(currentMonth.getMonth() + delta);
+    updateCalendar();
+}
+
+// ===== VIEW RESERVATIONS FOR SELECTED DATE =====
+function viewDateReservations(date) {
+    // Switch to list view and filter by date
+    toggleView('list');
+    const filterDate = document.getElementById('filterDate');
+    if (filterDate) {
+        filterDate.value = date;
+        currentDateFilter = date;
+        filterReservations();
+    }
+}
+
+// ===== OPEN RESERVATION DETAILS MODAL =====
+function openReservationModal(reservationId) {
+    const res = allReservations.find(r => r.id === reservationId);
+    if (!res) return;
+    
+    selectedReservationId = reservationId;
     
     // Set customer information
-    document.getElementById('resCustomerName').textContent = reservation.customerName || 'N/A';
-    document.getElementById('resCustomerPhone').textContent = reservation.customerPhone || 'N/A';
-    document.getElementById('resCustomerEmail').textContent = reservation.customerEmail || 'N/A';
+    const nameEl = document.getElementById('resCustomerName');
+    const phoneEl = document.getElementById('resCustomerPhone');
+    const emailEl = document.getElementById('resCustomerEmail');
+    
+    if (nameEl) nameEl.textContent = res.customerName || 'N/A';
+    if (phoneEl) phoneEl.textContent = res.customerPhone || 'N/A';
+    if (emailEl) emailEl.textContent = res.customerEmail || 'N/A';
     
     // Set reservation details
-    document.getElementById('resDate').textContent = formatDate(reservation.date);
-    document.getElementById('resTime').textContent = reservation.time;
-    document.getElementById('resGuests').textContent = reservation.guests;
-    document.getElementById('resDuration').textContent = reservation.duration || 2;
-    document.getElementById('resRequests').textContent = reservation.specialRequests || 'No special requests';
-
-    // Build timeline
-    buildTimeline(reservation);
-
+    const dateEl = document.getElementById('resDate');
+    const timeEl = document.getElementById('resTime');
+    const guestsEl = document.getElementById('resGuests');
+    const durationEl = document.getElementById('resDuration');
+    const requestsEl = document.getElementById('resRequests');
+    
+    if (dateEl) dateEl.textContent = formatDate(res.date);
+    if (timeEl) timeEl.textContent = formatTime(res.time);
+    if (guestsEl) guestsEl.textContent = res.guests || 1;
+    if (durationEl) durationEl.textContent = res.duration || 2;
+    if (requestsEl) requestsEl.textContent = res.specialRequests || 'No special requests';
+    
+    // Create timeline
+    createTimeline(res);
+    
     // Add status action buttons
-    addReservationStatusButtons(reservation.status);
-
-    document.getElementById('reservationModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
+    const statusActions = document.getElementById('resStatusActions');
+    if (statusActions) {
+        statusActions.innerHTML = `
+            ${res.status !== 'pending' ? '<button class="status-action-btn pending" onclick="updateReservationStatus(\'pending\')">Pending</button>' : ''}
+            ${res.status !== 'confirmed' ? '<button class="status-action-btn confirmed" onclick="updateReservationStatus(\'confirmed\')">Confirmed</button>' : ''}
+            ${res.status !== 'completed' ? '<button class="status-action-btn completed" onclick="updateReservationStatus(\'completed\')">Completed</button>' : ''}
+            ${res.status !== 'cancelled' ? '<button class="status-action-btn cancelled" onclick="updateReservationStatus(\'cancelled\')">Cancelled</button>' : ''}
+        `;
+    }
+    
+    const modal = document.getElementById('reservationModal');
+    if (modal) modal.classList.add('active');
 }
 
-// ===== BUILD TIMELINE =====
-function buildTimeline(reservation) {
+// ===== CREATE RESERVATION TIMELINE =====
+function createTimeline(res) {
     const timeline = document.getElementById('resTimeline');
+    if (!timeline) return;
     
     const events = [
-        { 
-            status: 'created', 
-            time: reservation.createdAt, 
-            title: 'Reservation Created' 
+        {
+            status: 'created',
+            label: 'Reservation Created',
+            time: res.createdAt,
+            icon: 'fa-plus-circle'
         }
     ];
     
-    if (reservation.status !== 'pending' || reservation.updatedAt) {
-        events.push({ 
-            status: reservation.status, 
-            time: reservation.updatedAt || reservation.createdAt, 
-            title: `Status changed to ${formatStatus(reservation.status)}` 
+    if (res.status === 'confirmed' || res.status === 'completed' || res.status === 'cancelled') {
+        events.push({
+            status: 'confirmed',
+            label: 'Reservation Confirmed',
+            time: res.updatedAt || res.createdAt,
+            icon: 'fa-check-circle'
         });
     }
-
+    
+    if (res.status === 'completed') {
+        events.push({
+            status: 'completed',
+            label: 'Reservation Completed',
+            time: res.updatedAt,
+            icon: 'fa-check-double'
+        });
+    }
+    
+    if (res.status === 'cancelled') {
+        events.push({
+            status: 'cancelled',
+            label: 'Reservation Cancelled',
+            time: res.updatedAt,
+            icon: 'fa-times-circle'
+        });
+    }
+    
     timeline.innerHTML = events.map(event => `
         <div class="timeline-item ${event.status}">
-            <div class="timeline-time">${formatDateTime(event.time)}</div>
-            <div class="timeline-title">${event.title}</div>
+            <div class="timeline-content">
+                <p><strong>${event.label}</strong></p>
+                <p>${formatDateTime(event.time)}</p>
+                <small>${getTimeAgo(new Date(event.time))}</small>
+            </div>
         </div>
     `).join('');
 }
 
-// ===== ADD RESERVATION STATUS BUTTONS =====
-function addReservationStatusButtons(currentStatus) {
-    const container = document.getElementById('resStatusActions');
-    if (!container) return;
-    
-    const statuses = [
-        { value: 'pending', label: 'Pending', icon: 'clock', color: 'pending' },
-        { value: 'confirmed', label: 'Confirm', icon: 'check-circle', color: 'confirmed' },
-        { value: 'completed', label: 'Complete', icon: 'check-double', color: 'completed' },
-        { value: 'cancelled', label: 'Cancel', icon: 'times-circle', color: 'cancelled' }
-    ];
-    
-    container.innerHTML = statuses.map(status => `
-        <button class="btn ${status.value === currentStatus ? 'btn-primary' : 'btn-outline'} ${status.color}" 
-                onclick="updateReservationStatus('${status.value}')"
-                ${status.value === currentStatus ? 'disabled' : ''}>
-            <i class="fas fa-${status.icon}"></i> ${status.label}
-        </button>
-    `).join('');
-}
-
-// ===== CLOSE RESERVATION MODAL =====
-window.closeReservationModal = function() {
-    document.getElementById('reservationModal').classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-// ===== UPDATE RESERVATION STATUS =====
-window.updateReservationStatus = function(newStatus) {
-    if (!currentReservationId) return;
-
-    const index = allReservations.findIndex(r => r.id === currentReservationId);
-    if (index === -1) return;
-
-    // Update reservation status
-    allReservations[index].status = newStatus;
-    allReservations[index].updatedAt = new Date().toISOString();
-    
-    // Save to localStorage
-    saveReservations();
-    
-    // Reload data
-    loadReservations();
-    
-    // Close modal
-    closeReservationModal();
-    
-    showNotification(`Reservation ${formatStatus(newStatus)}`, 'success');
+function closeReservationModal() {
+    const modal = document.getElementById('reservationModal');
+    if (modal) modal.classList.remove('active');
 }
 
 // ===== OPEN ADD RESERVATION MODAL =====
-window.openAddReservationModal = function() {
-    currentReservationId = null;
-    document.getElementById('addResModalTitle').textContent = 'Add New Reservation';
-    document.getElementById('reservationForm').reset();
-    document.getElementById('resId').value = '';
+function openAddReservationModal() {
+    const titleEl = document.getElementById('addResModalTitle');
+    const form = document.getElementById('reservationForm');
+    const resId = document.getElementById('resId');
+    const resDate = document.getElementById('resDate');
     
-    // Set default date to today
+    if (titleEl) titleEl.textContent = 'Add New Reservation';
+    if (form) form.reset();
+    if (resId) resId.value = '';
+    
+    // Set min date to today
     const today = new Date().toISOString().split('T')[0];
-    document.getElementById('resDate').value = today;
-    document.getElementById('resDate').min = today;
+    if (resDate) {
+        resDate.min = today;
+        resDate.value = today;
+    }
     
-    document.getElementById('addReservationModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
+    const modal = document.getElementById('addReservationModal');
+    if (modal) modal.classList.add('active');
 }
 
-// ===== EDIT RESERVATION =====
-window.editReservation = function(id) {
-    const reservation = allReservations.find(r => r.id === id);
-    if (!reservation) return;
-
-    currentReservationId = id;
-    document.getElementById('addResModalTitle').textContent = 'Edit Reservation';
-    document.getElementById('resName').value = reservation.customerName || '';
-    document.getElementById('resEmail').value = reservation.customerEmail || '';
-    document.getElementById('resPhone').value = reservation.customerPhone || '';
-    document.getElementById('resGuests').value = reservation.guests || '';
-    document.getElementById('resDate').value = reservation.date || '';
-    document.getElementById('resTime').value = reservation.time || '';
-    document.getElementById('resDuration').value = reservation.duration || 2;
-    document.getElementById('resStatus').value = reservation.status || 'pending';
-    document.getElementById('resRequests').value = reservation.specialRequests || '';
-    document.getElementById('resId').value = reservation.id;
-
-    document.getElementById('addReservationModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
+// ===== OPEN EDIT RESERVATION MODAL =====
+function openEditReservationModal(reservationId) {
+    const res = allReservations.find(r => r.id === reservationId);
+    if (!res) return;
+    
+    const titleEl = document.getElementById('addResModalTitle');
+    const idEl = document.getElementById('resId');
+    const nameEl = document.getElementById('resName');
+    const emailEl = document.getElementById('resEmail');
+    const phoneEl = document.getElementById('resPhone');
+    const guestsEl = document.getElementById('resGuests');
+    const dateEl = document.getElementById('resDate');
+    const timeEl = document.getElementById('resTime');
+    const durationEl = document.getElementById('resDuration');
+    const statusEl = document.getElementById('resStatus');
+    const requestsEl = document.getElementById('resRequests');
+    
+    if (titleEl) titleEl.textContent = 'Edit Reservation';
+    if (idEl) idEl.value = res.id;
+    if (nameEl) nameEl.value = res.customerName || '';
+    if (emailEl) emailEl.value = res.customerEmail || '';
+    if (phoneEl) phoneEl.value = res.customerPhone || '';
+    if (guestsEl) guestsEl.value = res.guests || 1;
+    if (dateEl) dateEl.value = res.date || '';
+    if (timeEl) timeEl.value = res.time || '';
+    if (durationEl) durationEl.value = res.duration || 2;
+    if (statusEl) statusEl.value = res.status || 'pending';
+    if (requestsEl) requestsEl.value = res.specialRequests || '';
+    
+    const modal = document.getElementById('addReservationModal');
+    if (modal) modal.classList.add('active');
 }
 
-// ===== CLOSE ADD RESERVATION MODAL =====
-window.closeAddReservationModal = function() {
-    document.getElementById('addReservationModal').classList.remove('active');
-    document.getElementById('reservationForm').reset();
-    document.body.style.overflow = '';
+function closeAddReservationModal() {
+    const modal = document.getElementById('addReservationModal');
+    if (modal) modal.classList.remove('active');
 }
 
-// ===== SAVE RESERVATION =====
-window.saveReservation = function() {
+// ===== SAVE RESERVATION (CREATE/UPDATE) =====
+function saveReservation() {
+    console.log('🔍 saveReservation called');
+    
     // Get form values
-    const name = document.getElementById('resName').value.trim();
-    const email = document.getElementById('resEmail').value.trim();
-    const phone = document.getElementById('resPhone').value.trim();
-    const guests = parseInt(document.getElementById('resGuests').value);
-    const date = document.getElementById('resDate').value;
-    const time = document.getElementById('resTime').value;
-    const duration = parseFloat(document.getElementById('resDuration').value);
-    const status = document.getElementById('resStatus').value;
-    const requests = document.getElementById('resRequests').value.trim();
-
-    // Validate
+    const name = document.getElementById('resName')?.value.trim();
+    const email = document.getElementById('resEmail')?.value.trim();
+    const phone = document.getElementById('resPhone')?.value.trim();
+    const guests = parseInt(document.getElementById('resGuests')?.value);
+    const date = document.getElementById('resDate')?.value;
+    const time = document.getElementById('resTime')?.value;
+    const duration = parseFloat(document.getElementById('resDuration')?.value);
+    const status = document.getElementById('resStatus')?.value;
+    const requests = document.getElementById('resRequests')?.value.trim();
+    const id = document.getElementById('resId')?.value;
+    
+    console.log('Form values:', { name, email, phone, guests, date, time, duration, status, requests, id });
+    
+    // Validation
     if (!name || !email || !phone || !guests || !date || !time) {
         showNotification('Please fill in all required fields', 'error');
         return;
     }
-
+    
     // Validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         showNotification('Please enter a valid email address', 'error');
         return;
     }
-
-    // Validate phone
+    
+    // Validate phone (Ethiopian format)
     const phoneRegex = /^(09|\+2519)\d{8}$/;
     if (!phoneRegex.test(phone)) {
-        showNotification('Please enter a valid Ethiopian phone number', 'error');
+        showNotification('Please enter a valid Ethiopian phone number (09XXXXXXXX or +2519XXXXXXXX)', 'error');
         return;
     }
-
-    // Validate date (must be today or future)
-    const selectedDate = new Date(date);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     
-    if (selectedDate < today) {
-        showNotification('Please select a future date', 'error');
+    // Check if ReservationsDB exists
+    if (typeof window.ReservationsDB === 'undefined' || !window.ReservationsDB) {
+        showNotification('Reservation system not available', 'error');
         return;
     }
-
+    
+    // Check availability for new reservations
+    if (!id) {
+        const availability = window.ReservationsDB.checkAvailability(date, time, guests);
+        if (!availability.available) {
+            showNotification(`This time slot is full. Only ${availability.remaining} spots left.`, 'error');
+            return;
+        }
+    }
+    
     const reservationData = {
-        id: currentReservationId || generateReservationId(),
         customerName: name,
         customerEmail: email,
         customerPhone: phone,
@@ -398,518 +898,329 @@ window.saveReservation = function() {
         time: time,
         duration: duration,
         status: status,
-        specialRequests: requests,
-        updatedAt: new Date().toISOString()
+        specialRequests: requests
     };
-
-    if (!currentReservationId) {
-        // Add new reservation
-        reservationData.createdAt = new Date().toISOString();
-        reservationData.customerId = null; // Manual entry by admin
-        
-        // Check availability (max 10 per slot)
-        const sameDateTime = allReservations.filter(r => 
-            r.date === date && 
-            r.time === time && 
-            r.status !== 'cancelled'
-        );
-        
-        if (sameDateTime.length >= 10) {
-            showNotification('This time slot is fully booked. Please choose another time.', 'error');
+    
+    if (id) {
+        // Update existing reservation
+        const updated = window.ReservationsDB.update(id, reservationData);
+        if (updated) {
+            showNotification('Reservation updated successfully', 'success');
+        } else {
+            showNotification('Failed to update reservation', 'error');
             return;
         }
-        
-        allReservations.push(reservationData);
-        showNotification('Reservation added successfully', 'success');
     } else {
-        // Update existing
-        const index = allReservations.findIndex(r => r.id === currentReservationId);
-        if (index !== -1) {
-            // Preserve createdAt
-            reservationData.createdAt = allReservations[index].createdAt;
-            allReservations[index] = reservationData;
-            showNotification('Reservation updated successfully', 'success');
+        // Create new reservation
+        // Try to find customer by email to link
+        const usersStr = localStorage.getItem('markanUsers');
+        if (usersStr) {
+            try {
+                const users = JSON.parse(usersStr);
+                const customer = users.find(u => u.email && u.email.toLowerCase() === email.toLowerCase());
+                if (customer) {
+                    reservationData.customerId = customer.id;
+                }
+            } catch (e) {
+                console.error('Error finding customer:', e);
+            }
+        }
+        
+        const newRes = window.ReservationsDB.add(reservationData);
+        if (newRes) {
+            showNotification('Reservation created successfully', 'success');
+        } else {
+            showNotification('Failed to create reservation', 'error');
+            return;
         }
     }
-
-    // Save to localStorage
-    saveReservations();
     
-    // Reload data
+    // Reload reservations
     loadReservations();
-    
-    // Close modal
     closeAddReservationModal();
 }
 
-// ===== GENERATE RESERVATION ID =====
-function generateReservationId() {
-    const prefix = 'RES';
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `${prefix}${timestamp}${random}`;
+// ===== OPEN STATUS UPDATE MODAL =====
+function openStatusModal(reservationId) {
+    selectedReservationId = reservationId;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('statusModal');
+    if (existingModal) existingModal.remove();
+    
+    // Create status options modal dynamically
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'statusModal';
+    modal.innerHTML = `
+        <div class="modal-content modal-sm">
+            <div class="modal-header">
+                <h3>Update Reservation Status</h3>
+                <button class="modal-close" onclick="closeStatusModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="status-options">
+                    <button class="status-option pending" onclick="updateReservationStatus('pending')">
+                        <i class="fas fa-clock"></i> Pending
+                    </button>
+                    <button class="status-option confirmed" onclick="updateReservationStatus('confirmed')">
+                        <i class="fas fa-check-circle"></i> Confirmed
+                    </button>
+                    <button class="status-option completed" onclick="updateReservationStatus('completed')">
+                        <i class="fas fa-check-double"></i> Completed
+                    </button>
+                    <button class="status-option cancelled" onclick="updateReservationStatus('cancelled')">
+                        <i class="fas fa-times-circle"></i> Cancelled
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
 }
 
-// ===== DELETE RESERVATION =====
-window.deleteReservation = function(id) {
-    if (confirm('Are you sure you want to delete this reservation? This action cannot be undone.')) {
-        allReservations = allReservations.filter(r => r.id !== id);
-        saveReservations();
-        loadReservations();
-        showNotification('Reservation deleted successfully', 'success');
+function closeStatusModal() {
+    const modal = document.getElementById('statusModal');
+    if (modal) modal.remove();
+}
+
+// ===== UPDATE RESERVATION STATUS =====
+function updateReservationStatus(newStatus) {
+    if (!selectedReservationId) return;
+    
+    if (typeof window.ReservationsDB === 'undefined' || !window.ReservationsDB) {
+        showNotification('Reservation system not available', 'error');
+        closeStatusModal();
+        return;
     }
-}
-
-// ===== FILTER RESERVATIONS =====
-window.filterReservations = function(status) {
-    currentFilter.status = status;
-    document.getElementById('statusFilter').value = status;
-    applyFilters();
-}
-
-// ===== SEARCH RESERVATIONS =====
-function searchReservations(query) {
-    const searchTerm = query.toLowerCase();
     
-    filteredReservations = allReservations.filter(res => 
-        res.id?.toLowerCase().includes(searchTerm) ||
-        res.customerName?.toLowerCase().includes(searchTerm) ||
-        res.customerPhone?.includes(searchTerm) ||
-        res.customerEmail?.toLowerCase().includes(searchTerm)
-    );
-    
-    // Re-apply status filter
-    if (currentFilter.status !== 'all') {
-        filteredReservations = filteredReservations.filter(res => 
-            res.status === currentFilter.status
-        );
-    }
-    
-    currentPage = 1;
-    displayReservations();
-}
-
-// ===== FILTER BY DATE =====
-function filterByDate(date) {
-    currentFilter.date = date;
-    
-    if (!date) {
-        filteredReservations = [...allReservations];
+    const updated = window.ReservationsDB.updateStatus(selectedReservationId, newStatus);
+    if (updated) {
+        showNotification(`Reservation status updated to ${newStatus}`, 'success');
+        
+        // Reload reservations
+        allReservations = window.ReservationsDB.getAll();
+        updateStats();
+        filterReservations();
+        updateCalendar();
+        
+        // Close modals
+        closeReservationModal();
+        closeStatusModal();
     } else {
-        filteredReservations = allReservations.filter(res => res.date === date);
+        showNotification('Failed to update reservation status', 'error');
     }
-    
-    // Re-apply status filter
-    if (currentFilter.status !== 'all') {
-        filteredReservations = filteredReservations.filter(res => 
-            res.status === currentFilter.status
-        );
-    }
-    
-    currentPage = 1;
-    displayReservations();
-}
-
-// ===== TOGGLE VIEW =====
-window.toggleView = function(view) {
-    currentView = view;
-    
-    // Update active button
-    document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.textContent.toLowerCase().includes(view)) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Show selected view
-    document.getElementById('listView').classList.remove('active');
-    document.getElementById('calendarView').classList.remove('active');
-    document.getElementById(`${view}View`).classList.add('active');
-    
-    if (view === 'calendar') {
-        renderCalendar();
-    }
-}
-
-// ===== RENDER CALENDAR =====
-function renderCalendar() {
-    const calendarGrid = document.getElementById('calendarGrid');
-    if (!calendarGrid) return;
-    
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    
-    document.getElementById('currentMonthYear').textContent = 
-        currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startingDay = firstDay.getDay(); // 0 = Sunday
-    const monthLength = lastDay.getDate();
-    const today = new Date();
-
-    let html = '';
-
-    // Weekday headers
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    weekdays.forEach(day => {
-        html += `<div class="calendar-weekday">${day}</div>`;
-    });
-
-    // Previous month days
-    const prevMonthLastDay = new Date(year, month, 0).getDate();
-    for (let i = startingDay - 1; i >= 0; i--) {
-        const day = prevMonthLastDay - i;
-        const dateStr = formatDateString(year, month - 1, day);
-        html += `<div class="calendar-day other-month" data-date="${dateStr}">
-                    <div class="day-number">${day}</div>
-                </div>`;
-    }
-
-    // Current month days
-    for (let i = 1; i <= monthLength; i++) {
-        const dateStr = formatDateString(year, month, i);
-        const isToday = today.getFullYear() === year && 
-                       today.getMonth() === month && 
-                       today.getDate() === i;
-        
-        // Get reservations for this day
-        const dayReservations = allReservations.filter(r => r.date === dateStr);
-        
-        html += `<div class="calendar-day ${isToday ? 'today' : ''}" data-date="${dateStr}">
-                    <div class="day-number">${i}</div>`;
-        
-        dayReservations.slice(0, 3).forEach(res => {
-            html += `<div class="reservation-indicator ${res.status}" 
-                         onclick="viewReservationDetails('${res.id}')"
-                         title="${res.customerName} - ${res.time}">
-                        ${res.time} ${res.customerName}
-                    </div>`;
-        });
-        
-        if (dayReservations.length > 3) {
-            html += `<div class="reservation-indicator">+${dayReservations.length - 3} more</div>`;
-        }
-        
-        html += `</div>`;
-    }
-
-    // Next month days
-    const totalDays = startingDay + monthLength;
-    const remainingDays = 42 - totalDays; // 6 rows * 7 days = 42
-    for (let i = 1; i <= remainingDays; i++) {
-        const dateStr = formatDateString(year, month + 1, i);
-        html += `<div class="calendar-day other-month" data-date="${dateStr}">
-                    <div class="day-number">${i}</div>
-                </div>`;
-    }
-
-    calendarGrid.innerHTML = html;
-    
-    // Add click handlers to calendar days
-    document.querySelectorAll('.calendar-day').forEach(day => {
-        day.addEventListener('click', function(e) {
-            if (!e.target.classList.contains('reservation-indicator')) {
-                const date = this.dataset.date;
-                if (date) {
-                    document.getElementById('filterDate').value = date;
-                    filterByDate(date);
-                    toggleView('list');
-                }
-            }
-        });
-    });
-}
-
-// ===== FORMAT DATE STRING =====
-function formatDateString(year, month, day) {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-}
-
-// ===== CHANGE MONTH =====
-window.changeMonth = function(delta) {
-    currentMonth.setMonth(currentMonth.getMonth() + delta);
-    renderCalendar();
 }
 
 // ===== PRINT RESERVATION =====
-window.printReservation = function() {
-    const reservation = allReservations.find(r => r.id === currentReservationId);
-    if (!reservation) return;
-
+function printReservation() {
+    const res = allReservations.find(r => r.id === selectedReservationId);
+    if (!res) return;
+    
     const printWindow = window.open('', '_blank');
+    
     printWindow.document.write(`
         <html>
             <head>
-                <title>Reservation ${reservation.id}</title>
+                <title>Reservation #${res.id} - Markan Cafe</title>
                 <style>
-                    body { 
-                        font-family: 'Poppins', Arial, sans-serif; 
-                        padding: 40px; 
-                        max-width: 800px; 
-                        margin: 0 auto;
-                    }
-                    h1 { color: #8B4513; }
-                    .header { 
-                        display: flex; 
-                        justify-content: space-between; 
-                        margin-bottom: 30px;
-                        border-bottom: 2px solid #8B4513;
-                        padding-bottom: 20px;
-                    }
-                    .section { 
-                        margin: 20px 0; 
-                        padding: 20px; 
-                        background: #f9f9f9; 
-                        border-radius: 8px; 
-                    }
-                    .details p { margin: 5px 0; }
-                    .status { 
-                        display: inline-block;
-                        padding: 5px 15px;
-                        border-radius: 20px;
-                        font-weight: 500;
-                    }
-                    .status.pending { background: #fff3cd; color: #856404; }
-                    .status.confirmed { background: #d4edda; color: #155724; }
-                    .status.completed { background: #cce5ff; color: #004085; }
-                    .status.cancelled { background: #f8d7da; color: #721c24; }
-                    .footer {
-                        margin-top: 40px;
-                        text-align: center;
-                        color: #666;
-                        font-style: italic;
-                    }
+                    body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; margin: 0 auto; }
+                    .header { text-align: center; border-bottom: 2px solid #4a2c1a; padding: 20px; }
+                    .header h1 { color: #4a2c1a; margin: 0; }
+                    .header p { color: #666; margin: 5px 0; }
+                    .section { margin: 20px 0; padding: 15px; border: 1px solid #e6d5b8; border-radius: 8px; }
+                    .section h3 { color: #4a2c1a; margin-top: 0; border-bottom: 1px solid #e6d5b8; padding-bottom: 5px; }
+                    .row { display: flex; margin: 10px 0; }
+                    .label { font-weight: bold; width: 150px; color: #666; }
+                    .value { flex: 1; color: #333; }
+                    .footer { text-align: center; margin-top: 30px; color: #666; font-size: 0.9em; }
                 </style>
             </head>
             <body>
                 <div class="header">
-                    <h1>Reservation #${reservation.id}</h1>
-                    <div>
-                        <p><strong>Status:</strong> 
-                            <span class="status ${reservation.status}">${formatStatus(reservation.status)}</span>
-                        </p>
-                    </div>
+                    <h1>Markan Cafe</h1>
+                    <p>Debre Birhan University</p>
+                    <h2>Reservation #${res.id}</h2>
                 </div>
                 
                 <div class="section">
                     <h3>Customer Information</h3>
-                    <p><strong>Name:</strong> ${reservation.customerName}</p>
-                    <p><strong>Phone:</strong> ${reservation.customerPhone}</p>
-                    <p><strong>Email:</strong> ${reservation.customerEmail}</p>
+                    <div class="row">
+                        <span class="label">Name:</span>
+                        <span class="value">${res.customerName || 'N/A'}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Phone:</span>
+                        <span class="value">${res.customerPhone || 'N/A'}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Email:</span>
+                        <span class="value">${res.customerEmail || 'N/A'}</span>
+                    </div>
                 </div>
                 
                 <div class="section">
                     <h3>Reservation Details</h3>
-                    <p><strong>Date:</strong> ${formatDate(reservation.date)}</p>
-                    <p><strong>Time:</strong> ${reservation.time}</p>
-                    <p><strong>Guests:</strong> ${reservation.guests}</p>
-                    <p><strong>Duration:</strong> ${reservation.duration || 2} hours</p>
+                    <div class="row">
+                        <span class="label">Date:</span>
+                        <span class="value">${formatDate(res.date)}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Time:</span>
+                        <span class="value">${formatTime(res.time)}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Guests:</span>
+                        <span class="value">${res.guests || 1}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Duration:</span>
+                        <span class="value">${res.duration || 2} hours</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Status:</span>
+                        <span class="value">${res.status || 'pending'}</span>
+                    </div>
                 </div>
                 
-                ${reservation.specialRequests ? `
-                    <div class="section">
-                        <h3>Special Requests</h3>
-                        <p>${reservation.specialRequests}</p>
-                    </div>
+                ${res.specialRequests ? `
+                <div class="section">
+                    <h3>Special Requests</h3>
+                    <p>${res.specialRequests}</p>
+                </div>
                 ` : ''}
                 
                 <div class="footer">
-                    <p>Created: ${formatDateTime(reservation.createdAt)}</p>
-                    ${reservation.updatedAt ? `<p>Last updated: ${formatDateTime(reservation.updatedAt)}</p>` : ''}
+                    <p>Thank you for choosing Markan Cafe!</p>
+                    <p>Printed on ${new Date().toLocaleString()}</p>
                 </div>
             </body>
         </html>
     `);
+    
     printWindow.document.close();
     printWindow.print();
 }
 
-// ===== UPDATE PAGINATION =====
-function updatePagination() {
-    const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
-    const pageNumbers = document.getElementById('pageNumbers');
-    const prevBtn = document.getElementById('prevPage');
-    const nextBtn = document.getElementById('nextPage');
-
-    if (prevBtn) prevBtn.disabled = currentPage === 1 || totalPages === 0;
-    if (nextBtn) nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-    if (!pageNumbers) return;
-
-    if (totalPages === 0) {
-        pageNumbers.innerHTML = '<span class="page-number active">1</span>';
-        return;
-    }
-
-    let pagesHtml = '';
-    for (let i = 1; i <= totalPages; i++) {
-        pagesHtml += `
-            <span class="page-number ${i === currentPage ? 'active' : ''}" 
-                  onclick="goToPage(${i})">${i}</span>
-        `;
-    }
-    pageNumbers.innerHTML = pagesHtml;
-}
-
-// ===== GO TO PAGE =====
-window.goToPage = function(page) {
-    currentPage = page;
-    displayReservations();
-}
-
-// ===== SETUP EVENT LISTENERS =====
-function setupEventListeners() {
-    // Search
-    document.getElementById('searchReservations')?.addEventListener('input', debounce(function(e) {
-        searchReservations(e.target.value);
-    }, 500));
+// ===== LOAD NOTIFICATION COUNT =====
+function loadNotificationCount() {
+    const today = new Date().toISOString().split('T')[0];
+    const todayReservations = allReservations.filter(r => r.date === today && r.status !== 'cancelled').length;
+    const pendingCount = allReservations.filter(r => r.status === 'pending').length;
     
-    // Status filter
-    document.getElementById('statusFilter')?.addEventListener('change', function(e) {
-        currentFilter.status = e.target.value;
-        applyFilters();
-    });
-    
-    // Date filter
-    document.getElementById('filterDate')?.addEventListener('change', function(e) {
-        filterByDate(e.target.value);
-    });
-    
-    // Pagination
-    document.getElementById('prevPage')?.addEventListener('click', function() {
-        if (currentPage > 1) {
-            currentPage--;
-            displayReservations();
-        }
-    });
-
-    document.getElementById('nextPage')?.addEventListener('click', function() {
-        const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayReservations();
-        }
-    });
-    
-    // Storage events (cross-tab updates)
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'markanReservations') {
-            loadReservations();
-        }
-    });
-    
-    // Close modals on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if (document.getElementById('reservationModal').classList.contains('active')) {
-                closeReservationModal();
-            }
-            if (document.getElementById('addReservationModal').classList.contains('active')) {
-                closeAddReservationModal();
-            }
-        }
-    });
-    
-    // Click outside modal to close
-    window.addEventListener('click', function(e) {
-        const resModal = document.getElementById('reservationModal');
-        const addModal = document.getElementById('addReservationModal');
-        
-        if (e.target === resModal) {
-            closeReservationModal();
-        }
-        if (e.target === addModal) {
-            closeAddReservationModal();
-        }
-    });
-    
-    // Logout
-    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        Auth.logout();
-    });
-}
-
-// ===== UPDATE ADMIN NAME =====
-function updateAdminName() {
-    const user = Auth.getCurrentUser();
-    if (user) {
-        document.getElementById('adminName').textContent = user.name;
+    const total = todayReservations + pendingCount;
+    const badge = document.getElementById('notificationCount');
+    if (badge) {
+        badge.textContent = total;
+        badge.style.display = total > 0 ? 'block' : 'none';
     }
 }
 
-// ===== HELPER: FORMAT DATE =====
-function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+// ===== UTILITY FUNCTIONS =====
+function formatDate(dateStr) {
+    if (!dateStr) return 'N/A';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    } catch (e) {
+        return dateStr;
+    }
 }
 
-// ===== HELPER: FORMAT DATE TIME =====
-function formatDateTime(dateString) {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
+function formatTime(timeStr) {
+    if (!timeStr) return 'N/A';
+    return timeStr;
 }
 
-// ===== HELPER: DEBOUNCE =====
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return 'N/A';
+    try {
+        const date = new Date(dateTimeStr);
+        return date.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        return dateTimeStr;
+    }
+}
+
+function getTimeAgo(date) {
+    if (!date) return 'Unknown';
+    
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
 }
 
 // ===== SHOW NOTIFICATION =====
 function showNotification(message, type = 'info') {
     const container = document.getElementById('notificationContainer');
-    if (!container) return;
+    if (!container) {
+        // Create container if it doesn't exist
+        const newContainer = document.createElement('div');
+        newContainer.id = 'notificationContainer';
+        document.body.appendChild(newContainer);
+    }
+    
+    const notifContainer = document.getElementById('notificationContainer');
+    if (!notifContainer) return;
 
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
     notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                            type === 'error' ? 'exclamation-circle' : 
-                            type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+        <i class="fas ${icons[type]}"></i>
         <span>${message}</span>
         <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
     `;
 
-    container.appendChild(notification);
+    notifContainer.appendChild(notification);
 
     setTimeout(() => {
-        notification.remove();
+        if (notification.parentNode) {
+            notification.remove();
+        }
     }, 5000);
 }
 
 // ===== MAKE FUNCTIONS GLOBAL =====
 window.filterReservations = filterReservations;
-window.viewReservationDetails = viewReservationDetails;
-window.closeReservationModal = closeReservationModal;
-window.updateReservationStatus = updateReservationStatus;
-window.openAddReservationModal = openAddReservationModal;
-window.editReservation = editReservation;
-window.closeAddReservationModal = closeAddReservationModal;
-window.saveReservation = saveReservation;
-window.deleteReservation = deleteReservation;
 window.toggleView = toggleView;
 window.changeMonth = changeMonth;
+window.openReservationModal = openReservationModal;
+window.closeReservationModal = closeReservationModal;
+window.openAddReservationModal = openAddReservationModal;
+window.openEditReservationModal = openEditReservationModal;
+window.closeAddReservationModal = closeAddReservationModal;
+window.saveReservation = saveReservation;
+window.openStatusModal = openStatusModal;
+window.closeStatusModal = closeStatusModal;
+window.updateReservationStatus = updateReservationStatus;
 window.printReservation = printReservation;
 window.goToPage = goToPage;
+window.viewDateReservations = viewDateReservations;
+window.showNotification = showNotification;

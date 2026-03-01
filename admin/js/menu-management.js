@@ -1,89 +1,284 @@
-// admin/js/menu-management.js
-// Markan Cafe Admin - Menu Management
-// Full CRUD operations with localStorage - NO HARDCODED DATA
+// admin/js/menu-management.js - Menu Management
+// Markan Cafe - Debre Birhan University
+// Complete CRUD operations for menu items with localStorage
 
-// ===== GLOBAL VARIABLES =====
+// ============================================
+// GLOBAL VARIABLES
+// ============================================
 let menuItems = [];
-let filteredItems = [];
-let currentItemId = null;
-let currentImageFile = null;
 let currentFilter = 'all';
 let currentCategory = 'all';
+let currentSearchTerm = '';
+let itemToDelete = null;
+let imageFile = null;
 
-// ===== INITIALIZATION =====
+// ============================================
+// INITIALIZATION
+// ============================================
 document.addEventListener('DOMContentLoaded', function() {
-    // Check admin access
-    if (!Auth.requireAdmin()) {
-        window.location.href = '../../login.html';
-        return;
+    console.log('📋 Menu Management initializing...');
+    
+    // Check authentication
+    checkAuth();
+    
+    // Set admin name
+    const user = Auth.getCurrentUser();
+    if (user) {
+        document.getElementById('adminName').textContent = user.name;
     }
-
+    
+    // Initialize menu database if needed
+    initializeMenuDB();
+    
     // Load menu items
     loadMenuItems();
     
     // Setup event listeners
     setupEventListeners();
     
-    // Update admin name
-    updateAdminName();
-    
-    // Check for URL parameters (e.g., filter=lowstock)
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('filter') === 'lowstock') {
-        filterLowStock();
-    }
+    // Load notifications count
+    loadNotificationCount();
 });
 
-// ===== LOAD MENU ITEMS =====
+// ============================================
+// CHECK AUTHENTICATION
+// ============================================
+function checkAuth() {
+    const userStr = localStorage.getItem('markanUser');
+    if (!userStr) {
+        window.location.replace('../../login.html');
+        return;
+    }
+    
+    try {
+        const user = JSON.parse(userStr);
+        if (user.role !== 'admin') {
+            window.location.replace('../../customer/html/dashboard.html');
+            return;
+        }
+    } catch (e) {
+        console.error('Auth error:', e);
+        window.location.replace('../../login.html');
+    }
+}
+
+// ============================================
+// INITIALIZE MENU DATABASE
+// ============================================
+function initializeMenuDB() {
+    // Check if MenuDB exists
+    if (typeof MenuDB === 'undefined') {
+        console.log('Creating MenuDB...');
+        
+        // Create MenuDB if it doesn't exist
+        window.MenuDB = {
+            items: [],
+            
+            getAll() {
+                return this.items;
+            },
+            
+            getById(id) {
+                return this.items.find(item => item.id == id);
+            },
+            
+            getByCategory(category) {
+                if (category === 'all') return this.items;
+                return this.items.filter(item => item.category === category);
+            },
+            
+            getAvailable() {
+                return this.items.filter(item => item.status === 'available' && item.stock > 0);
+            },
+            
+            getLowStock() {
+                return this.items.filter(item => item.stock < 5 && item.stock > 0);
+            },
+            
+            getOutOfStock() {
+                return this.items.filter(item => item.stock === 0 || item.status === 'out_of_stock');
+            },
+            
+            add(item) {
+                item.id = this.generateId();
+                this.items.push(item);
+                this.saveToStorage();
+                return item;
+            },
+            
+            update(id, updates) {
+                const index = this.items.findIndex(item => item.id == id);
+                if (index !== -1) {
+                    this.items[index] = { ...this.items[index], ...updates };
+                    this.saveToStorage();
+                    return this.items[index];
+                }
+                return null;
+            },
+            
+            delete(id) {
+                const index = this.items.findIndex(item => item.id == id);
+                if (index !== -1) {
+                    this.items.splice(index, 1);
+                    this.saveToStorage();
+                    return true;
+                }
+                return false;
+            },
+            
+            generateId() {
+                return Date.now() + Math.floor(Math.random() * 1000);
+            },
+            
+            saveToStorage() {
+                localStorage.setItem('markanMenu', JSON.stringify(this.items));
+                console.log('💾 Menu saved to localStorage');
+            },
+            
+            loadFromStorage() {
+                const saved = localStorage.getItem('markanMenu');
+                if (saved) {
+                    try {
+                        this.items = JSON.parse(saved);
+                        console.log('✅ Menu loaded from localStorage:', this.items.length, 'items');
+                    } catch (e) {
+                        console.error('Error loading menu:', e);
+                        this.items = [];
+                    }
+                } else {
+                    // Create sample data if no menu exists
+                    this.createSampleData();
+                }
+            },
+            
+            createSampleData() {
+                this.items = [
+                    {
+                        id: 1,
+                        name: 'Ethiopian Coffee',
+                        description: 'Traditional Ethiopian coffee ceremony',
+                        price: 50,
+                        category: 'beverages',
+                        image: 'assets/images/coffee.jpg',
+                        stock: 100,
+                        status: 'available',
+                        popular: true,
+                        ethiopian: true,
+                        vegetarian: true,
+                        vegan: true,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 2,
+                        name: 'Doro Wat',
+                        description: 'Spicy Ethiopian chicken stew',
+                        price: 180,
+                        category: 'meals',
+                        image: 'assets/images/doro-wat.jpg',
+                        stock: 50,
+                        status: 'available',
+                        popular: true,
+                        ethiopian: true,
+                        vegetarian: false,
+                        vegan: false,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 3,
+                        name: 'Shiro Wat',
+                        description: 'Chickpea stew, vegan friendly',
+                        price: 120,
+                        category: 'meals',
+                        image: 'assets/images/shiro.jpg',
+                        stock: 30,
+                        status: 'available',
+                        popular: true,
+                        ethiopian: true,
+                        vegetarian: true,
+                        vegan: true,
+                        createdAt: new Date().toISOString()
+                    },
+                    {
+                        id: 4,
+                        name: 'Sambusa',
+                        description: 'Fried pastry with lentil filling',
+                        price: 25,
+                        category: 'snacks',
+                        image: 'assets/images/sambusa.jpg',
+                        stock: 8,
+                        status: 'available',
+                        popular: true,
+                        ethiopian: true,
+                        vegetarian: true,
+                        vegan: true,
+                        createdAt: new Date().toISOString()
+                    }
+                ];
+                this.saveToStorage();
+                console.log('✅ Sample menu created');
+            }
+        };
+        
+        // Load data from localStorage
+        MenuDB.loadFromStorage();
+    }
+}
+
+// ============================================
+// SETUP EVENT LISTENERS
+// ============================================
+function setupEventListeners() {
+    // Search input
+    document.getElementById('searchMenu')?.addEventListener('input', function(e) {
+        currentSearchTerm = e.target.value.toLowerCase();
+        filterAndDisplayItems();
+    });
+    
+    // Category filter
+    document.getElementById('categoryFilter')?.addEventListener('change', function(e) {
+        currentCategory = e.target.value;
+        filterAndDisplayItems();
+    });
+    
+    // Image preview
+    document.getElementById('itemImage')?.addEventListener('change', handleImagePreview);
+    
+    // Logout button
+    document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        Auth.logout();
+    });
+}
+
+// ============================================
+// LOAD MENU ITEMS
+// ============================================
 function loadMenuItems() {
-    try {
-        // Get menu items from localStorage
-        const stored = localStorage.getItem('markanMenu');
-        menuItems = stored ? JSON.parse(stored) : [];
-        
-        // Reset filtered items
-        filteredItems = [...menuItems];
-        
-        // Update UI
-        updateStats();
-        displayMenuItems(filteredItems);
-        updateLowStockBadge();
-        
-    } catch (error) {
-        console.error('Error loading menu items:', error);
-        showNotification('Failed to load menu items', 'error');
+    if (typeof MenuDB !== 'undefined') {
+        menuItems = MenuDB.getAll() || [];
+        console.log('📊 Loaded', menuItems.length, 'menu items');
+    } else {
         menuItems = [];
-        displayMenuItems([]);
     }
+    
+    updateStats();
+    filterAndDisplayItems();
 }
 
-// ===== SAVE MENU ITEMS =====
-function saveMenuItems() {
-    try {
-        localStorage.setItem('markanMenu', JSON.stringify(menuItems));
-        
-        // Update stats and display
-        updateStats();
-        updateLowStockBadge();
-        
-        // Dispatch storage event for cross-tab updates
-        window.dispatchEvent(new StorageEvent('storage', {
-            key: 'markanMenu',
-            newValue: JSON.stringify(menuItems)
-        }));
-        
-    } catch (error) {
-        console.error('Error saving menu items:', error);
-        showNotification('Failed to save menu items', 'error');
-    }
-}
-
-// ===== UPDATE STATISTICS =====
+// ============================================
+// UPDATE STATS CARDS
+// ============================================
 function updateStats() {
     const totalItems = menuItems.length;
-    const availableItems = menuItems.filter(i => i.status === 'available').length;
-    const lowStockItems = menuItems.filter(i => i.stock < 5 && i.stock > 0 && i.status === 'available').length;
-    const outOfStockItems = menuItems.filter(i => i.stock === 0 || i.status === 'out_of_stock').length;
+    const availableItems = menuItems.filter(item => 
+        item.status === 'available' && item.stock > 0
+    ).length;
+    const lowStockItems = menuItems.filter(item => 
+        item.stock < 5 && item.stock > 0
+    ).length;
+    const outOfStockItems = menuItems.filter(item => 
+        item.stock === 0 || item.status === 'out_of_stock'
+    ).length;
     
     document.getElementById('totalItems').textContent = totalItems;
     document.getElementById('availableItems').textContent = availableItems;
@@ -92,153 +287,208 @@ function updateStats() {
     document.getElementById('lowStockBadge').textContent = lowStockItems;
 }
 
-// ===== UPDATE LOW STOCK BADGE =====
-function updateLowStockBadge() {
-    const lowStockCount = menuItems.filter(i => i.stock < 5 && i.stock > 0 && i.status === 'available').length;
-    document.getElementById('lowStockBadge').textContent = lowStockCount;
+// ============================================
+// FILTER AND DISPLAY ITEMS
+// ============================================
+function filterAndDisplayItems() {
+    let filtered = [...menuItems];
+    
+    // Apply filter
+    switch(currentFilter) {
+        case 'available':
+            filtered = filtered.filter(item => item.status === 'available' && item.stock > 0);
+            break;
+        case 'lowstock':
+            filtered = filtered.filter(item => item.stock < 5 && item.stock > 0);
+            break;
+        case 'outofstock':
+            filtered = filtered.filter(item => item.stock === 0 || item.status === 'out_of_stock');
+            break;
+    }
+    
+    // Apply category filter
+    if (currentCategory !== 'all') {
+        filtered = filtered.filter(item => item.category === currentCategory);
+    }
+    
+    // Apply search
+    if (currentSearchTerm) {
+        filtered = filtered.filter(item => 
+            item.name?.toLowerCase().includes(currentSearchTerm) ||
+            item.description?.toLowerCase().includes(currentSearchTerm)
+        );
+    }
+    
+    displayMenuItems(filtered);
 }
 
-// ===== DISPLAY MENU ITEMS =====
+// ============================================
+// DISPLAY MENU ITEMS IN GRID
+// ============================================
 function displayMenuItems(items) {
-    const container = document.getElementById('menuItemsGrid');
-    if (!container) return;
+    const grid = document.getElementById('menuItemsGrid');
     
     if (items.length === 0) {
-        container.innerHTML = `
-            <div class="no-items">
+        grid.innerHTML = `
+            <div class="empty-state">
                 <i class="fas fa-utensils"></i>
-                <h3>No Menu Items</h3>
-                <p>Click the "Add New Item" button to create your first menu item.</p>
-                <button class="btn btn-primary" onclick="openAddModal()">
-                    <i class="fas fa-plus"></i> Add First Item
-                </button>
+                <h3>No Menu Items Found</h3>
+                <p>${menuItems.length === 0 ? 'Add your first menu item to get started' : 'No items match your filters'}</p>
+                ${menuItems.length === 0 ? `
+                    <button class="btn btn-primary" onclick="openAddModal()">
+                        <i class="fas fa-plus"></i> Add First Item
+                    </button>
+                ` : ''}
             </div>
         `;
         return;
     }
     
-    container.innerHTML = items.map(item => {
-        const isLowStock = item.stock < 5 && item.stock > 0 && item.status === 'available';
-        const isOutOfStock = item.stock === 0 || item.status === 'out_of_stock';
-        
-        return `
-            <div class="menu-card ${isLowStock ? 'low-stock' : ''} ${isOutOfStock ? 'out-of-stock' : ''}" 
-                 data-id="${item.id}">
-                <div class="menu-card-image">
-                    <img src="${item.image || '../../assets/images/menu/default.jpg'}" 
-                         alt="${item.name}"
-                         onerror="this.src='https://via.placeholder.com/300x200/8B4513/FFD700?text=Food'">
-                    ${isLowStock ? 
-                        '<span class="stock-badge low">Low Stock</span>' : ''}
-                    ${isOutOfStock ? 
-                        '<span class="stock-badge out">Out of Stock</span>' : ''}
+    grid.innerHTML = items.map(item => `
+        <div class="menu-item-card">
+            <div class="menu-item-image" style="background-image: url('${item.image || '../../assets/images/placeholder-food.jpg'}')">
+                ${item.popular ? '<span class="menu-item-badge badge-popular">Popular</span>' : ''}
+                ${item.ethiopian ? '<span class="menu-item-badge badge-ethiopian">Ethiopian</span>' : ''}
+                <span class="stock-badge ${item.stock < 5 ? 'stock-low' : ''} ${item.stock === 0 ? 'stock-out' : ''}">
+                    <i class="fas fa-box"></i> ${item.stock} left
+                </span>
+            </div>
+            <div class="menu-item-content">
+                <div class="menu-item-header">
+                    <h3 class="menu-item-name">${item.name}</h3>
+                    <span class="menu-item-price">${item.price} ETB</span>
                 </div>
-                <div class="menu-card-content">
-                    <div class="menu-card-header">
-                        <h3>${item.name}</h3>
-                        <span class="menu-price">${formatETB(item.price)}</span>
+                <span class="menu-item-category">${item.category}</span>
+                <p class="menu-item-description">${item.description || 'No description'}</p>
+                <div class="menu-item-footer">
+                    <div class="menu-item-stock">
+                        <i class="fas ${item.stock > 0 ? 'fa-check-circle' : 'fa-times-circle'}" 
+                           style="color: ${item.stock > 0 ? '#2e7d32' : '#d32f2f'}"></i>
+                        ${item.status === 'available' && item.stock > 0 ? 'In Stock' : 'Out of Stock'}
                     </div>
-                    <p class="menu-description">${item.description || 'No description'}</p>
-                    <div class="menu-meta">
-                        <span class="menu-category">
-                            <i class="fas fa-tag"></i> ${formatCategory(item.category)}
-                        </span>
-                        <span class="menu-stock">
-                            <i class="fas fa-box"></i> Stock: ${item.stock || 0}
-                        </span>
-                    </div>
-                    <div class="menu-card-actions">
-                        <button class="action-btn edit" onclick="editItem('${item.id}')">
-                            <i class="fas fa-edit"></i> Edit
+                    <div class="menu-item-actions">
+                        <button class="action-btn edit-btn" onclick="openEditModal(${item.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
                         </button>
-                        <button class="action-btn delete" onclick="deleteItem('${item.id}')">
-                            <i class="fas fa-trash"></i> Delete
+                        <button class="action-btn delete-btn" onclick="openDeleteModal(${item.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-btn view-btn" onclick="viewItem(${item.id})" title="View Details">
+                            <i class="fas fa-eye"></i>
                         </button>
                     </div>
                 </div>
             </div>
-        `;
-    }).join('');
+        </div>
+    `).join('');
 }
 
-// ===== FORMAT CATEGORY =====
-function formatCategory(category) {
-    const categories = {
-        'beverages': 'Beverages',
-        'meals': 'Meals',
-        'snacks': 'Snacks',
-        'desserts': 'Desserts'
-    };
-    return categories[category] || category;
-}
-
-// ===== OPEN ADD MODAL =====
-window.openAddModal = function() {
-    currentItemId = null;
-    currentImageFile = null;
+// ============================================
+// FILTER FUNCTIONS
+// ============================================
+function filterItems(filter) {
+    currentFilter = filter;
     
-    document.getElementById('modalTitle').textContent = 'Add New Menu Item';
+    // Update active button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+    
+    filterAndDisplayItems();
+}
+
+function filterLowStock() {
+    filterItems('lowstock');
+}
+
+// ============================================
+// MODAL FUNCTIONS - ADD/EDIT
+// ============================================
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = 'Add Menu Item';
     document.getElementById('itemForm').reset();
     document.getElementById('itemId').value = '';
-    document.getElementById('imagePreview').innerHTML = '';
-    document.getElementById('itemStatus').value = 'available';
-    document.getElementById('itemStock').value = '0';
+    document.getElementById('imagePreview').style.backgroundImage = '';
+    imageFile = null;
     
     document.getElementById('itemModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== EDIT ITEM =====
-window.editItem = function(id) {
+function openEditModal(id) {
     const item = menuItems.find(i => i.id == id);
     if (!item) return;
-
-    currentItemId = id;
-    currentImageFile = null;
     
     document.getElementById('modalTitle').textContent = 'Edit Menu Item';
+    document.getElementById('itemId').value = item.id;
     document.getElementById('itemName').value = item.name || '';
     document.getElementById('itemCategory').value = item.category || 'beverages';
-    document.getElementById('itemPrice').value = item.price || '';
-    document.getElementById('itemDescription').value = item.description || '';
+    document.getElementById('itemPrice').value = item.price || 0;
     document.getElementById('itemStock').value = item.stock || 0;
     document.getElementById('itemStatus').value = item.status || 'available';
-    document.getElementById('itemId').value = item.id;
+    document.getElementById('itemDescription').value = item.description || '';
     
-    // Show image preview
     if (item.image) {
-        document.getElementById('imagePreview').innerHTML = `
-            <img src="${item.image}" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 5px;">
-        `;
+        document.getElementById('imagePreview').style.backgroundImage = `url('${item.image}')`;
+    } else {
+        document.getElementById('imagePreview').style.backgroundImage = '';
     }
     
+    imageFile = null;
     document.getElementById('itemModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== CLOSE MODAL =====
-window.closeModal = function() {
+function closeModal() {
     document.getElementById('itemModal').classList.remove('active');
-    document.getElementById('itemForm').reset();
-    document.getElementById('imagePreview').innerHTML = '';
-    document.body.style.overflow = '';
-    currentImageFile = null;
 }
 
-// ===== SAVE ITEM =====
-window.saveItem = function() {
+// ============================================
+// IMAGE HANDLING
+// ============================================
+function handleImagePreview(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        showNotification('Image size should be less than 2MB', 'error');
+        e.target.value = '';
+        return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        showNotification('Please select an image file', 'error');
+        e.target.value = '';
+        return;
+    }
+    
+    imageFile = file;
+    
+    // Preview image
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('imagePreview').style.backgroundImage = `url('${e.target.result}')`;
+    };
+    reader.readAsDataURL(file);
+}
+
+// ============================================
+// SAVE ITEM (CREATE/UPDATE)
+// ============================================
+function saveItem() {
     // Get form values
     const name = document.getElementById('itemName').value.trim();
     const category = document.getElementById('itemCategory').value;
     const price = parseFloat(document.getElementById('itemPrice').value);
-    const description = document.getElementById('itemDescription').value.trim();
-    const stock = parseInt(document.getElementById('itemStock').value) || 0;
+    const stock = parseInt(document.getElementById('itemStock').value);
     const status = document.getElementById('itemStatus').value;
-    const imageFile = document.getElementById('itemImage').files[0];
+    const description = document.getElementById('itemDescription').value.trim();
+    const id = document.getElementById('itemId').value;
     
-    // Validate
+    // Validation
     if (!name) {
-        showNotification('Please enter item name', 'error');
+        showNotification('Item name is required', 'error');
         return;
     }
     
@@ -252,341 +502,175 @@ window.saveItem = function() {
         return;
     }
     
-    // Auto-set status based on stock
+    // Determine final status based on stock
     let finalStatus = status;
     if (stock === 0) {
         finalStatus = 'out_of_stock';
+    } else if (stock > 0 && status === 'out_of_stock') {
+        finalStatus = 'available';
     }
     
-    // Handle image
-    const processSave = (imageData) => {
-        const itemData = {
-            id: currentItemId || generateId(),
-            name: name,
-            category: category,
-            price: price,
-            description: description,
-            stock: stock,
-            status: finalStatus,
-            image: imageData || getCurrentImage() || null,
-            updatedAt: new Date().toISOString()
-        };
-        
-        if (!currentItemId) {
-            // Add new item
-            itemData.createdAt = new Date().toISOString();
-            menuItems.push(itemData);
-            showNotification('Item added successfully', 'success');
-        } else {
-            // Update existing item
-            const index = menuItems.findIndex(i => i.id == currentItemId);
-            if (index !== -1) {
-                // Preserve createdAt
-                itemData.createdAt = menuItems[index].createdAt;
-                menuItems[index] = itemData;
-                showNotification('Item updated successfully', 'success');
-            }
-        }
-        
-        // Save to localStorage
-        saveMenuItems();
-        
-        // Reload display
-        filterItems(currentFilter, currentCategory);
-        
-        // Close modal
-        closeModal();
+    // Create item object
+    const itemData = {
+        name: name,
+        category: category,
+        price: price,
+        stock: stock,
+        status: finalStatus,
+        description: description,
+        updatedAt: new Date().toISOString()
     };
     
+    // Handle image
     if (imageFile) {
-        // Convert image to base64
+        // In a real app, you'd upload to server
+        // For demo, we'll create a data URL
         const reader = new FileReader();
-        reader.onload = (e) => {
-            processSave(e.target.result);
+        reader.onload = function(e) {
+            itemData.image = e.target.result;
+            saveItemToDB(itemData, id);
         };
         reader.readAsDataURL(imageFile);
     } else {
-        processSave(null);
+        // No new image, keep existing
+        if (id) {
+            const existing = menuItems.find(i => i.id == id);
+            if (existing && existing.image) {
+                itemData.image = existing.image;
+            }
+        }
+        saveItemToDB(itemData, id);
     }
 }
 
-// ===== GET CURRENT IMAGE =====
-function getCurrentImage() {
-    const preview = document.getElementById('imagePreview').querySelector('img');
-    return preview ? preview.src : null;
+function saveItemToDB(itemData, id) {
+    if (id) {
+        // Update existing item
+        const updated = MenuDB.update(id, itemData);
+        if (updated) {
+            showNotification('Item updated successfully', 'success');
+        }
+    } else {
+        // Add new item
+        itemData.createdAt = new Date().toISOString();
+        itemData.popular = false;
+        itemData.ethiopian = false;
+        itemData.vegetarian = false;
+        itemData.vegan = false;
+        
+        const newItem = MenuDB.add(itemData);
+        if (newItem) {
+            showNotification('Item added successfully', 'success');
+        }
+    }
+    
+    // Reload items
+    loadMenuItems();
+    closeModal();
 }
 
-// ===== GENERATE UNIQUE ID =====
-function generateId() {
-    return 'M' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
-}
-
-// ===== DELETE ITEM =====
-window.deleteItem = function(id) {
-    currentItemId = id;
+// ============================================
+// DELETE FUNCTIONS
+// ============================================
+function openDeleteModal(id) {
+    itemToDelete = id;
     document.getElementById('deleteModal').classList.add('active');
-    document.body.style.overflow = 'hidden';
 }
 
-// ===== CLOSE DELETE MODAL =====
-window.closeDeleteModal = function() {
+function closeDeleteModal() {
     document.getElementById('deleteModal').classList.remove('active');
-    document.body.style.overflow = '';
-    currentItemId = null;
+    itemToDelete = null;
 }
 
-// ===== CONFIRM DELETE =====
-window.confirmDelete = function() {
-    if (currentItemId) {
-        menuItems = menuItems.filter(i => i.id != currentItemId);
-        saveMenuItems();
-        
-        // Reload display
-        filterItems(currentFilter, currentCategory);
-        
-        showNotification('Item deleted successfully', 'success');
-        closeDeleteModal();
-    }
-}
-
-// ===== FILTER ITEMS =====
-window.filterItems = function(filter, category) {
-    currentFilter = filter || currentFilter;
-    currentCategory = category || document.getElementById('categoryFilter')?.value || 'all';
-    
-    // Update active filter button
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.getAttribute('onclick')?.includes(`'${currentFilter}'`)) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Update category filter
-    const categorySelect = document.getElementById('categoryFilter');
-    if (categorySelect) {
-        categorySelect.value = currentCategory;
-    }
-    
-    // Apply filters
-    let filtered = [...menuItems];
-    
-    // Apply category filter
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(item => item.category === currentCategory);
-    }
-    
-    // Apply status filter
-    switch(currentFilter) {
-        case 'available':
-            filtered = filtered.filter(item => item.status === 'available' && item.stock > 0);
-            break;
-        case 'lowstock':
-            filtered = filtered.filter(item => item.stock < 5 && item.stock > 0 && item.status === 'available');
-            break;
-        case 'outofstock':
-            filtered = filtered.filter(item => item.stock === 0 || item.status === 'out_of_stock');
-            break;
-        default:
-            // 'all' - no additional filter
-            break;
-    }
-    
-    displayMenuItems(filtered);
-}
-
-// ===== FILTER LOW STOCK =====
-window.filterLowStock = function() {
-    currentFilter = 'lowstock';
-    filterItems('lowstock', currentCategory);
-}
-
-// ===== SEARCH ITEMS =====
-function searchItems(query) {
-    const searchTerm = query.toLowerCase();
-    
-    let filtered = menuItems.filter(item => 
-        item.name?.toLowerCase().includes(searchTerm) ||
-        item.description?.toLowerCase().includes(searchTerm)
-    );
-    
-    // Apply current category filter
-    if (currentCategory !== 'all') {
-        filtered = filtered.filter(item => item.category === currentCategory);
-    }
-    
-    // Apply current status filter
-    switch(currentFilter) {
-        case 'available':
-            filtered = filtered.filter(item => item.status === 'available' && item.stock > 0);
-            break;
-        case 'lowstock':
-            filtered = filtered.filter(item => item.stock < 5 && item.stock > 0 && item.status === 'available');
-            break;
-        case 'outofstock':
-            filtered = filtered.filter(item => item.stock === 0 || item.status === 'out_of_stock');
-            break;
-        default:
-            // 'all' - no additional filter
-            break;
-    }
-    
-    displayMenuItems(filtered);
-}
-
-// ===== SETUP EVENT LISTENERS =====
-function setupEventListeners() {
-    // Search
-    document.getElementById('searchMenu')?.addEventListener('input', debounce(function(e) {
-        searchItems(e.target.value);
-    }, 300));
-    
-    // Category filter
-    document.getElementById('categoryFilter')?.addEventListener('change', function(e) {
-        currentCategory = e.target.value;
-        filterItems(currentFilter, currentCategory);
-    });
-    
-    // Image preview
-    document.getElementById('itemImage')?.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                showNotification('Please select an image file', 'error');
-                this.value = '';
-                return;
-            }
-            
-            // Validate file size (max 2MB)
-            if (file.size > 2 * 1024 * 1024) {
-                showNotification('Image size should be less than 2MB', 'error');
-                this.value = '';
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                document.getElementById('imagePreview').innerHTML = `
-                    <img src="${e.target.result}" alt="Preview" style="max-width: 100px; max-height: 100px; border-radius: 5px;">
-                `;
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-    
-    // Stock change affects status
-    document.getElementById('itemStock')?.addEventListener('input', function(e) {
-        const stock = parseInt(e.target.value) || 0;
-        const statusSelect = document.getElementById('itemStatus');
-        
-        if (stock === 0) {
-            statusSelect.value = 'out_of_stock';
-            statusSelect.disabled = true;
-        } else {
-            statusSelect.disabled = false;
-        }
-    });
-    
-    // Close modals on escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            if (document.getElementById('itemModal').classList.contains('active')) {
-                closeModal();
-            }
-            if (document.getElementById('deleteModal').classList.contains('active')) {
-                closeDeleteModal();
-            }
-        }
-    });
-    
-    // Click outside modal to close
-    window.addEventListener('click', function(e) {
-        const itemModal = document.getElementById('itemModal');
-        const deleteModal = document.getElementById('deleteModal');
-        
-        if (e.target === itemModal) {
-            closeModal();
-        }
-        if (e.target === deleteModal) {
-            closeDeleteModal();
-        }
-    });
-    
-    // Storage events (cross-tab updates)
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'markanMenu') {
+function confirmDelete() {
+    if (itemToDelete) {
+        const deleted = MenuDB.delete(itemToDelete);
+        if (deleted) {
+            showNotification('Item deleted successfully', 'success');
             loadMenuItems();
+        } else {
+            showNotification('Failed to delete item', 'error');
         }
-    });
-    
-    // Logout
-    document.getElementById('logoutBtn')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        Auth.logout();
-    });
+    }
+    closeDeleteModal();
 }
 
-// ===== UPDATE ADMIN NAME =====
-function updateAdminName() {
-    const user = Auth.getCurrentUser();
-    if (user) {
-        document.getElementById('adminName').textContent = user.name;
+// ============================================
+// VIEW ITEM DETAILS
+// ============================================
+function viewItem(id) {
+    const item = menuItems.find(i => i.id == id);
+    if (!item) return;
+    
+    // You could open a details modal here
+    // For now, just show in console
+    console.log('Item details:', item);
+    showNotification(`Viewing ${item.name}`, 'info');
+}
+
+// ============================================
+// LOAD NOTIFICATION COUNT
+// ============================================
+function loadNotificationCount() {
+    // Get low stock count for badge
+    const lowStock = menuItems.filter(item => item.stock < 5 && item.stock > 0).length;
+    const outOfStock = menuItems.filter(item => item.stock === 0).length;
+    
+    const total = lowStock + outOfStock;
+    const badge = document.getElementById('notificationCount');
+    if (badge) {
+        badge.textContent = total;
+        badge.style.display = total > 0 ? 'block' : 'none';
     }
 }
 
-// ===== HELPER: FORMAT ETB =====
-function formatETB(amount) {
-    return new Intl.NumberFormat('en-ET', {
-        style: 'currency',
-        currency: 'ETB',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }).format(amount).replace('ETB', '') + ' ETB';
-}
-
-// ===== HELPER: DEBOUNCE =====
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// ===== SHOW NOTIFICATION =====
+// ============================================
+// NOTIFICATION FUNCTION
+// ============================================
 function showNotification(message, type = 'info') {
     const container = document.getElementById('notificationContainer');
     if (!container) return;
-
+    
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
     notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                            type === 'error' ? 'exclamation-circle' : 
-                            type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
-        <span>${message}</span>
-        <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+        <i class="fas ${icons[type]}"></i>
+        <div class="notification-content">
+            <p>${message}</p>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
     `;
-
+    
     container.appendChild(notification);
-
+    
     setTimeout(() => {
-        notification.remove();
+        if (notification.parentNode) {
+            notification.remove();
+        }
     }, 5000);
 }
 
-// ===== MAKE FUNCTIONS GLOBAL =====
+// ============================================
+// EXPORT FUNCTIONS TO GLOBAL SCOPE
+// ============================================
 window.openAddModal = openAddModal;
-window.editItem = editItem;
+window.openEditModal = openEditModal;
 window.closeModal = closeModal;
 window.saveItem = saveItem;
-window.deleteItem = deleteItem;
-window.closeDeleteModal = closeDeleteModal;
-window.confirmDelete = confirmDelete;
 window.filterItems = filterItems;
 window.filterLowStock = filterLowStock;
+window.openDeleteModal = openDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDelete = confirmDelete;
+window.viewItem = viewItem;
+window.showNotification = showNotification;
