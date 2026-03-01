@@ -1,524 +1,417 @@
-// admin/js/dashboard.js
-// Markan Cafe Admin - Dashboard
-// All data is loaded dynamically from localStorage - NO HARDCODED VALUES
+// admin/js/dashboard.js - Dynamic Admin Dashboard
+// Markan Cafe - Debre Birhan University
 
-// ===== GLOBAL VARIABLES =====
-let updateInterval;
-let revenueChart;
-let allOrders = [];
-let allReservations = [];
-let allMenu = [];
-let notifications = [];
+// Global variables
+let revenueChart = null;
+let currentDateRange = 'month';
 
-// ===== INITIALIZATION =====
-document.addEventListener('DOMContentLoaded', function() {
-    // Check admin access
-    if (!Auth.requireAdmin()) {
-        window.location.href = '../../login.html';
-        return;
-    }
-
-    // Load all data
-    loadDashboardData();
+// ============================================
+// MAIN DASHBOARD DATA LOADER
+// ============================================
+async function loadDashboardData() {
+    console.log('📊 Loading dashboard data...');
     
-    // Setup event listeners
-    setupEventListeners();
+    // Show loading states
+    showLoadingStates();
     
-    // Initialize charts
-    initializeCharts();
-    
-    // Start real-time updates
-    startRealTimeUpdates();
-    
-    // Update admin name
-    updateAdminName();
-});
-
-// ===== LOAD ALL DASHBOARD DATA =====
-function loadDashboardData() {
     try {
-        // Load data from localStorage
-        allOrders = JSON.parse(localStorage.getItem('markanOrders')) || [];
-        allReservations = JSON.parse(localStorage.getItem('markanReservations')) || [];
-        allMenu = JSON.parse(localStorage.getItem('markanMenu')) || [];
+        // Wait for all databases to be ready
+        await Promise.all([
+            waitForDatabase('UsersDB'),
+            waitForDatabase('OrdersDB'),
+            waitForDatabase('ReservationsDB'),
+            waitForDatabase('MenuDB')
+        ]);
         
-        // Update all dashboard sections
-        updateStats();
-        checkLowStock();
+        // Load all dashboard components
+        loadStatsCards();
+        loadLowStockAlert();
         loadPopularItems();
         loadRecentOrders();
         loadActivityTimeline();
+        loadRevenueChart();
         loadNotifications();
-        updateCharts();
         
+        console.log('✅ Dashboard data loaded successfully');
     } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        showNotification('Failed to load dashboard data', 'error');
+        console.error('❌ Error loading dashboard data:', error);
+        showErrorMessage('Failed to load dashboard data. Please refresh the page.');
     }
 }
 
-// ===== UPDATE STATISTICS CARDS =====
-function updateStats() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+// ============================================
+// WAIT FOR DATABASE
+// ============================================
+function waitForDatabase(dbName) {
+    return new Promise((resolve) => {
+        if (typeof window[dbName] !== 'undefined') {
+            resolve();
+            return;
+        }
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        const interval = setInterval(() => {
+            attempts++;
+            if (typeof window[dbName] !== 'undefined') {
+                clearInterval(interval);
+                resolve();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                console.warn(`⚠️ ${dbName} not loaded after ${maxAttempts} attempts`);
+                resolve(); // Resolve anyway to not block
+            }
+        }, 100);
+    });
+}
+
+// ============================================
+// SHOW LOADING STATES
+// ============================================
+function showLoadingStates() {
+    // Stats cards
+    document.getElementById('pendingOrders').textContent = '...';
+    document.getElementById('completedOrders').textContent = '...';
+    document.getElementById('todayReservations').textContent = '...';
+    document.getElementById('todayRevenue').textContent = '... ETB';
     
-    // Calculate pending orders
+    // Trends
+    document.getElementById('pendingTrend').textContent = 'Loading...';
+    document.getElementById('completedTrend').textContent = 'Loading...';
+    document.getElementById('reservationTrend').textContent = 'Loading...';
+    document.getElementById('revenueTrend').textContent = 'Loading...';
+}
+
+// ============================================
+// LOAD STATS CARDS
+// ============================================
+function loadStatsCards() {
+    // Get today's date range
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    // Get all orders
+    let allOrders = [];
+    if (window.OrdersDB) {
+        allOrders = OrdersDB.getAll();
+    }
+    
+    // Calculate stats
     const pendingOrders = allOrders.filter(o => o.status === 'pending').length;
-    document.getElementById('pendingOrders').textContent = pendingOrders;
-    
-    // Calculate completed orders
     const completedOrders = allOrders.filter(o => o.status === 'completed').length;
-    document.getElementById('completedOrders').textContent = completedOrders;
     
-    // Calculate today's reservations
-    const todayReservations = allReservations.filter(r => {
-        const resDate = new Date(r.date);
-        resDate.setHours(0, 0, 0, 0);
-        return resDate.getTime() === today.getTime() && r.status !== 'cancelled';
-    }).length;
-    document.getElementById('todayReservations').textContent = todayReservations;
+    // Today's orders
+    const todayOrders = allOrders.filter(o => o.date === today);
+    const yesterdayOrders = allOrders.filter(o => o.date === yesterday);
     
-    // Calculate today's revenue
-    const todayRevenue = allOrders
-        .filter(o => {
-            if (o.status !== 'completed') return false;
-            const orderDate = new Date(o.completedDate || o.orderDate);
-            orderDate.setHours(0, 0, 0, 0);
-            return orderDate.getTime() === today.getTime();
-        })
+    // Today's revenue
+    const todayRevenue = todayOrders
+        .filter(o => o.status === 'completed')
         .reduce((sum, o) => sum + (o.total || 0), 0);
-    document.getElementById('todayRevenue').textContent = formatETB(todayRevenue);
+    
+    // Yesterday's revenue for trend
+    const yesterdayRevenue = yesterdayOrders
+        .filter(o => o.status === 'completed')
+        .reduce((sum, o) => sum + (o.total || 0), 0);
+    
+    // Calculate trends
+    const revenueTrend = calculateTrend(todayRevenue, yesterdayRevenue);
+    const orderTrend = calculateTrend(pendingOrders, allOrders.filter(o => o.date === yesterday && o.status === 'pending').length);
+    
+    // Update stats cards
+    document.getElementById('pendingOrders').textContent = pendingOrders;
+    document.getElementById('completedOrders').textContent = completedOrders;
+    document.getElementById('todayRevenue').textContent = formatCurrency(todayRevenue);
     
     // Update trends
-    updateTrends();
+    document.getElementById('pendingTrend').textContent = `${orderTrend} from yesterday`;
+    document.getElementById('completedTrend').textContent = `${calculateTrend(completedOrders, yesterdayOrders.filter(o => o.status === 'completed').length)} from yesterday`;
+    document.getElementById('revenueTrend').textContent = revenueTrend;
+    
+    // Load reservations
+    loadReservationStats();
 }
 
-// ===== UPDATE TRENDS =====
-function updateTrends() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+// ============================================
+// LOAD RESERVATION STATS
+// ============================================
+function loadReservationStats() {
+    const today = new Date().toISOString().split('T')[0];
     
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    // Calculate yesterday's completed orders
-    const yesterdayCompleted = allOrders.filter(o => {
-        if (o.status !== 'completed') return false;
-        const orderDate = new Date(o.completedDate || o.orderDate);
-        orderDate.setHours(0, 0, 0, 0);
-        return orderDate.getTime() === yesterday.getTime();
-    }).length;
-    
-    // Calculate today's completed orders
-    const todayCompleted = allOrders.filter(o => {
-        if (o.status !== 'completed') return false;
-        const orderDate = new Date(o.completedDate || o.orderDate);
-        orderDate.setHours(0, 0, 0, 0);
-        return orderDate.getTime() === today.getTime();
-    }).length;
-    
-    // Calculate completed trend
-    const completedDiff = todayCompleted - yesterdayCompleted;
-    const completedTrend = document.getElementById('completedTrend');
-    if (completedDiff > 0) {
-        completedTrend.textContent = `+${completedDiff} from yesterday`;
-        completedTrend.className = 'stat-trend positive';
-    } else if (completedDiff < 0) {
-        completedTrend.textContent = `${completedDiff} from yesterday`;
-        completedTrend.className = 'stat-trend negative';
-    } else {
-        completedTrend.textContent = 'Same as yesterday';
-        completedTrend.className = 'stat-trend';
-    }
-    
-    // Calculate yesterday's revenue
-    const yesterdayRevenue = allOrders
-        .filter(o => {
-            if (o.status !== 'completed') return false;
-            const orderDate = new Date(o.completedDate || o.orderDate);
-            orderDate.setHours(0, 0, 0, 0);
-            return orderDate.getTime() === yesterday.getTime();
-        })
-        .reduce((sum, o) => sum + (o.total || 0), 0);
-    
-    // Calculate today's revenue
-    const todayRevenue = allOrders
-        .filter(o => {
-            if (o.status !== 'completed') return false;
-            const orderDate = new Date(o.completedDate || o.orderDate);
-            orderDate.setHours(0, 0, 0, 0);
-            return orderDate.getTime() === today.getTime();
-        })
-        .reduce((sum, o) => sum + (o.total || 0), 0);
-    
-    // Calculate revenue trend
-    const revenueDiff = todayRevenue - yesterdayRevenue;
-    const revenueTrend = document.getElementById('revenueTrend');
-    if (revenueDiff > 0) {
-        revenueTrend.textContent = `+${formatETB(revenueDiff)} from yesterday`;
-        revenueTrend.className = 'stat-trend positive';
-    } else if (revenueDiff < 0) {
-        revenueTrend.textContent = `${formatETB(revenueDiff)} from yesterday`;
-        revenueTrend.className = 'stat-trend negative';
-    } else {
-        revenueTrend.textContent = 'Same as yesterday';
-        revenueTrend.className = 'stat-trend';
-    }
-    
-    // Update pending trend (based on change in pending orders from yesterday)
-    const yesterdayPending = allOrders.filter(o => {
-        if (o.status !== 'pending') return false;
-        const orderDate = new Date(o.orderDate);
-        orderDate.setHours(0, 0, 0, 0);
-        return orderDate.getTime() === yesterday.getTime() || orderDate.getTime() === today.getTime();
-    }).length;
-    
-    const todayPending = allOrders.filter(o => o.status === 'pending').length;
-    const pendingDiff = todayPending - yesterdayPending;
-    const pendingTrend = document.getElementById('pendingTrend');
-    
-    if (pendingDiff > 0) {
-        pendingTrend.textContent = `+${pendingDiff} from yesterday`;
-        pendingTrend.className = 'stat-trend negative'; // More pending is negative
-    } else if (pendingDiff < 0) {
-        pendingTrend.textContent = `${pendingDiff} from yesterday`;
-        pendingTrend.className = 'stat-trend positive'; // Less pending is positive
-    } else {
-        pendingTrend.textContent = 'Same as yesterday';
-        pendingTrend.className = 'stat-trend';
-    }
-    
-    // Update reservation trend
-    const yesterdayReservations = allReservations.filter(r => {
-        const resDate = new Date(r.date);
-        resDate.setHours(0, 0, 0, 0);
-        return resDate.getTime() === yesterday.getTime() && r.status !== 'cancelled';
-    }).length;
-    
-    const todayReservations = allReservations.filter(r => {
-        const resDate = new Date(r.date);
-        resDate.setHours(0, 0, 0, 0);
-        return resDate.getTime() === today.getTime() && r.status !== 'cancelled';
-    }).length;
-    
-    const reservationStatus = document.getElementById('reservationTrend');
-    const confirmedToday = allReservations.filter(r => {
-        const resDate = new Date(r.date);
-        resDate.setHours(0, 0, 0, 0);
-        return resDate.getTime() === today.getTime() && r.status === 'confirmed';
-    }).length;
-    
-    const pendingToday = allReservations.filter(r => {
-        const resDate = new Date(r.date);
-        resDate.setHours(0, 0, 0, 0);
-        return resDate.getTime() === today.getTime() && r.status === 'pending';
-    }).length;
-    
-    reservationStatus.textContent = `${confirmedToday} confirmed, ${pendingToday} pending`;
-}
-
-// ===== CHECK LOW STOCK =====
-function checkLowStock() {
-    const lowStockItems = allMenu.filter(item => 
-        item.stock < 5 && 
-        item.stock > 0 && 
-        item.status === 'available'
-    );
-    
-    const alertDiv = document.getElementById('lowStockAlert');
-    const messageSpan = document.getElementById('lowStockMessage');
-    
-    if (lowStockItems.length > 0) {
-        alertDiv.style.display = 'flex';
-        messageSpan.textContent = `${lowStockItems.length} item${lowStockItems.length > 1 ? 's are' : ' is'} running low on stock`;
+    if (window.ReservationsDB) {
+        const todayReservations = ReservationsDB.getByDate(today);
+        const confirmed = todayReservations.filter(r => r.status === 'confirmed').length;
+        const pending = todayReservations.filter(r => r.status === 'pending').length;
         
-        // Create tooltip with item names
-        const itemList = lowStockItems.map(i => `${i.name} (${i.stock} left)`).join('\n');
-        alertDiv.title = itemList;
+        document.getElementById('todayReservations').textContent = todayReservations.length;
+        document.getElementById('reservationTrend').textContent = `${confirmed} confirmed, ${pending} pending`;
     } else {
-        alertDiv.style.display = 'none';
+        document.getElementById('todayReservations').textContent = '0';
+        document.getElementById('reservationTrend').textContent = 'No reservations';
     }
 }
 
-// ===== LOAD POPULAR ITEMS =====
+// ============================================
+// CALCULATE TREND PERCENTAGE
+// ============================================
+function calculateTrend(current, previous) {
+    if (previous === 0) {
+        return current > 0 ? '+100%' : '0%';
+    }
+    
+    const change = ((current - previous) / previous) * 100;
+    const sign = change >= 0 ? '+' : '';
+    return `${sign}${change.toFixed(1)}%`;
+}
+
+// ============================================
+// LOAD LOW STOCK ALERT
+// ============================================
+function loadLowStockAlert() {
+    if (!window.MenuDB) return;
+    
+    const menuItems = MenuDB.getAll();
+    const lowStockItems = menuItems.filter(item => item.stock < 5 && item.stock > 0);
+    const outOfStock = menuItems.filter(item => item.stock === 0);
+    
+    if (lowStockItems.length > 0 || outOfStock.length > 0) {
+        const alertDiv = document.getElementById('lowStockAlert');
+        const messageEl = document.getElementById('lowStockMessage');
+        
+        let message = '';
+        if (outOfStock.length > 0) {
+            message += `${outOfStock.length} items out of stock. `;
+        }
+        if (lowStockItems.length > 0) {
+            message += `${lowStockItems.length} items running low.`;
+        }
+        
+        messageEl.textContent = message;
+        alertDiv.style.display = 'flex';
+    }
+}
+
+// ============================================
+// LOAD POPULAR ITEMS
+// ============================================
 function loadPopularItems() {
-    const itemCounts = {};
-    
-    // Count item occurrences in completed orders
-    allOrders
-        .filter(o => o.status === 'completed')
-        .forEach(order => {
-            order.items?.forEach(item => {
-                const key = item.id || item.name;
-                if (itemCounts[key]) {
-                    itemCounts[key].count += item.quantity;
-                    itemCounts[key].revenue += (item.price * item.quantity);
-                } else {
-                    itemCounts[key] = {
-                        name: item.name,
-                        count: item.quantity,
-                        revenue: item.price * item.quantity,
-                        category: item.category || 'Item'
-                    };
-                }
-            });
-        });
-    
-    // Get top 5 items
-    const popularItems = Object.values(itemCounts)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
-    
     const container = document.getElementById('popularItems');
     
-    if (popularItems.length === 0) {
-        container.innerHTML = '<p class="no-data">No sales data available</p>';
+    if (!window.OrdersDB || !window.MenuDB) {
+        container.innerHTML = '<p class="no-data">Order data not available</p>';
         return;
     }
     
-    container.innerHTML = popularItems.map(item => {
-        const totalCount = Object.values(itemCounts).reduce((sum, i) => sum + i.count, 0);
-        const percentage = totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0;
+    // Get all completed orders
+    const orders = OrdersDB.getAll().filter(o => o.status === 'completed');
+    
+    // Count item occurrences
+    const itemCounts = {};
+    orders.forEach(order => {
+        order.items?.forEach(item => {
+            const key = item.id || item.name;
+            itemCounts[key] = (itemCounts[key] || 0) + (item.quantity || 1);
+        });
+    });
+    
+    // Get menu items for names
+    const menuItems = MenuDB.getAll();
+    
+    // Sort and get top 5
+    const popular = Object.entries(itemCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([id, count]) => {
+            const menuItem = menuItems.find(m => m.id == id || m.name === id);
+            return {
+                name: menuItem?.name || id,
+                count: count,
+                price: menuItem?.price || 0
+            };
+        });
+    
+    if (popular.length === 0) {
+        container.innerHTML = '<p class="no-data">No order data yet</p>';
+        return;
+    }
+    
+    // Render popular items
+    container.innerHTML = popular.map((item, index) => `
+        <div class="popular-item">
+            <div class="popular-rank">#${index + 1}</div>
+            <div class="popular-details">
+                <h4>${item.name}</h4>
+                <p>${item.count} orders</p>
+            </div>
+            <div class="popular-revenue">${formatCurrency(item.price * item.count)}</div>
+        </div>
+    `).join('');
+}
+
+// ============================================
+// LOAD RECENT ORDERS
+// ============================================
+function loadRecentOrders() {
+    const tableBody = document.getElementById('recentOrdersTable');
+    
+    if (!window.OrdersDB) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="error-message">Orders database not available</td></tr>';
+        return;
+    }
+    
+    const orders = OrdersDB.getAll()
+        .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+        .slice(0, 10);
+    
+    if (orders.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="no-data">No orders found</td></tr>';
+        return;
+    }
+    
+    tableBody.innerHTML = orders.map(order => {
+        const itemCount = order.items?.reduce((sum, i) => sum + (i.quantity || 1), 0) || 0;
+        const timeAgo = getTimeAgo(new Date(order.orderDate));
         
         return `
-            <div class="popular-item">
-                <div class="popular-item-info">
-                    <h4>${item.name}</h4>
-                    <p>${item.category}</p>
-                </div>
-                <div class="popular-item-stats">
-                    <span class="count">${item.count} sold</span>
-                    <span class="percentage">${percentage}%</span>
-                </div>
-            </div>
+            <tr onclick="window.location.href='order-details.html?id=${order.id}'">
+                <td><span class="order-id">#${order.id}</span></td>
+                <td>${order.customerName || 'Guest'}</td>
+                <td>${itemCount} items</td>
+                <td>${formatCurrency(order.total || 0)}</td>
+                <td><span class="status-badge status-${order.status}">${order.status}</span></td>
+                <td><span class="time-ago">${timeAgo}</span></td>
+            </tr>
         `;
     }).join('');
 }
 
-// ===== LOAD RECENT ORDERS =====
-function loadRecentOrders() {
-    const recentOrders = allOrders
-        .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
-        .slice(0, 5);
-    
-    const tbody = document.getElementById('recentOrdersTable');
-    
-    if (recentOrders.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center">
-                    <div class="no-data">
-                        <i class="fas fa-clipboard-list"></i>
-                        <p>No orders yet</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-    
-    tbody.innerHTML = recentOrders.map(order => `
-        <tr onclick="window.location.href='orders.html?view=${order.id}'" style="cursor: pointer;">
-            <td><strong>${order.id}</strong></td>
-            <td>${order.customerName || 'Guest'}</td>
-            <td>${order.items?.length || 0} items</td>
-            <td>${formatETB(order.total || 0)}</td>
-            <td>
-                <span class="status-badge ${order.status || 'pending'}">
-                    ${order.status || 'pending'}
-                </span>
-            </td>
-            <td>${timeAgo(order.orderDate)}</td>
-        </tr>
-    `).join('');
-}
-
-// ===== LOAD ACTIVITY TIMELINE =====
+// ============================================
+// LOAD ACTIVITY TIMELINE
+// ============================================
 function loadActivityTimeline() {
-    // Create activities from orders and reservations
-    const activities = [
-        ...allOrders.map(o => ({
-            type: 'order',
-            action: 'New order placed',
-            description: `Order ${o.id} by ${o.customerName || 'Guest'}`,
-            time: o.orderDate,
-            icon: 'shopping-cart',
-            color: '#8B4513'
-        })),
-        ...allReservations.map(r => ({
-            type: 'reservation',
-            action: 'New reservation',
-            description: `Table for ${r.guests} by ${r.customerName}`,
-            time: r.createdAt || r.orderDate,
-            icon: 'calendar-check',
-            color: '#2E7D32'
-        }))
-    ];
+    const timeline = document.getElementById('activityTimeline');
     
-    // Sort by time and get recent 10
-    const recentActivities = activities
-        .sort((a, b) => new Date(b.time) - new Date(a.time))
-        .slice(0, 10);
+    // Collect recent activities from all sources
+    const activities = [];
     
-    const container = document.getElementById('activityTimeline');
+    // Add orders
+    if (window.OrdersDB) {
+        const orders = OrdersDB.getAll()
+            .sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate))
+            .slice(0, 5);
+        
+        orders.forEach(order => {
+            activities.push({
+                type: 'order',
+                id: order.id,
+                customer: order.customerName,
+                status: order.status,
+                time: new Date(order.orderDate),
+                icon: getStatusIcon(order.status),
+                color: getStatusColor(order.status)
+            });
+        });
+    }
     
-    if (recentActivities.length === 0) {
-        container.innerHTML = `
-            <div class="no-data">
-                <i class="fas fa-history"></i>
-                <p>No recent activity</p>
-            </div>
-        `;
+    // Add reservations
+    if (window.ReservationsDB) {
+        const reservations = ReservationsDB.getAll()
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 5);
+        
+        reservations.forEach(res => {
+            activities.push({
+                type: 'reservation',
+                id: res.id,
+                customer: res.customerName,
+                guests: res.guests,
+                time: new Date(res.createdAt),
+                icon: 'fa-calendar-check',
+                color: '#c49a6c'
+            });
+        });
+    }
+    
+    // Sort by time (most recent first)
+    activities.sort((a, b) => b.time - a.time);
+    
+    if (activities.length === 0) {
+        timeline.innerHTML = '<p class="no-data">No recent activity</p>';
         return;
     }
     
-    container.innerHTML = recentActivities.map(activity => `
-        <div class="timeline-item">
-            <div class="timeline-icon ${activity.type}" style="background: ${activity.color}20; color: ${activity.color};">
-                <i class="fas fa-${activity.icon}"></i>
-            </div>
-            <div class="timeline-content">
-                <p><strong>${activity.action}</strong></p>
-                <p>${activity.description}</p>
-                <small>${timeAgo(activity.time)}</small>
-            </div>
-        </div>
-    `).join('');
+    // Render activities
+    timeline.innerHTML = activities.slice(0, 10).map(activity => {
+        const timeAgo = getTimeAgo(activity.time);
+        
+        if (activity.type === 'order') {
+            return `
+                <div class="timeline-item" onclick="window.location.href='order-details.html?id=${activity.id}'">
+                    <div class="timeline-icon" style="background: ${activity.color}20; color: ${activity.color}">
+                        <i class="fas ${activity.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>New Order #${activity.id}</h4>
+                        <p>${activity.customer} placed an order</p>
+                        <span class="time-ago">${timeAgo}</span>
+                    </div>
+                    <span class="status-badge status-${activity.status}">${activity.status}</span>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="timeline-item" onclick="window.location.href='reservation-details.html?id=${activity.id}'">
+                    <div class="timeline-icon" style="background: ${activity.color}20; color: ${activity.color}">
+                        <i class="fas ${activity.icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <h4>New Reservation</h4>
+                        <p>${activity.customer} booked for ${activity.guests} guests</p>
+                        <span class="time-ago">${timeAgo}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }).join('');
 }
 
-// ===== LOAD NOTIFICATIONS =====
-function loadNotifications() {
-    notifications = [];
+// ============================================
+// LOAD REVENUE CHART
+// ============================================
+function loadRevenueChart() {
+    const ctx = document.getElementById('revenueChart').getContext('2d');
     
-    // Check for low stock
-    const lowStockItems = allMenu.filter(item => 
-        item.stock < 5 && 
-        item.stock > 0 && 
-        item.status === 'available'
-    );
+    // Get date range from selector
+    const range = document.getElementById('dateRange').value;
+    currentDateRange = range;
     
-    lowStockItems.forEach(item => {
-        notifications.push({
-            type: 'warning',
-            title: 'Low Stock Alert',
-            message: `${item.name} is low on stock (${item.stock} left)`,
-            time: new Date().toISOString(),
-            read: false
-        });
-    });
+    // Generate labels and data based on range
+    const { labels, data } = getChartData(range);
     
-    // Check for pending orders
-    const pendingOrders = allOrders.filter(o => o.status === 'pending');
-    if (pendingOrders.length > 0) {
-        notifications.push({
-            type: 'info',
-            title: 'Pending Orders',
-            message: `You have ${pendingOrders.length} pending order${pendingOrders.length > 1 ? 's' : ''}`,
-            time: new Date().toISOString(),
-            read: false
-        });
+    // Destroy existing chart if it exists
+    if (revenueChart) {
+        revenueChart.destroy();
     }
     
-    // Check for pending reservations
-    const pendingReservations = allReservations.filter(r => r.status === 'pending');
-    if (pendingReservations.length > 0) {
-        notifications.push({
-            type: 'info',
-            title: 'Pending Reservations',
-            message: `${pendingReservations.length} reservation${pendingReservations.length > 1 ? 's' : ''} pending approval`,
-            time: new Date().toISOString(),
-            read: false
-        });
-    }
-    
-    // Update notification badge
-    updateNotificationBadge();
-    
-    // Display notifications in dropdown
-    displayNotifications();
-}
-
-// ===== UPDATE NOTIFICATION BADGE =====
-function updateNotificationBadge() {
-    const unreadCount = notifications.filter(n => !n.read).length;
-    const badge = document.getElementById('notificationCount');
-    
-    if (badge) {
-        badge.textContent = unreadCount;
-        badge.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-    }
-}
-
-// ===== DISPLAY NOTIFICATIONS =====
-function displayNotifications() {
-    const list = document.getElementById('notificationsList');
-    if (!list) return;
-    
-    if (notifications.length === 0) {
-        list.innerHTML = `
-            <div class="no-data" style="padding: 20px;">
-                <i class="fas fa-bell-slash"></i>
-                <p>No notifications</p>
-            </div>
-        `;
-        return;
-    }
-    
-    list.innerHTML = notifications.slice(0, 5).map(notification => `
-        <div class="notification-item ${notification.read ? '' : 'unread'}" 
-             onclick="markNotificationRead(${notifications.indexOf(notification)})">
-            <div class="notification-icon ${notification.type}">
-                <i class="fas fa-${notification.type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
-            </div>
-            <div class="notification-content">
-                <h4>${notification.title}</h4>
-                <p>${notification.message}</p>
-                <small>${timeAgo(notification.time)}</small>
-            </div>
-            ${!notification.read ? '<span class="unread-dot"></span>' : ''}
-        </div>
-    `).join('');
-}
-
-// ===== MARK NOTIFICATION AS READ =====
-window.markNotificationRead = function(index) {
-    if (notifications[index]) {
-        notifications[index].read = true;
-        updateNotificationBadge();
-        displayNotifications();
-    }
-}
-
-// ===== MARK ALL NOTIFICATIONS AS READ =====
-document.getElementById('markAllRead')?.addEventListener('click', function() {
-    notifications.forEach(n => n.read = true);
-    updateNotificationBadge();
-    displayNotifications();
-    showNotification('All notifications marked as read', 'success');
-});
-
-// ===== INITIALIZE CHARTS =====
-function initializeCharts() {
-    const revenueCtx = document.getElementById('revenueChart')?.getContext('2d');
-    if (!revenueCtx) return;
-    
-    revenueChart = new Chart(revenueCtx, {
+    // Create new chart
+    revenueChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [],
+            labels: labels,
             datasets: [{
-                label: 'Revenue (ETB)',
-                data: [],
-                borderColor: '#8B4513',
-                backgroundColor: 'rgba(139,69,19,0.1)',
-                borderWidth: 3,
-                pointBackgroundColor: '#FFD700',
-                pointBorderColor: '#8B4513',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 7,
+                label: 'Revenue',
+                data: data,
+                borderColor: '#c49a6c',
+                backgroundColor: 'rgba(196, 154, 108, 0.1)',
+                borderWidth: 2,
+                fill: true,
                 tension: 0.4,
-                fill: true
+                pointBackgroundColor: '#4a2c1a',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
@@ -531,7 +424,7 @@ function initializeCharts() {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return formatETB(context.raw);
+                            return `Revenue: ${formatCurrency(context.raw)}`;
                         }
                     }
                 }
@@ -541,183 +434,250 @@ function initializeCharts() {
                     beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return formatETB(value);
+                            return formatCurrency(value);
                         }
-                    },
-                    grid: {
-                        color: 'rgba(255,255,255,0.1)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
                     }
                 }
             }
         }
     });
+    
+    // Add event listener for date range change
+    document.getElementById('dateRange').addEventListener('change', function(e) {
+        loadRevenueChart();
+    });
 }
 
-// ===== UPDATE CHARTS =====
-function updateCharts() {
-    if (!revenueChart) return;
+// ============================================
+// GET CHART DATA BASED ON RANGE
+// ============================================
+function getChartData(range) {
+    const labels = [];
+    const data = [];
     
-    // Get date range from selector
-    const range = document.getElementById('dateRange')?.value || 'month';
+    if (!window.OrdersDB) {
+        return { labels: ['No Data'], data: [0] };
+    }
     
-    let labels = [];
-    let revenueData = [];
+    const orders = OrdersDB.getAll().filter(o => o.status === 'completed');
+    const today = new Date();
     
     switch(range) {
         case 'today':
-            // Show hourly data for today
-            labels = getHoursArray();
-            revenueData = labels.map(hour => {
-                const start = new Date();
-                start.setHours(hour, 0, 0, 0);
-                const end = new Date();
-                end.setHours(hour, 59, 59, 999);
+            // Hourly data for today
+            for (let i = 0; i < 24; i++) {
+                const hour = i.toString().padStart(2, '0') + ':00';
+                labels.push(hour);
                 
-                return allOrders
+                const revenue = orders
                     .filter(o => {
-                        if (o.status !== 'completed') return false;
-                        const orderDate = new Date(o.completedDate || o.orderDate);
-                        return orderDate >= start && orderDate <= end;
+                        const orderDate = new Date(o.orderDate);
+                        return orderDate.getHours() === i && 
+                               orderDate.toDateString() === today.toDateString();
                     })
                     .reduce((sum, o) => sum + (o.total || 0), 0);
-            });
+                
+                data.push(revenue);
+            }
             break;
             
         case 'week':
-            // Show daily data for last 7 days
-            labels = getLast7Days().map(d => d.toLocaleDateString('en-US', { weekday: 'short' }));
-            revenueData = getLast7Days().map(day => {
-                return allOrders
+            // Daily data for this week
+            const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                labels.unshift(weekDays[date.getDay()]);
+                
+                const revenue = orders
                     .filter(o => {
-                        if (o.status !== 'completed') return false;
-                        const orderDate = new Date(o.completedDate || o.orderDate);
-                        return orderDate.toDateString() === day.toDateString();
+                        const orderDate = new Date(o.orderDate);
+                        return orderDate.toDateString() === date.toDateString();
                     })
                     .reduce((sum, o) => sum + (o.total || 0), 0);
-            });
+                
+                data.unshift(revenue);
+            }
             break;
             
         case 'month':
-            // Show weekly data for last 4 weeks
-            labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
-            revenueData = [0, 0, 0, 0];
-            
-            const now = new Date();
-            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            
-            allOrders
-                .filter(o => o.status === 'completed')
-                .forEach(o => {
-                    const orderDate = new Date(o.completedDate || o.orderDate);
-                    if (orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear()) {
-                        const weekIndex = Math.floor((orderDate.getDate() - 1) / 7);
-                        if (weekIndex >= 0 && weekIndex < 4) {
-                            revenueData[weekIndex] += o.total || 0;
-                        }
-                    }
-                });
+            // Daily data for this month
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            for (let i = 1; i <= daysInMonth; i++) {
+                labels.push(i.toString());
+                
+                const revenue = orders
+                    .filter(o => {
+                        const orderDate = new Date(o.orderDate);
+                        return orderDate.getDate() === i &&
+                               orderDate.getMonth() === today.getMonth() &&
+                               orderDate.getFullYear() === today.getFullYear();
+                    })
+                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                
+                data.push(revenue);
+            }
             break;
             
         case 'year':
-            // Show monthly data for last 12 months
-            labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            revenueData = new Array(12).fill(0);
-            
-            const currentYear = new Date().getFullYear();
-            
-            allOrders
-                .filter(o => o.status === 'completed')
-                .forEach(o => {
-                    const orderDate = new Date(o.completedDate || o.orderDate);
-                    if (orderDate.getFullYear() === currentYear) {
-                        revenueData[orderDate.getMonth()] += o.total || 0;
-                    }
-                });
+            // Monthly data for this year
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            for (let i = 0; i < 12; i++) {
+                labels.push(months[i]);
+                
+                const revenue = orders
+                    .filter(o => {
+                        const orderDate = new Date(o.orderDate);
+                        return orderDate.getMonth() === i &&
+                               orderDate.getFullYear() === today.getFullYear();
+                    })
+                    .reduce((sum, o) => sum + (o.total || 0), 0);
+                
+                data.push(revenue);
+            }
             break;
     }
     
-    revenueChart.data.labels = labels;
-    revenueChart.data.datasets[0].data = revenueData;
-    revenueChart.update();
+    return { labels, data };
 }
 
-// ===== HELPER: GET HOURS ARRAY =====
-function getHoursArray() {
-    const hours = [];
-    for (let i = 0; i < 24; i++) {
-        hours.push(`${i.toString().padStart(2, '0')}:00`);
-    }
-    return hours;
-}
-
-// ===== HELPER: GET LAST 7 DAYS =====
-function getLast7Days() {
-    const days = [];
-    for (let i = 6; i >= 0; i--) {
-        const day = new Date();
-        day.setDate(day.getDate() - i);
-        day.setHours(0, 0, 0, 0);
-        days.push(day);
-    }
-    return days;
-}
-
-// ===== SETUP EVENT LISTENERS =====
-function setupEventListeners() {
-    // Date range change
-    document.getElementById('dateRange')?.addEventListener('change', function(e) {
-        updateCharts();
-        showNotification(`Showing data for: ${e.target.value}`, 'info');
-    });
+// ============================================
+// LOAD NOTIFICATIONS
+// ============================================
+function loadNotifications() {
+    const notificationsList = document.getElementById('notificationsList');
+    const notificationCount = document.getElementById('notificationCount');
     
-    // Global search
-    document.getElementById('globalSearch')?.addEventListener('input', debounce(function(e) {
-        const query = e.target.value.toLowerCase();
-        if (query.length < 2) return;
-        
-        // Search in orders
-        const orderResults = allOrders.filter(o => 
-            o.id?.toLowerCase().includes(query) ||
-            o.customerName?.toLowerCase().includes(query) ||
-            o.customerEmail?.toLowerCase().includes(query)
-        );
-        
-        if (orderResults.length > 0) {
-            showNotification(`Found ${orderResults.length} matching orders`, 'success');
-        }
-    }, 500));
+    const notifications = [];
     
-    // Storage events (cross-tab updates)
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'markanOrders' || e.key === 'markanReservations' || e.key === 'markanMenu') {
-            loadDashboardData();
-        }
-    });
-}
-
-// ===== REAL-TIME UPDATES =====
-function startRealTimeUpdates() {
-    // Update every 30 seconds
-    updateInterval = setInterval(() => {
-        loadDashboardData();
-    }, 30000);
-}
-
-// ===== CLEANUP =====
-window.addEventListener('beforeunload', function() {
-    if (updateInterval) {
-        clearInterval(updateInterval);
+    // Check for low stock
+    if (window.MenuDB) {
+        const lowStock = MenuDB.getLowStock?.() || [];
+        lowStock.forEach(item => {
+            notifications.push({
+                type: 'warning',
+                message: `${item.name} is running low (${item.stock} left)`,
+                time: new Date(),
+                link: 'menu-management.html?filter=lowstock'
+            });
+        });
     }
-});
+    
+    // Check for pending orders
+    if (window.OrdersDB) {
+        const pendingOrders = OrdersDB.getByStatus?.('pending') || [];
+        if (pendingOrders.length > 0) {
+            notifications.push({
+                type: 'info',
+                message: `${pendingOrders.length} pending orders need attention`,
+                time: new Date(),
+                link: 'orders.html?status=pending'
+            });
+        }
+    }
+    
+    // Check for today's reservations
+    if (window.ReservationsDB) {
+        const today = new Date().toISOString().split('T')[0];
+        const todayReservations = ReservationsDB.getByDate?.(today) || [];
+        if (todayReservations.length > 0) {
+            notifications.push({
+                type: 'info',
+                message: `${todayReservations.length} reservations for today`,
+                time: new Date(),
+                link: 'reservations.html'
+            });
+        }
+    }
+    
+    // Update notification count
+    notificationCount.textContent = notifications.length;
+    notificationCount.style.display = notifications.length > 0 ? 'block' : 'none';
+    
+    // Render notifications
+    if (notifications.length === 0) {
+        notificationsList.innerHTML = '<p class="no-notifications">No new notifications</p>';
+        return;
+    }
+    
+    notificationsList.innerHTML = notifications
+        .sort((a, b) => b.time - a.time)
+        .map(notif => `
+            <div class="notification-item ${notif.type}" onclick="window.location.href='${notif.link}'">
+                <i class="fas ${notif.type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                <div class="notification-content">
+                    <p>${notif.message}</p>
+                    <span class="time-ago">${getTimeAgo(notif.time)}</span>
+                </div>
+            </div>
+        `).join('');
+}
 
-// ===== HELPER: FORMAT ETB =====
-function formatETB(amount) {
-    return new Intl.NumberFormat('en-ET', {
+// ============================================
+// PERFORM GLOBAL SEARCH
+// ============================================
+function performGlobalSearch(term) {
+    const results = [];
+    
+    // Search orders
+    if (window.OrdersDB) {
+        const orders = OrdersDB.getAll();
+        orders.forEach(order => {
+            if (order.id?.toLowerCase().includes(term) ||
+                order.customerName?.toLowerCase().includes(term)) {
+                results.push({
+                    type: 'order',
+                    id: order.id,
+                    name: `Order #${order.id}`,
+                    customer: order.customerName,
+                    link: `order-details.html?id=${order.id}`
+                });
+            }
+        });
+    }
+    
+    // Search users
+    if (window.UsersDB) {
+        const users = UsersDB.getAll();
+        users.forEach(user => {
+            if (user.name?.toLowerCase().includes(term) ||
+                user.email?.toLowerCase().includes(term)) {
+                results.push({
+                    type: 'user',
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    link: `user-details.html?id=${user.id}`
+                });
+            }
+        });
+    }
+    
+    // Search menu items
+    if (window.MenuDB) {
+        const items = MenuDB.getAll();
+        items.forEach(item => {
+            if (item.name?.toLowerCase().includes(term)) {
+                results.push({
+                    type: 'menu',
+                    id: item.id,
+                    name: item.name,
+                    link: `menu-management.html?edit=${item.id}`
+                });
+            }
+        });
+    }
+    
+    // Display results (you can implement a dropdown here)
+    console.log('Search results:', results);
+}
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: 'ETB',
         minimumFractionDigits: 0,
@@ -725,57 +685,59 @@ function formatETB(amount) {
     }).format(amount).replace('ETB', '') + ' ETB';
 }
 
-// ===== HELPER: TIME AGO =====
-function timeAgo(timestamp) {
-    const date = new Date(timestamp);
+function getTimeAgo(date) {
     const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
     
-    if (seconds < 60) return 'just now';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
-    return `${Math.floor(seconds / 86400)} days ago`;
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
 }
 
-// ===== HELPER: DEBOUNCE =====
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+function getStatusIcon(status) {
+    const icons = {
+        'pending': 'fa-clock',
+        'preparing': 'fa-utensils',
+        'ready': 'fa-check-circle',
+        'completed': 'fa-check-double',
+        'cancelled': 'fa-times-circle'
     };
+    return icons[status] || 'fa-circle';
 }
 
-// ===== SHOW NOTIFICATION =====
-function showNotification(message, type = 'info') {
+function getStatusColor(status) {
+    const colors = {
+        'pending': '#ed6c02',
+        'preparing': '#0288d1',
+        'ready': '#2e7d32',
+        'completed': '#2e7d32',
+        'cancelled': '#d32f2f'
+    };
+    return colors[status] || '#757575';
+}
+
+function showErrorMessage(message) {
     const container = document.getElementById('notificationContainer');
-    if (!container) return;
-
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 
-                            type === 'error' ? 'exclamation-circle' : 
-                            type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
-        <span>${message}</span>
-        <button onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
-    `;
-
-    container.appendChild(notification);
-
-    setTimeout(() => {
-        notification.remove();
-    }, 5000);
-}
-
-// ===== UPDATE ADMIN NAME =====
-function updateAdminName() {
-    const user = Auth.getCurrentUser();
-    if (user) {
-        document.getElementById('adminName').textContent = user.name;
+    if (container && typeof showNotification === 'function') {
+        showNotification(message, 'error');
+    } else {
+        alert(message);
     }
 }
+
+// ============================================
+// AUTO-REFRESH (every 30 seconds)
+// ============================================
+setInterval(() => {
+    if (document.visibilityState === 'visible') {
+        console.log('🔄 Auto-refreshing dashboard data...');
+        loadDashboardData();
+    }
+}, 30000);
+
+// Make functions globally available
+window.loadDashboardData = loadDashboardData;

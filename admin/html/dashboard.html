@@ -13,35 +13,28 @@
     <script>
     // ===== SINGLE PROTECTION CHECK =====
     (function() {
-        // Check if already processed
         if (window.__adminProtected) return;
         window.__adminProtected = true;
         
         try {
-            // Get user from localStorage
             const userStr = localStorage.getItem('markanUser');
             
-            // No user found - redirect to login
             if (!userStr) {
                 window.location.replace('../../login.html');
                 return;
             }
             
-            // Parse user
             const user = JSON.parse(userStr);
             
-            // Wrong role - redirect to customer
             if (user.role !== 'admin') {
                 window.location.replace('../../customer/html/dashboard.html');
                 return;
             }
             
-            // Store user for later use
             window.currentUser = user;
             
         } catch (e) {
             console.error('Auth error:', e);
-            // Clear invalid data and redirect
             localStorage.removeItem('markanUser');
             window.location.replace('../../login.html');
         }
@@ -64,7 +57,6 @@
                     <li><a href="orders.html"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
                     <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
                     <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
-                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
                     <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
                     <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
                 </ul>
@@ -102,7 +94,6 @@
                         <i class="fas fa-chevron-down"></i>
                         <div class="profile-dropdown">
                             <a href="profile.html"><i class="fas fa-user"></i> My Profile</a>
-                            <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
                             <a href="#" id="dropdownLogout"><i class="fas fa-sign-out-alt"></i> Logout</a>
                         </div>
                     </div>
@@ -131,7 +122,7 @@
                     <div class="stat-content">
                         <h3 id="pendingOrders">0</h3>
                         <p>Pending Orders</p>
-                        <span class="stat-trend" id="pendingTrend">+12% from yesterday</span>
+                        <span class="stat-trend" id="pendingTrend">Loading...</span>
                     </div>
                 </div>
 
@@ -142,7 +133,7 @@
                     <div class="stat-content">
                         <h3 id="completedOrders">0</h3>
                         <p>Completed Orders</p>
-                        <span class="stat-trend positive" id="completedTrend">+8% from yesterday</span>
+                        <span class="stat-trend positive" id="completedTrend">Loading...</span>
                     </div>
                 </div>
 
@@ -153,18 +144,18 @@
                     <div class="stat-content">
                         <h3 id="todayReservations">0</h3>
                         <p>Today's Reservations</p>
-                        <span class="stat-trend" id="reservationTrend">3 confirmed, 2 pending</span>
+                        <span class="stat-trend" id="reservationTrend">Loading...</span>
                     </div>
                 </div>
 
-                <div class="stat-card" onclick="window.location.href='billing.html'">
+                <div class="stat-card">
                     <div class="stat-icon">
                         <i class="fas fa-dollar-sign"></i>
                     </div>
                     <div class="stat-content">
                         <h3 id="todayRevenue">0 ETB</h3>
                         <p>Today's Revenue</p>
-                        <span class="stat-trend positive" id="revenueTrend">+15% from yesterday</span>
+                        <span class="stat-trend positive" id="revenueTrend">Loading...</span>
                     </div>
                 </div>
             </div>
@@ -220,6 +211,7 @@
                             </thead>
                             <tbody id="recentOrdersTable">
                                 <!-- Will be populated by JS -->
+                                <tr><td colspan="6" class="loading-message">Loading orders...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -231,6 +223,7 @@
                     </div>
                     <div class="activity-timeline" id="activityTimeline">
                         <!-- Will be populated by JS -->
+                        <div class="loading-message">Loading activity...</div>
                     </div>
                 </div>
             </div>
@@ -243,6 +236,10 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../js/config.js"></script>
+    <script src="../../js/users.js"></script>
+    <script src="../../js/orders.js"></script>
+    <script src="../../js/reservations.js"></script>
+    <script src="../../js/menu-items.js"></script>
     <script src="../../js/auth.js"></script>
     <script src="../js/dashboard.js"></script>
     <script>
@@ -252,6 +249,9 @@
             if (user) {
                 document.getElementById('adminName').textContent = user.name;
             }
+            
+            // Load all dashboard data
+            loadDashboardData();
         });
 
         // Single logout handler
@@ -262,6 +262,14 @@
 
         document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
         document.getElementById('dropdownLogout')?.addEventListener('click', handleLogout);
+        
+        // Global search functionality
+        document.getElementById('globalSearch')?.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            if (searchTerm.length > 2) {
+                performGlobalSearch(searchTerm);
+            }
+        });
     </script>
 </body>
 </html>
