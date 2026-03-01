@@ -1,265 +1,29 @@
 // data/menu-items.js - Menu Database
 // Markan Cafe - Debre Birhan University
+// Complete menu management for admin panel
 
-const menuDatabase = [
-    // Beverages
-    {
-        id: 1,
-        name: 'Ethiopian Coffee',
-        description: 'Traditional Ethiopian coffee ceremony style, served with popcorn',
-        price: 4.50,
-        category: 'beverages',
-        image: 'assets/images/menu/beverages/ethiopian-coffee.jpg',
-        rating: 4.9,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 2,
-        name: 'Macchiato',
-        description: 'Espresso with a dash of steamed milk',
-        price: 3.75,
-        category: 'beverages',
-        image: 'assets/images/menu/beverages/macchiato.jpg',
-        rating: 4.7,
-        popular: true,
-        ethiopian: false,
-        inStock: true
-    },
-    {
-        id: 3,
-        name: 'Spiced Tea (Shai)',
-        description: 'Traditional Ethiopian spiced tea with cinnamon and cardamom',
-        price: 3.25,
-        category: 'beverages',
-        image: 'assets/images/menu/beverages/spiced-tea.jpg',
-        rating: 4.6,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 4,
-        name: 'Fresh Orange Juice',
-        description: 'Freshly squeezed Ethiopian oranges',
-        price: 4.00,
-        category: 'beverages',
-        image: 'assets/images/menu/beverages/fresh-juice.jpg',
-        rating: 4.5,
-        popular: false,
-        ethiopian: true,
-        inStock: true
-    },
-    
-    // Meals
-    {
-        id: 5,
-        name: 'Doro Wat',
-        description: 'Spicy Ethiopian chicken stew with hard-boiled eggs, served with injera',
-        price: 12.99,
-        category: 'meals',
-        image: 'assets/images/menu/meals/doro-wat.jpg',
-        rating: 4.9,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 6,
-        name: 'Kitfo',
-        description: 'Minced raw beef seasoned with mitmita and niter kibbeh, served with ayib',
-        price: 14.50,
-        category: 'meals',
-        image: 'assets/images/menu/meals/kitfo.jpg',
-        rating: 4.8,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 7,
-        name: 'Tibs',
-        description: 'Sautéed meat with onions, peppers, and traditional spices',
-        price: 13.50,
-        category: 'meals',
-        image: 'assets/images/menu/meals/tibs.jpg',
-        rating: 4.7,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 8,
-        name: 'Shiro Wat',
-        description: 'Chickpea stew with berbere spice, vegan-friendly',
-        price: 8.99,
-        category: 'meals',
-        image: 'assets/images/menu/meals/shiro-wat.jpg',
-        rating: 4.6,
-        popular: true,
-        ethiopian: true,
-        vegetarian: true,
-        inStock: true
-    },
-    {
-        id: 9,
-        name: 'Misir Wat',
-        description: 'Red lentil stew with berbere spice, vegan-friendly',
-        price: 8.99,
-        category: 'meals',
-        image: 'assets/images/menu/meals/misir-wat.jpg',
-        rating: 4.5,
-        popular: false,
-        ethiopian: true,
-        vegetarian: true,
-        inStock: true
-    },
-    {
-        id: 10,
-        name: 'Gomen',
-        description: 'Sautéed collard greens with garlic and ginger, vegan-friendly',
-        price: 7.99,
-        category: 'meals',
-        image: 'assets/images/menu/meals/gomen.jpg',
-        rating: 4.4,
-        popular: false,
-        ethiopian: true,
-        vegetarian: true,
-        inStock: true
-    },
-    
-    // Snacks
-    {
-        id: 11,
-        name: 'Sambusa',
-        description: 'Fried pastry filled with lentils or meat, Ethiopian style',
-        price: 3.50,
-        category: 'snacks',
-        image: 'assets/images/menu/snacks/sambusa.jpg',
-        rating: 4.7,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 12,
-        name: 'Kolo',
-        description: 'Roasted barley snack, traditional Ethiopian street food',
-        price: 2.50,
-        category: 'snacks',
-        image: 'assets/images/menu/snacks/kolo.jpg',
-        rating: 4.3,
-        popular: false,
-        ethiopian: true,
-        vegan: true,
-        inStock: true
-    },
-    {
-        id: 13,
-        name: 'Injera with Ayib',
-        description: 'Ethiopian flatbread with fresh cottage cheese',
-        price: 5.99,
-        category: 'snacks',
-        image: 'assets/images/menu/snacks/injera-ayib.jpg',
-        rating: 4.5,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    
-    // Desserts
-    {
-        id: 14,
-        name: 'Ethiopian Honey Bread',
-        description: 'Traditional sweet bread made with honey and spices',
-        price: 4.99,
-        category: 'desserts',
-        image: 'assets/images/menu/desserts/honey-bread.jpg',
-        rating: 4.6,
-        popular: true,
-        ethiopian: true,
-        inStock: true
-    },
-    {
-        id: 15,
-        name: 'Baklava',
-        description: 'Layered pastry with nuts and honey',
-        price: 5.50,
-        category: 'desserts',
-        image: 'assets/images/menu/desserts/baklava.jpg',
-        rating: 4.7,
-        popular: true,
-        ethiopian: false,
-        inStock: true
-    },
-    {
-        id: 16,
-        name: 'Fresh Fruit Platter',
-        description: 'Assorted Ethiopian seasonal fruits',
-        price: 6.50,
-        category: 'desserts',
-        image: 'assets/images/menu/desserts/fruit-platter.jpg',
-        rating: 4.4,
-        popular: false,
-        ethiopian: true,
-        vegan: true,
-        inStock: true
-    }
-];
-
-// Initialize menu items in localStorage if not exists
+// Initialize empty menu if not exists
 if (!localStorage.getItem('markanMenu')) {
-    localStorage.setItem('markanMenu', JSON.stringify(menuDatabase));
+    localStorage.setItem('markanMenu', JSON.stringify([]));
+    console.log('✅ Empty menu initialized');
 }
 
 // Menu database helper
 const MenuDB = {
     // Get all menu items
     getAll: function() {
-        const items = localStorage.getItem('markanMenu');
-        return items ? JSON.parse(items) : menuDatabase;
+        try {
+            return JSON.parse(localStorage.getItem('markanMenu')) || [];
+        } catch (e) {
+            console.error('Error parsing menu:', e);
+            return [];
+        }
     },
     
     // Get item by ID
     getById: function(id) {
         const items = this.getAll();
-        return items.find(item => item.id === parseInt(id));
-    },
-    
-    // Add new menu item
-    add: function(item) {
-        const items = this.getAll();
-        const newId = Math.max(...items.map(i => i.id), 0) + 1;
-        const newItem = {
-            id: newId,
-            rating: 0,
-            inStock: true,
-            ...item
-        };
-        items.push(newItem);
-        localStorage.setItem('markanMenu', JSON.stringify(items));
-        return newItem;
-    },
-    
-    // Update menu item
-    update: function(id, updates) {
-        const items = this.getAll();
-        const index = items.findIndex(item => item.id === parseInt(id));
-        if (index !== -1) {
-            items[index] = { ...items[index], ...updates };
-            localStorage.setItem('markanMenu', JSON.stringify(items));
-            return items[index];
-        }
-        return null;
-    },
-    
-    // Delete menu item
-    delete: function(id) {
-        const items = this.getAll();
-        const filtered = items.filter(item => item.id !== parseInt(id));
-        localStorage.setItem('markanMenu', JSON.stringify(filtered));
-        return filtered;
+        return items.find(item => item.id == id);
     },
     
     // Get items by category
@@ -269,34 +33,172 @@ const MenuDB = {
         return items.filter(item => item.category === category);
     },
     
-    // Search items
+    // Get available items (status = 'available' AND stock > 0)
+    getAvailable: function() {
+        const items = this.getAll();
+        return items.filter(item => item.status === 'available' && item.stock > 0);
+    },
+    
+    // Get low stock items (stock < 5 AND > 0)
+    getLowStock: function() {
+        const items = this.getAll();
+        return items.filter(item => item.stock < 5 && item.stock > 0 && item.status === 'available');
+    },
+    
+    // Get out of stock items
+    getOutOfStock: function() {
+        const items = this.getAll();
+        return items.filter(item => item.stock === 0 || item.status === 'out_of_stock');
+    },
+    
+    // Add new menu item
+    add: function(itemData) {
+        try {
+            const items = this.getAll();
+            const newId = this.generateId();
+            
+            // Auto-set status based on stock
+            const status = itemData.stock === 0 ? 'out_of_stock' : (itemData.status || 'available');
+            
+            const newItem = {
+                id: newId,
+                name: itemData.name,
+                description: itemData.description || '',
+                price: parseFloat(itemData.price) || 0,
+                category: itemData.category || 'other',
+                stock: parseInt(itemData.stock) || 0,
+                status: status,
+                image: itemData.image || null,
+                popular: itemData.popular || false,
+                ethiopian: itemData.ethiopian || false,
+                vegetarian: itemData.vegetarian || false,
+                vegan: itemData.vegan || false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            items.push(newItem);
+            localStorage.setItem('markanMenu', JSON.stringify(items));
+            return newItem;
+            
+        } catch (error) {
+            console.error('Error adding menu item:', error);
+            return null;
+        }
+    },
+    
+    // Update menu item
+    update: function(id, updates) {
+        try {
+            const items = this.getAll();
+            const index = items.findIndex(item => item.id == id);
+            
+            if (index !== -1) {
+                // Auto-update status based on stock if stock is being updated
+                if (updates.stock !== undefined) {
+                    if (updates.stock === 0) {
+                        updates.status = 'out_of_stock';
+                    } else if (updates.stock > 0 && items[index].status === 'out_of_stock') {
+                        updates.status = 'available';
+                    }
+                }
+                
+                items[index] = { 
+                    ...items[index], 
+                    ...updates, 
+                    updatedAt: new Date().toISOString() 
+                };
+                
+                localStorage.setItem('markanMenu', JSON.stringify(items));
+                return items[index];
+            }
+            return null;
+            
+        } catch (error) {
+            console.error('Error updating menu item:', error);
+            return null;
+        }
+    },
+    
+    // Delete menu item
+    delete: function(id) {
+        try {
+            const items = this.getAll();
+            const filtered = items.filter(item => item.id != id);
+            localStorage.setItem('markanMenu', JSON.stringify(filtered));
+            return true;
+        } catch (error) {
+            console.error('Error deleting menu item:', error);
+            return false;
+        }
+    },
+    
+    // Reduce stock (when order is placed)
+    reduceStock: function(itemId, quantity) {
+        const items = this.getAll();
+        const index = items.findIndex(item => item.id == itemId);
+        
+        if (index !== -1) {
+            items[index].stock -= quantity;
+            if (items[index].stock < 0) items[index].stock = 0;
+            if (items[index].stock === 0) {
+                items[index].status = 'out_of_stock';
+            }
+            localStorage.setItem('markanMenu', JSON.stringify(items));
+            return items[index];
+        }
+        return null;
+    },
+    
+    // Search items by name or description
     search: function(query) {
         const items = this.getAll();
         const searchTerm = query.toLowerCase();
         return items.filter(item => 
             item.name.toLowerCase().includes(searchTerm) ||
-            item.description.toLowerCase().includes(searchTerm)
+            (item.description && item.description.toLowerCase().includes(searchTerm))
         );
     },
     
-    // Get popular items
-    getPopular: function(limit = 4) {
-        const items = this.getAll();
-        return items.filter(item => item.popular).slice(0, limit);
+    // Generate unique ID
+    generateId: function() {
+        return 'M' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
     },
     
-    // Get Ethiopian items
-    getEthiopian: function() {
+    // Get popular items (based on order count)
+    getPopular: function(limit = 5) {
+        const orders = JSON.parse(localStorage.getItem('markanOrders')) || [];
         const items = this.getAll();
-        return items.filter(item => item.ethiopian);
-    },
-    
-    // Get vegetarian items
-    getVegetarian: function() {
-        const items = this.getAll();
-        return items.filter(item => item.vegetarian || item.vegan);
+        
+        // Count item occurrences in completed orders
+        const itemCounts = {};
+        orders.filter(o => o.status === 'completed').forEach(order => {
+            order.items?.forEach(item => {
+                const key = item.id;
+                if (itemCounts[key]) {
+                    itemCounts[key].count += item.quantity;
+                } else {
+                    itemCounts[key] = {
+                        id: key,
+                        count: item.quantity
+                    };
+                }
+            });
+        });
+        
+        // Sort by count and map to full item details
+        return Object.values(itemCounts)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, limit)
+            .map(count => {
+                const item = items.find(i => i.id == count.id);
+                return item ? { ...item, orderCount: count.count } : null;
+            })
+            .filter(i => i);
     }
 };
 
 // Make available globally
 window.MenuDB = MenuDB;
+
+console.log('📁 Menu database ready');

@@ -9,9 +9,8 @@
     <link rel="stylesheet" href="../css/customer-style.css">
     <link rel="stylesheet" href="../css/customer-responsive.css">
     <style>
-        /* ===== RESERVATIONS PAGE STYLES ===== */
         .reservations-header {
-            background: linear-gradient(135deg, #2C1810, #8B4513);
+            background: linear-gradient(135deg, var(--coffee-dark), var(--coffee-medium));
             padding: 3rem;
             border-radius: 0 0 50px 50px;
             text-align: center;
@@ -38,12 +37,12 @@
         }
 
         .reservation-cta {
-            background: #FFFFFF;
-            border-radius: 24px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius-xl);
             padding: 3rem;
             text-align: center;
             margin-bottom: 3rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: var(--shadow-lg);
             position: relative;
             overflow: hidden;
             border: 1px solid rgba(139,69,19,0.1);
@@ -60,34 +59,34 @@
         }
 
         .reservation-cta h2 {
-            color: #2C1810;
+            color: var(--coffee-dark);
             font-size: 2.2rem;
             margin-bottom: 1rem;
         }
 
         .reservation-cta p {
-            color: #6B4F3F;
+            color: var(--text-muted);
             font-size: 1.1rem;
             max-width: 600px;
             margin: 0 auto 2rem;
         }
 
         .btn-reserve {
-            background: #8B4513;
+            background: var(--coffee-medium);
             color: white;
             padding: 1rem 3rem;
             font-size: 1.2rem;
             border: none;
-            border-radius: 50px;
+            border-radius: var(--border-radius-full);
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(139,69,19,0.3);
+            box-shadow: var(--shadow-md);
         }
 
         .btn-reserve:hover {
-            background: #2C1810;
+            background: var(--coffee-dark);
             transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(44,24,16,0.3);
+            box-shadow: var(--shadow-lg);
         }
 
         .my-reservations {
@@ -99,14 +98,14 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            color: #2C1810;
+            color: var(--coffee-dark);
         }
 
         .reservations-tabs {
             display: flex;
             gap: 1rem;
             margin-bottom: 2rem;
-            border-bottom: 2px solid #F5E6D3;
+            border-bottom: 2px solid var(--primary-cream);
             padding-bottom: 0.5rem;
         }
 
@@ -116,18 +115,18 @@
             border: none;
             font-size: 1rem;
             font-weight: 500;
-            color: #8B7D6B;
+            color: var(--text-muted);
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
         }
 
         .tab-btn:hover {
-            color: #8B4513;
+            color: var(--coffee-medium);
         }
 
         .tab-btn.active {
-            color: #2C1810;
+            color: var(--coffee-dark);
         }
 
         .tab-btn.active::after {
@@ -137,8 +136,8 @@
             left: 0;
             right: 0;
             height: 3px;
-            background: #8B4513;
-            border-radius: 9999px;
+            background: var(--coffee-medium);
+            border-radius: var(--border-radius-full);
         }
 
         .reservations-grid {
@@ -148,10 +147,10 @@
         }
 
         .reservation-card {
-            background: #FFFFFF;
-            border-radius: 16px;
+            background: var(--card-bg);
+            border-radius: var(--border-radius-lg);
             padding: 1.5rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            box-shadow: var(--shadow-md);
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
             border: 1px solid rgba(139,69,19,0.1);
@@ -159,20 +158,20 @@
 
         .reservation-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(139,69,19,0.15);
-            border-color: #8B4513;
+            box-shadow: var(--shadow-lg);
+            border-color: var(--coffee-medium);
         }
 
         .reservation-card.pending {
-            border-left-color: #B76E1E;
+            border-left-color: var(--warning-orange);
         }
 
         .reservation-card.confirmed {
-            border-left-color: #2E7D32;
+            border-left-color: var(--success-green);
         }
 
         .reservation-card.cancelled {
-            border-left-color: #9A2A2A;
+            border-left-color: var(--danger-red);
             opacity: 0.7;
         }
 
@@ -182,17 +181,17 @@
             align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 0.5rem;
-            border-bottom: 1px solid #F5E6D3;
+            border-bottom: 1px solid var(--primary-cream);
         }
 
         .reservation-id {
             font-weight: 600;
-            color: #2C1810;
+            color: var(--coffee-dark);
         }
 
         .reservation-status {
             padding: 0.3rem 1rem;
-            border-radius: 9999px;
+            border-radius: var(--border-radius-full);
             font-size: 0.8rem;
             font-weight: 600;
         }
@@ -221,11 +220,11 @@
             align-items: center;
             gap: 0.5rem;
             margin: 0.5rem 0;
-            color: #6B4F3F;
+            color: var(--text-muted);
         }
 
         .reservation-details i {
-            color: #8B4513;
+            color: var(--coffee-medium);
             width: 20px;
         }
 
@@ -234,23 +233,23 @@
             gap: 0.5rem;
             margin-top: 1rem;
             padding-top: 1rem;
-            border-top: 1px solid #F5E6D3;
+            border-top: 1px solid var(--primary-cream);
         }
 
         .btn-cancel {
             flex: 1;
             padding: 0.8rem;
             background: none;
-            border: 2px solid #9A2A2A;
-            color: #9A2A2A;
-            border-radius: 9999px;
+            border: 2px solid var(--danger-red);
+            color: var(--danger-red);
+            border-radius: var(--border-radius-full);
             cursor: pointer;
             transition: all 0.3s ease;
             font-weight: 500;
         }
 
         .btn-cancel:hover {
-            background: #9A2A2A;
+            background: var(--danger-red);
             color: white;
             transform: translateY(-2px);
         }
@@ -263,392 +262,91 @@
         .no-reservations {
             text-align: center;
             padding: 4rem;
-            background: #FFFFFF;
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            background: var(--card-bg);
+            border-radius: var(--border-radius-xl);
+            box-shadow: var(--shadow-lg);
             grid-column: 1 / -1;
         }
 
         .no-reservations i {
             font-size: 5rem;
-            color: #8B4513;
+            color: var(--coffee-medium);
             margin-bottom: 1rem;
             opacity: 0.5;
         }
 
         .no-reservations h3 {
-            color: #2C1810;
+            color: var(--coffee-dark);
             margin-bottom: 0.5rem;
         }
 
         .no-reservations p {
-            color: #6B4F3F;
+            color: var(--text-muted);
             margin-bottom: 2rem;
         }
 
-        /* ===== MODERNIZED RESERVATION MODAL ===== */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(44, 24, 16, 0.8);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            backdrop-filter: blur(8px);
-        }
-
-        .modal.active {
-            display: flex;
-            animation: modalFadeIn 0.4s ease;
-        }
-
-        @keyframes modalFadeIn {
-            from {
-                opacity: 0;
-                transform: scale(0.95) translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-            }
-        }
-
-        .modal-content {
-            background: #FDF5E6;
-            border-radius: 32px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            box-shadow: 0 25px 50px -12px rgba(44, 24, 16, 0.5);
-            border: 1px solid rgba(139, 69, 19, 0.2);
-        }
-
-        .modal-header {
-            background: linear-gradient(135deg, #2C1810, #8B4513);
-            padding: 2rem 2rem;
-            border-radius: 32px 32px 0 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .modal-header::before {
-            content: '☕';
-            position: absolute;
-            right: -10px;
-            bottom: -10px;
-            font-size: 100px;
-            opacity: 0.1;
-            color: #FFD700;
-            transform: rotate(15deg);
-        }
-
-        .modal-header h3 {
-            color: #FFFFFF;
-            margin: 0;
-            font-size: 1.8rem;
-            font-family: 'Playfair Display', serif;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .modal-header h3 i {
-            color: #FFD700;
-            font-size: 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            border-radius: 50%;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            cursor: pointer;
-            color: white;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .modal-close:hover {
-            background: #9A2A2A;
-            transform: rotate(90deg);
-            border-color: transparent;
-        }
-
-        .modal-body {
-            padding: 2.5rem;
-            background: #FDF5E6;
-            background-image: radial-gradient(circle at 10% 20%, rgba(139, 69, 19, 0.03) 0%, transparent 30%);
-        }
-
-        /* ===== FORM STYLES ===== */
+        /* Reservation Form Modal */
         .reservation-form {
-            display: flex;
-            flex-direction: column;
+            display: grid;
             gap: 1.5rem;
         }
 
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.2rem;
+            gap: 1rem;
         }
 
         .form-group {
-            position: relative;
+            margin-bottom: 0;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 0.6rem;
-            font-weight: 600;
-            color: #2C1810;
-            font-size: 0.95rem;
-            letter-spacing: 0.3px;
-        }
-
-        .form-group label i {
-            color: #8B4513;
-            margin-right: 8px;
-            width: 18px;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--coffee-dark);
         }
 
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
-            padding: 1rem 1.2rem;
-            border: 2px solid #E5D5C5;
-            border-radius: 16px;
+            padding: 0.8rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius-md);
             font-size: 1rem;
             transition: all 0.3s ease;
-            background: #FFFFFF;
-            font-family: 'Poppins', sans-serif;
-            color: #2C1810;
-        }
-
-        .form-group input:hover,
-        .form-group select:hover,
-        .form-group textarea:hover {
-            border-color: #A0522D;
-            background: #FFF9F0;
+            background: var(--bg-warm);
         }
 
         .form-group input:focus,
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #8B4513;
-            box-shadow: 0 0 0 4px rgba(139, 69, 19, 0.15);
-            background: #FFFFFF;
+            border-color: var(--coffee-medium);
+            box-shadow: 0 0 0 3px rgba(139,69,19,0.1);
         }
 
-        .form-group input::placeholder,
-        .form-group textarea::placeholder {
-            color: #B8A99A;
-            font-style: italic;
-        }
-
-        /* ===== CUSTOM SELECT STYLES ===== */
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B4513' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1.2rem center;
-            padding-right: 3rem !important;
-        }
-
-        /* ===== PHONE INPUT HINT ===== */
         .hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
             display: block;
-            font-size: 0.8rem;
-            color: #8B7D6B;
-            margin-top: 0.5rem;
-            padding-left: 0.5rem;
-            font-style: italic;
         }
 
-        .hint i {
-            color: #8B4513;
-            margin-right: 4px;
-        }
-
-        /* ===== TEXTAREA ===== */
-        textarea {
-            resize: vertical;
-            min-height: 100px;
-        }
-
-        /* ===== MODAL ACTIONS ===== */
         .modal-actions {
             display: flex;
             gap: 1rem;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 2px dashed #E5D5C5;
+            margin-top: 1rem;
         }
 
-        .btn {
-            flex: 1;
-            padding: 1rem 1.5rem;
-            border: none;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid #8B4513;
-            color: #8B4513;
-        }
-
-        .btn-outline:hover {
-            background: #8B4513;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(139, 69, 19, 0.3);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #8B4513, #A0522D);
-            color: white;
-            box-shadow: 0 4px 15px rgba(139, 69, 19, 0.3);
-        }
-
-        .btn-primary:hover {
-            background: linear-gradient(135deg, #A0522D, #8B4513);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(139, 69, 19, 0.4);
-        }
-
-        .btn i {
-            font-size: 1.1rem;
-        }
-
-        /* ===== SCROLLBAR STYLING ===== */
-        .modal-content::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .modal-content::-webkit-scrollbar-track {
-            background: #F5E6D3;
-            border-radius: 0 0 32px 0;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb {
-            background: #8B4513;
-            border-radius: 4px;
-        }
-
-        .modal-content::-webkit-scrollbar-thumb:hover {
-            background: #A0522D;
-        }
-
-        /* ===== ANIMATIONS ===== */
-        @keyframes slideInField {
-            from {
-                opacity: 0;
-                transform: translateX(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        .form-group {
-            animation: slideInField 0.4s ease forwards;
-            opacity: 0;
-        }
-
-        .form-group:nth-child(1) { animation-delay: 0.1s; }
-        .form-group:nth-child(2) { animation-delay: 0.15s; }
-        .form-group:nth-child(3) { animation-delay: 0.2s; }
-        .form-group:nth-child(4) { animation-delay: 0.25s; }
-        .form-group:nth-child(5) { animation-delay: 0.3s; }
-        .form-group:nth-child(6) { animation-delay: 0.35s; }
-        .form-group:nth-child(7) { animation-delay: 0.4s; }
-
-        /* ===== COFFEE THEME ACCENTS ===== */
-        .modal-content::after {
-            content: '';
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238B4513" opacity="0.05"><path d="M18 6h-2V4h2v2zm-2 2h-2v2h2V8zm-4-2h-2v2h2V6zm0 6h-2v2h2v-2zm4 2h-2v2h2v-2zm2-2h-2v2h2v-2zm-8-2H6v2h2v-2zm0 6H6v2h2v-2zm4 2h-2v2h2v-2zm2-2h-2v2h2v-2z"/></svg>');
-            background-repeat: no-repeat;
-            pointer-events: none;
-            opacity: 0.1;
-        }
-
-        /* ===== DATE INPUT STYLING ===== */
-        input[type="date"] {
-            position: relative;
-            color: #2C1810;
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            color: #8B4513;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-        }
-
-        input[type="date"]::-webkit-calendar-picker-indicator:hover {
-            background: rgba(139, 69, 19, 0.1);
-        }
-
-        /* ===== TIME INPUT STYLING ===== */
-        input[type="time"] {
-            color: #2C1810;
-        }
-
-        input[type="time"]::-webkit-calendar-picker-indicator {
-            background: transparent;
-            color: #8B4513;
-            cursor: pointer;
-            padding: 5px;
-            border-radius: 50%;
-        }
-
-        /* ===== FOCUS WITHIN EFFECT ===== */
-        .form-group:focus-within label {
-            color: #8B4513;
-            transform: translateX(5px);
-            transition: transform 0.3s ease;
-        }
-
-        /* ===== RESPONSIVE ===== */
         @media (max-width: 768px) {
             .reservations-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
                 grid-template-columns: 1fr;
             }
 
@@ -660,6 +358,10 @@
                 font-size: 1.8rem;
             }
 
+            .modal-actions {
+                flex-direction: column;
+            }
+
             .reservations-tabs {
                 flex-wrap: wrap;
             }
@@ -668,48 +370,6 @@
                 flex: 1;
                 text-align: center;
                 padding: 0.5rem;
-            }
-            
-            .modal-content {
-                width: 95%;
-                border-radius: 24px;
-            }
-
-            .modal-header {
-                padding: 1.5rem;
-            }
-
-            .modal-header h3 {
-                font-size: 1.4rem;
-            }
-
-            .modal-header h3 i {
-                font-size: 1.5rem;
-                padding: 8px;
-            }
-
-            .modal-body {
-                padding: 1.5rem;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .modal-actions {
-                flex-direction: column;
-            }
-
-            .btn {
-                width: 100%;
-            }
-
-            .modal-close {
-                top: 1rem;
-                right: 1rem;
-                width: 35px;
-                height: 35px;
             }
         }
     </style>
@@ -818,90 +478,59 @@
         </div>
     </div>
 
-    <!-- Reservation Modal - Modernized Version -->
+    <!-- Reservation Modal -->
     <div class="modal" id="reservationModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>
-                    <i class="fas fa-calendar-check"></i>
-                    Make a Reservation
-                </h3>
-                <button class="modal-close" onclick="closeReservationModal()">
-                    <i class="fas fa-times"></i>
-                </button>
+                <h3><i class="fas fa-calendar-plus"></i> Make a Reservation</h3>
+                <button class="modal-close" onclick="closeReservationModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
                 <form id="reservationForm" class="reservation-form" onsubmit="event.preventDefault(); makeReservation();">
                     <div class="form-group">
-                        <label for="resName">
-                            <i class="fas fa-user"></i>
-                            Full Name
-                        </label>
-                        <input type="text" id="resName" placeholder="e.g., Abebe Kebede" required>
+                        <label for="resName">Full Name *</label>
+                        <input type="text" id="resName" placeholder="Enter your full name" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="resEmail">
-                            <i class="fas fa-envelope"></i>
-                            Email
-                        </label>
-                        <input type="email" id="resEmail" placeholder="your@email.com" required>
+                        <label for="resEmail">Email *</label>
+                        <input type="email" id="resEmail" placeholder="Enter your email" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="resPhone">
-                            <i class="fas fa-phone"></i>
-                            Phone Number
-                        </label>
-                        <input type="tel" id="resPhone" placeholder="0912345678" required>
-                        <small class="hint">
-                            <i class="fas fa-info-circle"></i>
-                            Format: 09XXXXXXXX or +2519XXXXXXXX
-                        </small>
+                        <label for="resPhone">Phone Number *</label>
+                        <input type="tel" id="resPhone" placeholder="0912345678 or +251912345678" required>
+                        <small class="hint">Format: 09XXXXXXXX or +2519XXXXXXXX</small>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="resGuests">
-                                <i class="fas fa-users"></i>
-                                Guests
-                            </label>
+                            <label for="resGuests">Number of Guests *</label>
                             <select id="resGuests" required>
-                                <option value="" disabled selected>Select number</option>
+                                <option value="">Select</option>
                                 <option value="1">1 Guest</option>
                                 <option value="2">2 Guests</option>
                                 <option value="3">3 Guests</option>
                                 <option value="4">4 Guests</option>
                                 <option value="5">5 Guests</option>
-                                <option value="6">6 Guests</option>
-                                <option value="7">7 Guests</option>
-                                <option value="8">8+ Guests</option>
+                                <option value="6">6+ Guests</option>
                             </select>
                         </div>
                         
                         <div class="form-group">
-                            <label for="resDate">
-                                <i class="fas fa-calendar"></i>
-                                Date
-                            </label>
+                            <label for="resDate">Date *</label>
                             <input type="date" id="resDate" required>
                         </div>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="resTime">
-                                <i class="fas fa-clock"></i>
-                                Time
-                            </label>
+                            <label for="resTime">Time *</label>
                             <input type="time" id="resTime" required>
                         </div>
                         
                         <div class="form-group">
-                            <label for="resDuration">
-                                <i class="fas fa-hourglass-half"></i>
-                                Duration
-                            </label>
+                            <label for="resDuration">Duration (hours)</label>
                             <select id="resDuration">
                                 <option value="1">1 hour</option>
                                 <option value="1.5">1.5 hours</option>
@@ -913,23 +542,13 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="resRequests">
-                            <i class="fas fa-comment"></i>
-                            Special Requests
-                        </label>
-                        <textarea id="resRequests" rows="3" 
-                            placeholder="Dietary restrictions, special occasion, seating preferences..."></textarea>
+                        <label for="resRequests">Special Requests</label>
+                        <textarea id="resRequests" rows="3" placeholder="Any special requests? (dietary restrictions, occasion, etc.)"></textarea>
                     </div>
                     
                     <div class="modal-actions">
-                        <button type="button" class="btn btn-outline" onclick="closeReservationModal()">
-                            <i class="fas fa-times"></i>
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-check-circle"></i>
-                            Confirm Reservation
-                        </button>
+                        <button type="button" class="btn btn-outline" onclick="closeReservationModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Confirm Reservation</button>
                     </div>
                 </form>
             </div>
