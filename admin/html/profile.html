@@ -104,9 +104,6 @@
                         <a href="#security" class="profile-menu-item" onclick="showSection('security')">
                             <i class="fas fa-shield-alt"></i> Security
                         </a>
-                        <a href="#preferences" class="profile-menu-item" onclick="showSection('preferences')">
-                            <i class="fas fa-sliders-h"></i> Preferences
-                        </a>
                         <a href="#activity" class="profile-menu-item" onclick="showSection('activity')">
                             <i class="fas fa-history"></i> Activity Log
                         </a>
@@ -188,103 +185,6 @@
                             </form>
                         </div>
 
-                        <div class="security-card">
-                            <h4>Two-Factor Authentication</h4>
-                            <div class="two-factor-status">
-                                <div class="status-info">
-                                    <i class="fas fa-shield-alt"></i>
-                                    <div>
-                                        <p><strong>Status:</strong> <span id="twoFactorStatus">Disabled</span></p>
-                                        <p>Add an extra layer of security to your account</p>
-                                    </div>
-                                </div>
-                                <button class="btn btn-outline" onclick="toggleTwoFactor()">
-                                    Enable 2FA
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="security-card">
-                            <h4>Login Sessions</h4>
-                            <div class="sessions-list" id="sessionsList">
-                                <!-- Will be populated by JS -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Preferences Section -->
-                    <div id="preferences" class="profile-section">
-                        <h3>Preferences</h3>
-                        
-                        <div class="preferences-card">
-                            <h4>Theme Settings</h4>
-                            <div class="theme-options">
-                                <div class="theme-option" onclick="setTheme('light')">
-                                    <div class="theme-preview light"></div>
-                                    <span>Light</span>
-                                </div>
-                                <div class="theme-option" onclick="setTheme('dark')">
-                                    <div class="theme-preview dark"></div>
-                                    <span>Dark</span>
-                                </div>
-                                <div class="theme-option" onclick="setTheme('system')">
-                                    <div class="theme-preview system"></div>
-                                    <span>System</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="preferences-card">
-                            <h4>Language & Region</h4>
-                            <div class="form-group">
-                                <label for="language">Language</label>
-                                <select id="language">
-                                    <option value="en">English</option>
-                                    <option value="am">አማርኛ</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="timezone">Timezone</label>
-                                <select id="timezone">
-                                    <option value="Africa/Addis_Ababa">Africa/Addis Ababa (UTC+3)</option>
-                                    <option value="UTC">UTC</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="dateFormat">Date Format</label>
-                                <select id="dateFormat">
-                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="preferences-card">
-                            <h4>Dashboard Preferences</h4>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="showStats" checked>
-                                    <span>Show statistics cards</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="showCharts" checked>
-                                    <span>Show charts</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="showRecentOrders" checked>
-                                    <span>Show recent orders</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" id="compactView">
-                                    <span>Compact view</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button class="btn btn-primary" onclick="savePreferences()">Save Preferences</button>
-                        </div>
                     </div>
 
                     <!-- Activity Log Section -->

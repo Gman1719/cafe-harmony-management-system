@@ -26,7 +26,6 @@
                     <li><a href="orders.html" class="active"><i class="fas fa-clipboard-list"></i> <span>Orders</span></a></li>
                     <li><a href="reservations.html"><i class="fas fa-calendar-check"></i> <span>Reservations</span></a></li>
                     <li><a href="users.html"><i class="fas fa-users"></i> <span>Users</span></a></li>
-                    <li><a href="billing.html"><i class="fas fa-receipt"></i> <span>Billing</span></a></li>
                     <li><a href="profile.html"><i class="fas fa-user-cog"></i> <span>Profile</span></a></li>
                     <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></a></li>
                 </ul>
@@ -139,14 +138,6 @@
                         <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
-                <div class="payment-filter">
-                    <select id="paymentFilter">
-                        <option value="all">All Payments</option>
-                        <option value="cash">Cash</option>
-                        <option value="card">Card</option>
-                        <option value="online">Online</option>
-                    </select>
-                </div>
             </div>
 
             <!-- Orders Table -->
@@ -220,14 +211,6 @@
                         </thead>
                         <tbody id="orderItemsList"></tbody>
                         <tfoot>
-                            <tr>
-                                <td colspan="3" class="text-right"><strong>Subtotal:</strong></td>
-                                <td id="orderSubtotal"></td>
-                            </tr>
-                            <tr>
-                                <td colspan="3" class="text-right"><strong>Tax (10%):</strong></td>
-                                <td id="orderTax"></td>
-                            </tr>
                             <tr>
                                 <td colspan="3" class="text-right"><strong>Total:</strong></td>
                                 <td id="orderTotal" class="total-price"></td>
