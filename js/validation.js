@@ -213,7 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: document.getElementById('email')?.value,
                 phone: document.getElementById('phone')?.value,
                 password: document.getElementById('password')?.value,
-                confirmPassword: document.getElementById('confirmPassword')?.value
+                confirmPassword: document.getElementById('confirmPassword')?.value,
+                role: document.getElementById('role')?.value,
+                terms: document.getElementById('terms')?.checked
             };
             
             const rules = {
@@ -221,8 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: [v => Validator.required(v, 'Email'), v => Validator.email(v)],
                 phone: [v => Validator.required(v, 'Phone'), v => Validator.ethiopianPhone(v)],
                 password: [v => Validator.required(v, 'Password'), v => Validator.password(v)],
-                confirmPassword: [v => Validator.confirmPassword(formData.password, v, 'Confirm Password')]
+                confirmPassword: [v => Validator.confirmPassword(formData.password, v, 'Confirm Password')],
+                role: [v => Validator.select(v, 'role')]
             };
+            
+            // Check terms
+            if (!formData.terms) {
+                Validator.showFieldError('terms', 'You must agree to the Terms of Service');
+                showNotification('Please agree to the Terms of Service', 'error');
+                return;
+            }
             
             const result = Validator.validate(formData, rules);
             
@@ -233,7 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         email: 'email',
                         phone: 'phone',
                         password: 'password',
-                        confirmPassword: 'confirmPassword'
+                        confirmPassword: 'confirmPassword',
+                        role: 'role'
                     }[field];
                     
                     if (fieldId) {
@@ -245,66 +256,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             
-            // If validation passes, let auth.js handle the submission
-            registerForm.removeEventListener('submit', this);
-            registerForm.dispatchEvent(new Event('submit'));
+            // If validation passes, call Auth.register
+            Auth.register(formData);
         });
     }
     
-    // Reservation form validation
-    const reservationForm = document.getElementById('reservationForm');
-    if (reservationForm) {
-        reservationForm.addEventListener('submit', (e) => {
+    // Login form validation
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
             Validator.clearAllErrors();
             
-            const formData = {
-                name: document.getElementById('resName')?.value,
-                email: document.getElementById('resEmail')?.value,
-                phone: document.getElementById('resPhone')?.value,
-                guests: document.getElementById('resGuests')?.value,
-                date: document.getElementById('resDate')?.value,
-                time: document.getElementById('resTime')?.value
-            };
+            const email = document.getElementById('email')?.value;
+            const password = document.getElementById('password')?.value;
+            const remember = document.getElementById('rememberMe')?.checked || false;
             
-            const rules = {
-                name: [v => Validator.required(v, 'Full Name')],
-                email: [v => Validator.required(v, 'Email'), v => Validator.email(v)],
-                phone: [v => Validator.required(v, 'Phone'), v => Validator.ethiopianPhone(v)],
-                guests: [v => Validator.select(v, 'number of guests')],
-                date: [v => Validator.required(v, 'Date'), v => Validator.futureDate(v)],
-                time: [v => Validator.required(v, 'Time'), v => Validator.time(v)]
-            };
+            let hasError = false;
             
-            const result = Validator.validate(formData, rules);
+            if (!Validator.required(email, 'Email')) {
+                Validator.showFieldError('email', 'Email is required');
+                hasError = true;
+            } else if (!Validator.email(email)) {
+                Validator.showFieldError('email', 'Please enter a valid email');
+                hasError = true;
+            }
             
-            if (!result.isValid) {
-                Object.entries(result.errors).forEach(([field, message]) => {
-                    const fieldId = {
-                        name: 'resName',
-                        email: 'resEmail',
-                        phone: 'resPhone',
-                        guests: 'resGuests',
-                        date: 'resDate',
-                        time: 'resTime'
-                    }[field];
-                    
-                    if (fieldId) {
-                        Validator.showFieldError(fieldId, message);
-                    }
-                });
-                
+            if (!Validator.required(password, 'Password')) {
+                Validator.showFieldError('password', 'Password is required');
+                hasError = true;
+            }
+            
+            if (hasError) {
                 showNotification('Please fix the errors in the form', 'error');
                 return;
             }
             
-            // If validation passes, proceed
-            showNotification('Reservation request sent successfully! We\'ll confirm shortly.', 'success');
-            reservationForm.reset();
-            if (typeof closeReservationModal === 'function') {
-                closeReservationModal();
-            }
+            // Call Auth.login
+            Auth.login(email, password, remember);
         });
     }
 });

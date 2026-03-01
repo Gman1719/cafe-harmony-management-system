@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Ethiopian Coffee",
+      "description": "Traditional Ethiopian coffee ceremony",
+      "price": 4.50,
+      "category": "beverages",
+      "image": "assets/images/menu/ethiopian-coffee.jpg",
+      "stock": 50,
+      "status": "available",
+      "popular": true,
+      "ethiopian": true,
+      "vegetarian": true,
+      "vegan": true,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "Doro Wat",
+      "description": "Spicy Ethiopian chicken stew",
+      "price": 12.99,
+      "category": "meals",
+      "image": "assets/images/menu/doro-wat.jpg",
+      "stock": 30,
+      "status": "available",
+      "popular": true,
+      "ethiopian": true,
+      "vegetarian": false,
+      "vegan": false,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}

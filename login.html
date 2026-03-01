@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="css/responsive.css">
     <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
     <style>
-        /* Ensure auth footer is visible */
+        /* Your existing styles */
         .auth-footer {
             margin-top: 1.5rem;
             text-align: center;
@@ -35,11 +35,19 @@
         .auth-footer a:hover {
             text-decoration: underline;
         }
+        
+        body.auth-page {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                        url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
     </style>
 </head>
 <body class="auth-page">
     <!-- Navigation -->
-    <nav class="navbar">
+    <nav class="navbar" id="navbar">
         <div class="container">
             <div class="navbar-brand">
                 <img src="assets/images/logo.png" alt="Markan Cafe Logo" class="logo" onerror="this.src='https://via.placeholder.com/50x50/8B4513/FFD700?text=MC'">
@@ -52,6 +60,12 @@
                 <a href="about.html">About</a>
                 <a href="contact.html">Contact</a>
                 <a href="faq.html">FAQ</a>
+                
+                <!-- Static buttons that will be shown/hidden by Auth -->
+                <div class="navbar-buttons static">
+                    <a href="login.html" class="btn btn-outline">Login</a>
+                    <a href="register.html" class="btn btn-primary">Sign Up</a>
+                </div>
             </div>
             
             <button class="navbar-toggle" id="navbarToggle">
@@ -121,5 +135,22 @@
     <script src="js/main.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/validation.js"></script>
+    
+    <script>
+        // Navbar toggle
+        document.getElementById('navbarToggle').addEventListener('click', function() {
+            document.getElementById('navbarMenu').classList.toggle('active');
+        });
+
+        // Scroll effect for navbar
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+    </script>
 </body>
 </html>

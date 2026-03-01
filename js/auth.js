@@ -10,13 +10,94 @@ const Auth = {
     },
     
     currentUser: null,
+    users: [],
     
-    init() {
+    async init() {
+        await this.loadUsersFromJSON();
         this.checkSession();
         this.setupEventListeners();
         setTimeout(() => {
             this.updateNavigation();
         }, 100);
+    },
+    
+    async loadUsersFromJSON() {
+        try {
+            // Try to load from localStorage first (cached)
+            const cached = localStorage.getItem('markanUsersCache');
+            if (cached) {
+                this.users = JSON.parse(cached);
+                console.log('✅ Users loaded from cache');
+                return;
+            }
+            
+            // Fetch from JSON file
+            const response = await fetch('data/json/users.json');
+            if (!response.ok) {
+                throw new Error('Failed to load users.json');
+            }
+            
+            const jsonData = await response.json();
+            this.users = jsonData.users || [];
+            
+            // Cache in localStorage
+            localStorage.setItem('markanUsersCache', JSON.stringify(this.users));
+            
+            // Also save to legacy format for backward compatibility
+            localStorage.setItem('markanUsers', JSON.stringify(this.users));
+            
+            console.log('✅ Users loaded from JSON file');
+            
+        } catch (error) {
+            console.error('Error loading users:', error);
+            
+            // Fallback to legacy localStorage
+            const legacy = localStorage.getItem('markanUsers');
+            if (legacy) {
+                try {
+                    this.users = JSON.parse(legacy);
+                    console.log('✅ Users loaded from legacy storage');
+                } catch (e) {
+                    this.createDefaultUsers();
+                }
+            } else {
+                this.createDefaultUsers();
+            }
+        }
+    },
+    
+    createDefaultUsers() {
+        this.users = [
+            {
+                id: 1,
+                name: 'Admin User',
+                email: 'admin@markan.com',
+                password: 'Admin@123',
+                phone: '+251911234567',
+                role: 'admin',
+                avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=8B4513&color=fff&size=150',
+                createdAt: new Date().toISOString(),
+                lastLogin: null,
+                status: 'active',
+                address: 'Debre Birhan University, Staff Quarters',
+                bio: 'Cafe administrator',
+                preferences: {
+                    notifications: true,
+                    darkMode: false,
+                    language: 'en',
+                    theme: 'light',
+                    twoFactor: false
+                },
+                rewards: {
+                    points: 0,
+                    tier: 'bronze'
+                }
+            }
+        ];
+        
+        localStorage.setItem('markanUsers', JSON.stringify(this.users));
+        localStorage.setItem('markanUsersCache', JSON.stringify(this.users));
+        console.log('✅ Default admin account created');
     },
     
     checkSession() {
@@ -44,9 +125,12 @@ const Auth = {
                 throw new Error('Please enter a valid email');
             }
             
-            const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            // Make sure users are loaded
+            if (this.users.length === 0) {
+                await this.loadUsersFromJSON();
+            }
             
-            const user = users.find(u => 
+            const user = this.users.find(u => 
                 u.email.toLowerCase() === email.toLowerCase() && 
                 u.password === password
             );
@@ -110,19 +194,22 @@ const Auth = {
                 throw new Error('Password must be at least 8 characters with one special character');
             }
             
-            const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
+            // Make sure users are loaded
+            if (this.users.length === 0) {
+                await this.loadUsersFromJSON();
+            }
             
-            if (users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
+            if (this.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
                 throw new Error('Email already registered');
             }
             
             const newUser = {
-                id: this.generateUserId(users),
+                id: this.generateUserId(),
                 name: userData.name,
                 email: userData.email,
                 phone: userData.phone,
                 password: userData.password,
-                role: 'customer',
+                role: userData.role || 'customer',
                 avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=8B4513&color=fff&size=150`,
                 createdAt: new Date().toISOString(),
                 lastLogin: null,
@@ -140,8 +227,17 @@ const Auth = {
                 }
             };
             
-            users.push(newUser);
-            localStorage.setItem('markanUsers', JSON.stringify(users));
+            this.users.push(newUser);
+            
+            // Save to localStorage (legacy)
+            localStorage.setItem('markanUsers', JSON.stringify(this.users));
+            
+            // Save to cache
+            localStorage.setItem('markanUsersCache', JSON.stringify(this.users));
+            
+            // For demo: Create downloadable JSON
+            const blob = new Blob([JSON.stringify({ users: this.users }, null, 2)], { type: 'application/json' });
+            console.log('📁 Updated users.json ready for export:', URL.createObjectURL(blob));
             
             this.showNotification('Registration successful! Please login.', 'success');
             
@@ -157,7 +253,6 @@ const Auth = {
         }
     },
     
-    // FIXED: Logout with proper path detection
     logout(showMessage = true) {
         // Clear current user
         this.currentUser = null;
@@ -181,13 +276,10 @@ const Auth = {
         let redirectPath = 'index.html';
         
         if (currentPath.includes('/admin/')) {
-            // From admin pages: go up 2 levels
             redirectPath = '../../index.html';
         } else if (currentPath.includes('/customer/')) {
-            // From customer pages: go up 2 levels
             redirectPath = '../../index.html';
         } else {
-            // From root pages: just go to index.html
             redirectPath = 'index.html';
         }
         
@@ -209,11 +301,24 @@ const Auth = {
         navMenus.forEach(menu => {
             if (!menu) return;
             
+            // Remove existing dynamic buttons
             const existingDynamic = menu.querySelectorAll('.dynamic-btn, .navbar-buttons:not(.static)');
             existingDynamic.forEach(el => el.remove());
             
+            // Find the original navbar buttons (if any)
+            const originalButtons = menu.querySelector('.navbar-buttons.static');
+            
             if (this.isAuthenticated()) {
+                // Hide original buttons if they exist
+                if (originalButtons) {
+                    originalButtons.style.display = 'none';
+                }
                 this.addAuthenticatedNav(menu);
+            } else {
+                // Show original buttons if they exist
+                if (originalButtons) {
+                    originalButtons.style.display = 'flex';
+                }
             }
         });
     },
@@ -330,19 +435,20 @@ const Auth = {
     },
     
     updateLastLogin(userId) {
-        const users = JSON.parse(localStorage.getItem('markanUsers')) || [];
-        const index = users.findIndex(u => u.id === userId);
+        const index = this.users.findIndex(u => u.id === userId);
         if (index !== -1) {
-            users[index].lastLogin = new Date().toISOString();
-            localStorage.setItem('markanUsers', JSON.stringify(users));
+            this.users[index].lastLogin = new Date().toISOString();
+            localStorage.setItem('markanUsers', JSON.stringify(this.users));
+            localStorage.setItem('markanUsersCache', JSON.stringify(this.users));
         }
     },
     
-    generateUserId(users) {
-        return users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+    generateUserId() {
+        return this.users.length > 0 ? Math.max(...this.users.map(u => u.id)) + 1 : 1;
     }
 };
 
+// Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     Auth.init();
 });
