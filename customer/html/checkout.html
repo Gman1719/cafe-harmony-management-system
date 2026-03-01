@@ -370,11 +370,13 @@
         .form-group textarea:focus {
             outline: none;
             border-color: #c49a6c;
+            box-shadow: 0 0 0 3px rgba(196, 154, 108, 0.1);
         }
 
-        .form-group input[readonly] {
-            background: #f0f0f0;
-            cursor: not-allowed;
+        /* REMOVED readonly background - now all fields are editable */
+        .form-group input:not([readonly]),
+        .form-group textarea:not([readonly]) {
+            background: #ffffff;
         }
 
         .form-row {
@@ -528,6 +530,17 @@
 
         .btn-success-action.secondary:hover {
             background: #c49a6c;
+        }
+
+        /* Validation styles */
+        .input-error {
+            border-color: #dc3545 !important;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.8rem;
+            margin-top: 0.3rem;
         }
 
         @media (max-width: 992px) {
@@ -713,14 +726,7 @@
                     </a>
                 </li>
             </ul>
-            
-            <div class="sidebar-footer">
-                <div class="loyalty-card">
-                    <h4>Your Rewards</h4>
-                    <div class="points" id="userPoints">0 pts</div>
-                    <div class="tier" id="userTier">Bronze</div>
-                </div>
-            </div>
+
         </aside>
 
         <!-- Main Content -->
@@ -751,20 +757,21 @@
                 <div class="checkout-container">
                     <!-- Left Column - Forms -->
                     <div>
-                        <!-- Contact Information -->
+                        <!-- Contact Information - FIXED: Removed readonly -->
                         <div class="checkout-section">
                             <h3 class="section-title"><i class="fas fa-user"></i> Contact Information</h3>
                             <div class="form-group">
-                                <label for="fullName">Full Name</label>
-                                <input type="text" id="fullName" readonly>
+                                <label for="fullName">Full Name *</label>
+                                <input type="text" id="fullName" placeholder="Enter your full name" value="">
                             </div>
                             <div class="form-group">
-                                <label for="email">Email</label>
-                                <input type="email" id="email" readonly>
+                                <label for="email">Email *</label>
+                                <input type="email" id="email" placeholder="Enter your email" value="">
                             </div>
                             <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" id="phone" readonly>
+                                <label for="phone">Phone Number *</label>
+                                <input type="tel" id="phone" placeholder="09XXXXXXXX or +2519XXXXXXXX" value="">
+                                <small class="hint">Format: 09XXXXXXXX or +2519XXXXXXXX</small>
                             </div>
                         </div>
 
@@ -779,7 +786,7 @@
                             </div>
                             <div id="deliveryAddress" style="display: none;">
                                 <div class="form-group">
-                                    <label for="address">Delivery Address</label>
+                                    <label for="address">Delivery Address *</label>
                                     <textarea id="address" rows="3" placeholder="Enter your full address"></textarea>
                                 </div>
                             </div>
@@ -809,7 +816,7 @@
                             <div class="payment-details" id="telebirrDetails">
                                 <p>You will be redirected to Telebirr to complete payment.</p>
                                 <div class="form-group">
-                                    <label for="phoneNumber">Telebirr Phone Number</label>
+                                    <label for="phoneNumber">Telebirr Phone Number *</label>
                                     <input type="tel" id="phoneNumber" placeholder="09XXXXXXXX" value="">
                                 </div>
                             </div>
@@ -914,6 +921,7 @@
     <script src="../../data/menu-items.js"></script>
     <script src="../js/theme.js"></script>
     <script src="../js/notifications.js"></script>
+    <script src="../js/checkout.js"></script>
     <script>
         // Mobile menu toggle
         document.getElementById('navbarToggle').addEventListener('click', function() {
@@ -950,6 +958,7 @@
         }
 
         function loadUserProfile() {
+            // Pre-fill with user data but allow editing
             document.getElementById('fullName').value = currentUser.name || '';
             document.getElementById('email').value = currentUser.email || '';
             document.getElementById('phone').value = currentUser.phone || '';
@@ -964,7 +973,10 @@
             cartItems = JSON.parse(localStorage.getItem(cartKey)) || [];
             
             if (cartItems.length === 0) {
-                window.location.href = 'cart.html';
+                showNotification('Your cart is empty', 'warning');
+                setTimeout(() => {
+                    window.location.href = 'cart.html';
+                }, 1500);
                 return;
             }
             
@@ -983,7 +995,7 @@
             
             container.innerHTML = cartItems.map(item => {
                 const menuItem = menuItems.find(m => m.id == item.id) || item;
-                const imageUrl = menuItem.image || `https://via.placeholder.com/50x50/8B4513/FFD700?text=${encodeURIComponent(item.name.charAt(0))}`;
+                const imageUrl = menuItem.image || '../../assets/images/placeholder-food.jpg';
                 
                 return `
                     <div class="order-item">
@@ -991,10 +1003,10 @@
                             <div class="order-item-image" style="background-image: url('${imageUrl}')"></div>
                             <div class="order-item-details">
                                 <h4>${item.name}</h4>
-                                <p>Qty: ${item.quantity}</p>
+                                <p>Qty: ${item.quantity} x ${formatETB(item.price)}</p>
                             </div>
                         </div>
-                        <div class="order-item-price">${(item.price * item.quantity).toFixed(2)} ETB</div>
+                        <div class="order-item-price">${formatETB(item.price * item.quantity)}</div>
                     </div>
                 `;
             }).join('');
@@ -1009,10 +1021,14 @@
             
             const total = subtotal + tax + deliveryFee;
             
-            document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' ETB';
-            document.getElementById('tax').textContent = tax.toFixed(2) + ' ETB';
+            document.getElementById('subtotal').textContent = formatETB(subtotal);
+            document.getElementById('tax').textContent = formatETB(tax);
             document.getElementById('deliveryFee').textContent = deliveryFee + ' ETB';
-            document.getElementById('total').textContent = total.toFixed(2) + ' ETB';
+            document.getElementById('total').textContent = formatETB(total);
+        }
+
+        function formatETB(amount) {
+            return Math.round(amount).toLocaleString() + ' ETB';
         }
 
         window.handleOrderTypeChange = function() {
@@ -1036,76 +1052,6 @@
                 telebirrDetails.classList.add('active');
             } else {
                 telebirrDetails.classList.remove('active');
-            }
-        };
-
-        window.confirmOrder = function() {
-            const orderType = document.getElementById('orderType').value;
-            const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
-            
-            // Validate delivery address
-            if (orderType === 'delivery' && !document.getElementById('address').value) {
-                showNotification('Please enter your delivery address', 'error');
-                return;
-            }
-            
-            // Validate Telebirr number
-            if (paymentMethod === 'telebirr') {
-                const phone = document.getElementById('phoneNumber').value;
-                const phoneRegex = /^(09|\+2519)\d{8}$/;
-                if (!phoneRegex.test(phone)) {
-                    showNotification('Please enter a valid Telebirr phone number', 'error');
-                    return;
-                }
-            }
-            
-            // Calculate totals
-            const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            const tax = subtotal * 0.1;
-            const deliveryFee = orderType === 'delivery' ? 50 : 0;
-            const total = subtotal + tax + deliveryFee;
-            
-            // Create order
-            if (window.OrdersDB) {
-                const orderData = {
-                    customerId: currentUser.id,
-                    customerName: currentUser.name,
-                    customerPhone: currentUser.phone,
-                    customerEmail: currentUser.email,
-                    items: cartItems,
-                    subtotal: subtotal,
-                    tax: tax,
-                    deliveryFee: deliveryFee,
-                    total: total,
-                    paymentMethod: paymentMethod,
-                    orderType: orderType,
-                    deliveryAddress: orderType === 'delivery' ? document.getElementById('address').value : '',
-                    specialInstructions: document.getElementById('instructions').value,
-                    status: 'pending',
-                    orderDate: new Date().toISOString()
-                };
-                
-                const newOrder = OrdersDB.add(orderData);
-                
-                if (newOrder) {
-                    // Clear cart
-                    localStorage.removeItem(`cart_${currentUser.id}`);
-                    
-                    // Update user points (10 points per order)
-                    if (currentUser.stats) {
-                        currentUser.stats.points += 10;
-                        localStorage.setItem('markanUser', JSON.stringify(currentUser));
-                    }
-                    
-                    // Show success message
-                    document.getElementById('checkoutContent').style.display = 'none';
-                    document.getElementById('successMessage').style.display = 'block';
-                    document.getElementById('confirmedOrderId').textContent = newOrder.id;
-                    
-                    showNotification('Order confirmed!', 'success');
-                } else {
-                    showNotification('Error placing order. Please try again.', 'error');
-                }
             }
         };
 
